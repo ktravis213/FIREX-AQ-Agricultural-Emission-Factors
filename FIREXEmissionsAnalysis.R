@@ -1,8 +1,8 @@
 # -------- ### All  EFs ### -------- 
 doclear=1
 if (doclear == 1){ rm(list=ls()) } # clear all analysis
-load("AgFires.RData")
-source('getERs.R') ; require(GMCM)
+load('AgFires.RData')
+source('getERsv2.R') ; require(GMCM)
 source('makeplots.R'); source('speciateSpecies.R')
 require(dplyr); require(plyr)
 source('/Users/ktravis1/OneDrive - NASA/FIREX/plotSpeciesMCE.R')
@@ -11,17 +11,25 @@ R2filter = 0.75; R2filterCO = 0.90 # stricter criteria for CO as this defines th
 R2Bot = 0.5 ; COcutoff = 400 # ppb 
 doprocess=0;doprocessSTEP2 =0
 
-fuelshapes = c(19,15,17,18,7,8,4,2,16,12)
-fuellimits = c("corn","soybean","rice","winter wheat","grass","pile","slash","shrub")
+fuelshapes = c(19,15,2,18,7,8,4,2,16,12,13)
+fuellimits = c("corn","soybean","rice","winter wheat","grass","pile","slash","shrub","forest")
 
-cbp1 <- c( "#E69F00", "#56B4E9", "#009E73",
-           "#F0E442", "#0072B2", "#D55E00", 
-           "#CC79A7","#000000","#999999","#CC0000")
+cbp1a <- c( "#E69F00", "#56B4E9", "#009E73",
+            "#F0E442", "#0072B2", "#D55E00", 
+            "#CC79A7","#000000","#999999","#CC0000")
+# colorblind safe option
+cbp1b = c('#377eb8','#e41a1c','#4daf4a','#f781bf','#a65628','#984ea3','#ff7f00','#ffff33')
+cbp1c=c('#a50026','#d73027','#f46d43','#fdae61','#fee090','#e0f3f8','#abd9e9',
+        '#74add1','#4575b4','#313695')
+cbp1d <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+           "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+cbp1 = cbp1b
 # ----- +++++++++++ ANALYSIS +++++++++++++ ------
 # How do emission factors change at a single fire over time, if at all?
 # How do emission factors vary across various fires sampled?
 #  Are there metrics (i.e. MCE etc) that provide some explanatory fpower for the variation that may be present?
-require(reshape); require(ggmap) ; require(OrgMassSpecR); library(readxl) ;require(plyr) ; library(ggbrace)
+require(reshape); require(ggmap) ; require(OrgMassSpecR); library(readxl) ;require(plyr)# ; library(ggbrace)
 require(dplyr); require(ggpubr); require(ncdf4)
 # ---- EFs from Xiaoxi Liu (2016 ACP SEAC4RS rice straw)
 source("xioaxi.R")
@@ -48,7 +56,6 @@ andreae = read.csv(f2)
 # --------- Get Akagi emission factors ---------
 akagi=readxl::read_xlsx('Akagi_acp-11-4039-2011-supplement/Tables 1-5_4.27.11.xlsx')
 akagi$CropEF = as.numeric(akagi$CropEF)
-akagi$PastureEF = as.numeric(akagi$PastureEF)
 akagi$SavannahEF= as.numeric(akagi$Savannah)
 akagi$TemperateEF= as.numeric(akagi$Temperate)
 
@@ -142,57 +149,10 @@ if (doprocess == 1){
   
   # merge names, flags, and data so I can plot the ag fires I actually analyzed
   # should probably cut though to criteria for both
-  require(ggmap)
-  ind = which(all5hz$fuel != "?" & all5hz$fuel != "forest" & all5hz$fuel != "savannah?" &
-                all5hz$fuel != "coniferous/decidous" & all5hz$fuel != "house" & 
-                all5hz$fuel != 'Understory mixed, shrub,rice' &
-                #all5hz$fuel != 'shrub' &
-                all5hz$fuel != 'Post-blackjack oak forest' &
-                all5hz$variable == 'CO_DACOM_DISKIN' &
-                as.numeric(all5hz$R2toX) >= R2filterCO & as.numeric(all5hz$maxval) > COcutoff ) 
-  
-  all5hz.map = all5hz[ind,]
-  all5hz.map$maxval = as.numeric(all5hz.map$maxval)
-  all5hz.map$catCO = NaN
-  ind = which(all5hz.map$maxval < 1E3)
-  all5hz.map$catCO[ind] = 1 # 52/237
-  ind = which(all5hz.map$maxval >= 1E3 & all5hz.map$maxval < 5E3)
-  all5hz.map$catCO[ind] = 5#123
-  ind = which(all5hz.map$maxval >= 5E3 & all5hz.map$maxval < 10E3)
-  all5hz.map$catCO[ind] = 10 # 42
-  ind = which(all5hz.map$maxval >= 10E3 & all5hz.map$maxval < 20E3)
-  all5hz.map$catCO[ind] = 30 # 14
-  ind = which(all5hz.map$maxval >= 20E3 & all5hz.map$maxval < 40E3)
-  all5hz.map$catCO[ind] = 40 # 6
-  all5hz.map =all5hz.map[order(all5hz.map$maxval,decreasing = TRUE),]
-  
-  domap=0
-  if (domap == 1){
-    map.us <- get_map(c(-98.5,30,-82,41))
-    mapfire = ggmap(map.us) +
-      geom_point(data = all5hz.map, aes(x = lon,y = lat,colour =fuel, size=catCO))+ 
-      ggtitle("Ag Fires, 8/21-9/03 ")+  scale_color_manual(values = c(cbp1 ), 
-                                                           limits=fuellimits)
-    ind = which(all5hz.map$fuel == 'corn' | all5hz.map$fuel == 'rice' | 
-                  all5hz.map$fuel == 'soybean' | all5hz.map$fuel == 'winter wheat')   
-    ind = which(all5hz.map$fuel == 'grass' | all5hz.map$fuel == 'shrub')   
-    ind = which(all5hz.map$fuel == 'slash' | all5hz.map$fuel == 'pile')   
-    
-    ggmap(map.us) +
-      geom_point(data = all5hz.map[ind,], aes(x = lon,y = lat,colour =fuel, size=catCO))
-    
-    # ---- MCE  histogram -----
-    ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' & allBOTH.filter$fuel != 'coniferous/decidous' & allBOTH.filter$fuel != 'forest')
-    MCEhist = ggplot(allBOTH.filter[ind,], aes(x=MCE, col=fuel, fill=fuel)) + geom_histogram()+theme_classic()+
-      scale_color_manual(values = c(cbp1 ),limits=fuellimits) + scale_fill_manual(values = c(cbp1 ),limits=fuellimits) +
-      theme(legend.position = "top")+labs(fill="")
-    ggsave(filename = 'MCEhist.pdf',MCEhist,width = 6,height = 6,units = 'in')
-    
-    ggsave(filename = 'Figure1_FireMap.pdf',mapfire,width = 6,height = 6,units = 'in')
-  }
+
   # ------- How many fuels? --------
-  fuels = unique(all5hz.map$fuel)
-  length(unique(all5hz.map$fire))
+  #fuels = unique(all5hz.map$fuel)
+  #length(unique(all5hz.map$fire))
   
   ind = which(all1hz$Category == 1 & is.finite(as.numeric(all1hz$ERtoCO)) & as.numeric(all1hz$ERtoCO) > 0
               & as.numeric(all1hz$R2toCO) > 0.75)
@@ -281,12 +241,13 @@ if (doprocess == 1){
     allBOTH.filter$MCE[ind] = max(as.numeric(allBOTH.filter$mce.5hz[ind]), na.rm=TRUE) # they should all be the same, just fill in
   }
   
-  ind = which(allBOTH.filter$R2toCO.5hz < R2filter)
+  # Remove EF and ER below R2 filter
+  ind = which(round(allBOTH.filter$R2toCO.5hz, digits = 1) < R2filter)
   allBOTH.filter$EF1CO.5hz[ind] = NaN
   allBOTH.filter$ERtoCO.5hz[ind] = NaN
   allBOTH.filter$MCE[ind] = NaN
   
-  ind = which(allBOTH.filter$R2toCO.1hz < R2filter)
+  ind = which(round(allBOTH.filter$R2toCO.1hz, digits=1) < R2filter)
   allBOTH.filter$EF1CO.1hz[ind] = NaN
   allBOTH.filter$ERtoCO.1hz[ind] = NaN
   allBOTH.filter$MCE[ind] = NaN
@@ -302,20 +263,23 @@ if (doprocess == 1){
   allBOTH.filter$FinalR2[ind] = allBOTH.filter$R2toCO.1hz[ind]
   
   # If R2 is between 0.5 and 0.75, assume we can use the integration method
-  ind = which(!is.finite(allBOTH.filter$FinalEF) & allBOTH.filter$R2toCO.5hz > R2Bot  &
-                allBOTH.filter$R2toCO.5hz < R2filter & is.finite(allBOTH.filter$EF1COintfill.5hz))
-  allBOTH.filter$FinalEF[ind] = allBOTH.filter$EF1COintfill.5hz[ind]
-  ind = which(!is.finite(allBOTH.filter$FinalERtoCO) & allBOTH.filter$R2toCO.5hz > R2Bot  &
-                allBOTH.filter$R2toCO.5hz < R2filter & is.finite(allBOTH.filter$ERtoCOintfill.5hz))
-  allBOTH.filter$FinalERtoCO[ind] = allBOTH.filter$ERtoCOintfill.5hz[ind]
- 
-  ind = which(!is.finite(allBOTH.filter$FinalEF) & allBOTH.filter$R2toCO.1hz > R2Bot  &
-                allBOTH.filter$R2toCO.1hz < R2filter & is.finite(allBOTH.filter$EF1COintfill.1hz))
-  allBOTH.filter$FinalEF[ind] = allBOTH.filter$EF1COintfill.1hz[ind]
-  ind = which(!is.finite(allBOTH.filter$FinalERtoCO) & allBOTH.filter$R2toCO.1hz > R2Bot  &
-                allBOTH.filter$R2toCO.1hz < R2filter & is.finite(allBOTH.filter$ERtoCOintfill.1hz))
-  allBOTH.filter$FinalERtoCO[ind] = allBOTH.filter$ERtoCOintfill.1hz[ind]
- 
+  # actually don't
+  doINT = 0
+  if (doINT == 1){
+    ind = which(!is.finite(allBOTH.filter$FinalEF) & allBOTH.filter$R2toCO.5hz > R2Bot  &
+                  allBOTH.filter$R2toCO.5hz < R2filter & is.finite(allBOTH.filter$EF1COintfill.5hz))
+    allBOTH.filter$FinalEF[ind] = allBOTH.filter$EF1COintfill.5hz[ind]
+    ind = which(!is.finite(allBOTH.filter$FinalERtoCO) & allBOTH.filter$R2toCO.5hz > R2Bot  &
+                  allBOTH.filter$R2toCO.5hz < R2filter & is.finite(allBOTH.filter$ERtoCOintfill.5hz))
+    allBOTH.filter$FinalERtoCO[ind] = allBOTH.filter$ERtoCOintfill.5hz[ind]
+   
+    ind = which(!is.finite(allBOTH.filter$FinalEF) & allBOTH.filter$R2toCO.1hz > R2Bot  &
+                  allBOTH.filter$R2toCO.1hz < R2filter & is.finite(allBOTH.filter$EF1COintfill.1hz))
+    allBOTH.filter$FinalEF[ind] = allBOTH.filter$EF1COintfill.1hz[ind]
+    ind = which(!is.finite(allBOTH.filter$FinalERtoCO) & allBOTH.filter$R2toCO.1hz > R2Bot  &
+                  allBOTH.filter$R2toCO.1hz < R2filter & is.finite(allBOTH.filter$ERtoCOintfill.1hz))
+    allBOTH.filter$FinalERtoCO[ind] = allBOTH.filter$ERtoCOintfill.1hz[ind]
+  }   
   # ----------- Now, choose EFs that had the best correlation to either CO2 or CO --------
   #allBOTH.filter$ChosenEF.5hz = NaN; allBOTH.filter$ChosenEF.R2.5hz = NaN
   #allBOTH.filter$ChosenEF.1hz = NaN; allBOTH.filter$ChosenEF.R2.1hz = NaN
@@ -400,6 +364,15 @@ if (doprocess == 1){
 } else{
   load('AllBOTH.filter.RData')
 }# end do process
+# ---- Remove very strange outliers -----
+# TOGA struggles with Wiggins-neighbor pass 2 & Limoncello 3
+ind = which(allBOTH.filter$fire == 'Wiggins-neighbor' & allBOTH.filter$pass == 2 & allBOTH.filter$PI == 'ppt')
+allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+ind = which(allBOTH.filter$fire == 'Limoncello' & allBOTH.filter$pass == 3 & allBOTH.filter$PI == 'ppt')
+allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+# iWAS struggles with Ratatouille pass 2
+ind = which(allBOTH.filter$fire == 'Ratatouille' & allBOTH.filter$pass == 2 & allBOTH.filter$PI == 'GILMAN')
+allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
 
 if (doprocessSTEP2 == 1){
   
@@ -440,6 +413,7 @@ if (doprocessSTEP2 == 1){
   # get rid of Inf
   ind = which(allBOTH.filter$maxval.5hz == -Inf)
   allBOTH.filter$maxval.5hz[ind] = NaN
+  
   
   # Probs should get rid of negative emission factors, however need to go back and check these
   ind = which(allBOTH.filter$ERtoCO.1hz < 0 & allBOTH.filter$Category.1hz == 1)
@@ -489,18 +463,25 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter$EF1CO.1hz[ind] = NaN
 
   # ---- SET USEME ----
-  allBOTH.filter$USEME = 1  # 1: include in the table and total VOC EF, 2: include in the table not total EF, 0: dont include at all
+  # 1: include in the table and total VOC EF
+  # 2: include in the table not total EF
+  # -1 : Dont report at all, not an emission
+  # 0: Dont include in the table but include for analysis of MCE dependence etc.
+  allBOTH.filter$USEME = 1  
+  # No longer reported by CALTECH
+  ind1 = which(allBOTH.filter$names == 'C4 Hydroxyperoxide')
+  allBOTH.filter$USEME[ind1] = 0
   # ------ These PM1 species don't correlate with CO ------
   ind1 = which(allBOTH.filter$variable =="Iodine_JIMENEZ")
-  allBOTH.filter$USEME[ind1] = 0
+  allBOTH.filter$USEME[ind1] = -1
   ind1 = which(allBOTH.filter$variable == "ClO4_JIMENEZ")
-  allBOTH.filter$USEME[ind1] = 0
+  allBOTH.filter$USEME[ind1] = -1
   ind1 = which(allBOTH.filter$variable =="Bromine_JIMENEZ")
-  allBOTH.filter$USEME[ind1] = 0
+  allBOTH.filter$USEME[ind1] = -1
   ind1 = which(allBOTH.filter$variable == "Seasalt_JIMENEZ")
-  allBOTH.filter$USEME[ind1] = 0
+  allBOTH.filter$USEME[ind1] = -1
   ind1 = which(allBOTH.filter$variable == "MSA_JIMENEZ")
-  allBOTH.filter$USEME[ind1] = 0
+  allBOTH.filter$USEME[ind1] = -1
   # ---------------- Get PM1 EF --------------------------------
   ind1 = which(allBOTH.filter$variable == 'OC_JIMENEZ')
   oc = allBOTH.filter[ind1,]
@@ -534,216 +515,220 @@ if (doprocessSTEP2 == 1){
     allBOTH.filter = rbind(allBOTH.filter,newline)
   }
   
-  # ---- Get rid of outlier points from Becky ------
-  ind = which(allBOTH.filter$fire == "U2" & allBOTH.filter$variable == 'nButane_ppt')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "U2" & allBOTH.filter$variable == 'nPentane_ppt')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+  # --- actually don't do this
+  dobeckyoutliers = 0
+  if (dobeckyoutliers == 1){
+    # ---- Get rid of outlier points from Becky ------
+    ind = which(allBOTH.filter$fire == "U2" & allBOTH.filter$variable == 'nButane_ppt')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "U2" & allBOTH.filter$variable == 'nPentane_ppt')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    
+    ind = which(allBOTH.filter$fire == "Supertramp" & allBOTH.filter$variable == 'nButane_ppt')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "Supertramp" & allBOTH.filter$variable == 'nPentane_ppt')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    
+    #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'nButane_ppt')
+    #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'nPentane_ppt')
+    #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'iButane_ppt')
+    #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'iButene1Butene_ppt')
+    #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    
+    ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$names == 'n-Butane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$variable == 'n-Pentane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$variable == 'Isobutane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$variable == 'i-Butene/1Butene')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    
+    ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'n-Butane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'n-Pentane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'Isobutane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'i-Butene/1Butene')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == '2-Methylpentane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == '3-Methylpentane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    
+    ind = which(allBOTH.filter$fire == "FatAlbert" & allBOTH.filter$variable == 'n-Pentane')
+    allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
   
-  ind = which(allBOTH.filter$fire == "Supertramp" & allBOTH.filter$variable == 'nButane_ppt')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "Supertramp" & allBOTH.filter$variable == 'nPentane_ppt')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
+    # just for plotting
+    ind = which(was.all$fire == "U2" )
+    was.all$nButane_WAS_BLAKE[ind] = NaN 
+    was.all$nPentane_WAS_BLAKE[ind] = NaN 
   
-  #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'nButane_ppt')
-  #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'nPentane_ppt')
-  #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'iButane_ppt')
-  #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  #ind = which(allBOTH.filter$fire == "Blackwater" & allBOTH.filter$variable == 'iButene1Butene_ppt')
-  #allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  
-  ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$names == 'n-Butane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$variable == 'n-Pentane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$variable == 'Isobutane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "Willow" & allBOTH.filter$variable == 'i-Butene/1Butene')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  
-  ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'n-Butane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'n-Pentane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'Isobutane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == 'i-Butene/1Butene')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == '2-Methylpentane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  ind = which(allBOTH.filter$fire == "BugsBunny" & allBOTH.filter$variable == '3-Methylpentane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-  
-  ind = which(allBOTH.filter$fire == "FatAlbert" & allBOTH.filter$variable == 'n-Pentane')
-  allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN
-
-  # just for plotting
-  ind = which(was.all$fire == "U2" )
-  was.all$nButane_WAS_BLAKE[ind] = NaN 
-  was.all$nPentane_WAS_BLAKE[ind] = NaN 
-
-  ind = which(was.all$fire == "Supertramp" )
-  was.all$nButane_WAS_BLAKE[ind] = NaN 
-  was.all$nPentane_WAS_BLAKE[ind] = NaN
-  
-  ind = which(was.all$fire == "Willow" )
-  was.all$nButane_WAS_BLAKE[ind] = NaN 
-  was.all$nPentane_WAS_BLAKE[ind] = NaN
-  was.all$iButane_WAS_BLAKE[ind] = NaN
-  was.all$iButene_WAS_BLAKE[ind] = NaN
-  
-  ind = which(was.all$fire == "BugsBunny" )
-  was.all$nButane_WAS_BLAKE[ind] = NaN 
-  was.all$nPentane_WAS_BLAKE[ind] = NaN
-  was.all$iButane_WAS_BLAKE[ind] = NaN
-  was.all$iButene_WAS_BLAKE[ind] = NaN
-  was.all$x2MePentane_WAS_BLAKE[ind] = NaN
-  was.all$x3MePentane_WAS_BLAKE[ind] = NaN
-  
-  ind = which(was.all$fire == "FatAlbert" )
-  was.all$nPentane_WAS_BLAKE[ind] = NaN
-  
+    ind = which(was.all$fire == "Supertramp" )
+    was.all$nButane_WAS_BLAKE[ind] = NaN 
+    was.all$nPentane_WAS_BLAKE[ind] = NaN
+    
+    ind = which(was.all$fire == "Willow" )
+    was.all$nButane_WAS_BLAKE[ind] = NaN 
+    was.all$nPentane_WAS_BLAKE[ind] = NaN
+    was.all$iButane_WAS_BLAKE[ind] = NaN
+    was.all$iButene_WAS_BLAKE[ind] = NaN
+    
+    ind = which(was.all$fire == "BugsBunny" )
+    was.all$nButane_WAS_BLAKE[ind] = NaN 
+    was.all$nPentane_WAS_BLAKE[ind] = NaN
+    was.all$iButane_WAS_BLAKE[ind] = NaN
+    was.all$iButene_WAS_BLAKE[ind] = NaN
+    was.all$x2MePentane_WAS_BLAKE[ind] = NaN
+    was.all$x3MePentane_WAS_BLAKE[ind] = NaN
+    
+    ind = which(was.all$fire == "FatAlbert" )
+    was.all$nPentane_WAS_BLAKE[ind] = NaN
+  }
+    
   # ------- Removing these measurements entirely
   # No emission factors come out for these species
   ind = which(allBOTH.filter$formula == 'C2H4O3S')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$formula == 'MSA')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$formula == 'Na')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   # Don't correlate with CO
   ind = which(allBOTH.filter$formula == 'BrO')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$formula == 'BrCl')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$formula == 'BrCN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   # ---------- These TOGA species don't correlate with CO
   ind = which(allBOTH.filter$variable  == 'iPropONO2_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHBr3_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable =='CHBrCl2_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CH3CCl3_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHCl3_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HFC134a_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HCFC142b_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HCFC141b_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHBr2Cl_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CH2ClI_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'LimoneneD3Carene_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'Propane_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'Propene_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'MBO_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'iButONO2and2ButONO2_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'C2H5OH_ppt')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CH2ClCH2Cl_ppt' ) 
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HCFC22_ppt' ) 
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CH2Cl2_ppt' ) # TOGA doesn't correlate with CO but WAS does
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'C2Cl4_ppt' ) # 
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   # These iWAS species dont correlate with CO
   ind = which(allBOTH.filter$variable == 'CycHexane_NOAAiWAS_GILMAN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable  == 'x3MePentane_NOAAiWAS_GILMAN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable  == 'x224TriMePentane_NOAAiWAS_GILMAN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable  == 'x22DiMeButane_NOAAiWAS_GILMAN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable  == 'CHCl3_NOAAiWAS_GILMAN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'C2Cl4_NOAAiWAS_GILMAN')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   
   #These WAS species dont correlate with CO
   ind = which(allBOTH.filter$variable == 'C2Cl4_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHBrCl2_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'C2HCl3_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHCl3_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'Limonene_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'ClBenzene_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'H1211_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CFC11_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CFC12_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'x234TrimePentane_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CH2ClCH2Cl_WAS_BLAKE' ) 
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CCl4_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CH3CCl3_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CFC12_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HFC134a_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HFC152a_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HCFC142b_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HCFC141b_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'HFC365mfc_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'x2MePentane_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CFC114_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'x3MePentane_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'H1301_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'H2402_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHBr2Cl_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CFC113_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable =='HCFC22_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'x23Dimebutane_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'CHBr3_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable =='x2PentONO2_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable =='x2ButONO2_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable =='x3PentONO2_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'iPropONO2_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable == 'x3Me2ButONO2_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
 #  ind = which(allBOTH.filter$variable =='CycPentane_WAS_BLAKE')
  # allBOTH.filter$USEME[ind] = 0
   
@@ -762,10 +747,9 @@ if (doprocessSTEP2 == 1){
   
   # ----- These species just really don't correlate in my opinion!
   ind = which(allBOTH.filter$variable =='Cl2_NOAACIMS_VERES')
-  allBOTH.filter$USEME[ind] = 0
-  
+  allBOTH.filter$USEME[ind] = -1
   ind = which(allBOTH.filter$variable =='ISOPN_WENNBERG')
-  allBOTH.filter$USEME[ind] = 0
+  allBOTH.filter$USEME[ind] = -1
   
   # Speciate C9 aromatics with Blake (C9H12) - maybe not enough, so just dont include the speciated in the total VOC
   ind = which(allBOTH.filter$variable== 'C9Aromatics_NOAAPTR_ppbv_WARNEKE')
@@ -787,7 +771,7 @@ if (doprocessSTEP2 == 1){
   
   # Toga CH2Br2 seems weird - maybe use blake?
   ind = which(allBOTH.filter$variable == 'CH2Br2_ppt')
-  allBOTH.filter$USEME[ind] =0
+  allBOTH.filter$USEME[ind] =-1
   # -- Actually just use TOGA furan, methyl furan, and furfural per GIGI's paper 
   ind = which(allBOTH.filter$names == 'Furan' & allBOTH.filter$PI == 'WARNEKE'  ) 
   allBOTH.filter$USEME[ind] = 0
@@ -820,6 +804,11 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter$USEME[ind] = 0
   ind = which(allBOTH.filter$names == 'Toluene' & allBOTH.filter$PI != 'WARNEKE') 
   allBOTH.filter$USEME[ind] = 0
+  # ---- Weird toluene outlier
+  ind = which(allBOTH.filter$variable == 'Toluene_NOAAPTR_ppbv_WARNEKE' & allBOTH.filter$FinalEF > 2)
+  allBOTH.filter$FinalEF[ind] = allBOTH.filter$EF1CO.5hz[ind]
+  allBOTH.filter$FinalERtoCO[ind] = allBOTH.filter$ERtoCO.5hz[ind]
+  
   ind = which(allBOTH.filter$names == 'Acetaldehyde' & allBOTH.filter$PI != 'WARNEKE') 
   allBOTH.filter$USEME[ind] = 0
   ind = which(allBOTH.filter$names == 'Acrolein' & allBOTH.filter$PI != 'WARNEKE') #APEL and WARNEKE agree, BLAKE is low
@@ -829,6 +818,11 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter$USEME[ind] = 0
   ind = which(allBOTH.filter$names == 'Formaldehyde' & allBOTH.filter$PI == 'WARNEKE')
   allBOTH.filter$USEME[ind] = 0
+  
+  # All but WAS agree so just keep warneke
+  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI != 'WARNEKE')
+  allBOTH.filter$USEME[ind] = 0
+  
   # Stategy - maybe average the 'short' measurements?
   # ------ Make averages of specific species, set USME for individuals == 0 -----------
   # --- Average Fried and Hanisco HCHO
@@ -910,11 +904,15 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter = mergelines3(allBOTH.filter, 'oXylene_ppt','oXylene_WAS_BLAKE','oXylene_NOAAiWAS_GILMAN')
   # --- Average GILMAN, BLAKE, APEL ethylbenzene
   allBOTH.filter = mergelines3(allBOTH.filter, 'EthBenzene_ppt','EthBenzene_WAS_BLAKE','EthBenzene_NOAAiWAS_GILMAN')
-  # --- Average GILMAN, BLAKE, APEL MEK
-  allBOTH.filter = mergelines3(allBOTH.filter, 'MEK_ppt','MEK_WAS_BLAKE','MEK_NOAAiWAS_GILMAN')
-  # --- Average WARNEKE, BLAKE, APEL Nitromethane
-  allBOTH.filter = mergelines3(allBOTH.filter, 'CH3NO2_NOAAPTR_ppbv_WARNEKE','Nitromethane_WAS_BLAKE','Nitromethane_ppt')
-  # --- Average GBlake, TOGA, CH3Br
+   # --- Average WARNEKE, BLAKE, APEL Nitromethane
+ # allBOTH.filter = mergelines3(allBOTH.filter, 'CH3NO2_NOAAPTR_ppbv_WARNEKE','Nitromethane_WAS_BLAKE','Nitromethane_ppt')
+  # TOGA nitromethane is way low compaared to WAS, which is within 30% of WARNEKE. USE Warneke
+  ind = which(allBOTH.filter$variable == 'Nitromethane_WAS_BLAKE' | allBOTH.filter$variable == 'Nitromethane_ppt')
+  allBOTH.filter$USEME[ind] = 0
+  ind = which(allBOTH.filter$variable == 'CH3NO2_NOAAPTR_ppbv_WARNEKE')
+  allBOTH.filter$USEME[ind] = 1
+  
+    # --- Average GBlake, TOGA, CH3Br
   allBOTH.filter = mergelines(allBOTH.filter, 'CH3Br_ppt','CH3Br_WAS_BLAKE')
   # --- Average GILMAN BLAKE, APEL 2,2,4-Trimethylpentane
   allBOTH.filter = mergelines3(allBOTH.filter, 'x224TrimePentane_ppt','x224TrimePentane_WAS_BLAKE','x224TriMePentane_NOAAiWAS_GILMAN')
@@ -1020,13 +1018,25 @@ if (doprocessSTEP2 == 1){
   ind = which(allBOTH.filter$variable == 'Styrene_ppt')
   allBOTH.filter$USEME[ind] = 0
   # ----- For isoprene, dont use  Warneke - possible interferences
-  ind = which(allBOTH.filter$variable == 'Isoprene_WAS_BLAKE')
-  allBOTH.filter$USEME[ind] = 0
-  ind = which(allBOTH.filter$variable == 'Isoprene_ppt')
-  allBOTH.filter$USEME[ind] = 0
-  ind = which(allBOTH.filter$variable == 'Isoprene_NOAAiWAS_GILMAN')
+  ind = which(allBOTH.filter$variable == 'Isoprene_NOAAPTR_ppbv_WARNEKE')
   allBOTH.filter$USEME[ind] = 0
   allBOTH.filter = mergelines3(allBOTH.filter, 'Isoprene_WAS_BLAKE','Isoprene_ppt','Isoprene_NOAAiWAS_GILMAN')
+  # But, there are some outliers that look odd for the above average.  If it is 3x higher than PTRMS, remove.
+  #ttt = unique(allBOTH.filter$uniqueid)
+  #for ( i in 1:length(ttt)){
+  #  ind = which(allBOTH.filter$uniqueid == ttt[i] & allBOTH.filter$variable == 'Isoprene_NOAAPTR_ppbv_WARNEKE')
+  #  try1 =allBOTH.filter[ind,]
+  #  ind2 = which(allBOTH.filter$uniqueid == ttt[i] & allBOTH.filter$variable == 'Isoprene_BLAKE_ppt_')
+  #  try2= allBOTH.filter[ind2,]
+  #  #if (length(try1$FinalEF) > 1){print(c(i,try1$FinalEF,try2$FinalEF))}
+  #  if (is.finite(try2$FinalEF) & is.finite(try1$FinalEF)){
+  #    if (try2$FinalEF > (try1$FinalEF*3)){
+  #      print(c(try2$fire,try2$pass,try2$FinalEF, try1$FinalEF))
+  #      allBOTH.filter$FinalEF[ind2] = NaN
+  #      allBOTH.filter$FinalERtoCO[ind2] = NaN
+  #    }
+  #  }
+  #}
   
   # ---- For DMS just use Warneke -----
 #  ind = which(allBOTH.filter$variable == 'DMS_WAS_BLAKE')
@@ -1040,6 +1050,7 @@ if (doprocessSTEP2 == 1){
   ind = which(allBOTH.filter$variable == 'x23Butanedione_NOAAPTR_ppbv_WARNEKE') # fast photolysis
   allBOTH.filter$lifetime_5hz_hr[ind] = 4 # 
   allBOTH.filter$lifetime_1hz_hr[ind] = 4 # 1
+  allBOTH.filter$lifetime[ind] = 4 # 1
   
   allBOTH.filter$LifetimeCat = 1 # assume fast if I haven't found an OH rate yet
   ind = which(allBOTH.filter$lifetime_1hz_hr <= 12 | allBOTH.filter$lifetime_5hz_hr <= 12)
@@ -1073,10 +1084,14 @@ if (doprocessSTEP2 == 1){
                    allBOTH.filter$uniqueid == newline$uniqueid& allBOTH.filter$LifetimeCat == 2 & allBOTH.filter$formula != 'N/A')
     
     # kludge for C8 aromatics (short-lived), MEK (long-lived), Methyl acetate (long-lived)
-    ind1B = which(allBOTH.filter$names[ind] != 'Ethylbenzene' & allBOTH.filter$names[ind] != 'o-Xylene' & allBOTH.filter$names[ind] != 'm,p-Xylene' &
-                    allBOTH.filter$names[ind] != 'Methyl Ethyl Ketone' & allBOTH.filter$names[ind] != 'Methyl acetate')
-    ind2B = which(allBOTH.filter$names[ind2] != 'Ethylbenzene' & allBOTH.filter$names[ind2] != 'o-Xylene' & allBOTH.filter$names[ind2] != 'm,p-Xylene')
-    ind3B = which(allBOTH.filter$names[ind3] != 'Methyl Ethyl Ketone' & allBOTH.filter$names[ind3] != 'Methyl acetate')
+    ind1B = which(allBOTH.filter$names[ind] != 'Ethylbenzene' & allBOTH.filter$names[ind] != 'o-Xylene' & 
+                    allBOTH.filter$names[ind] != 'm,p-Xylene' &
+#                    allBOTH.filter$names[ind] != 'Methyl Ethyl Ketone' & 
+                    allBOTH.filter$names[ind] != 'Methyl acetate' &
+                    allBOTH.filter$names[ind] != ' Furan and fragments')
+    ind2B = which(allBOTH.filter$names[ind2] != 'Ethylbenzene' & allBOTH.filter$names[ind2] != 'o-Xylene' & 
+                    allBOTH.filter$names[ind2] != 'm,p-Xylene' & allBOTH.filter$names[ind2] != ' Furan and fragments')
+    ind3B = which(allBOTH.filter$names[ind3] != 'Methyl acetate')
     
     tN1 = allBOTH.filter$FinalEF[ind[ind1B]]
     tN1ER = allBOTH.filter$FinalERtoCO[ind[ind1B]]
@@ -1095,13 +1110,14 @@ if (doprocessSTEP2 == 1){
       sRVOC = sum(tN1ER, na.rm=TRUE)
     } else{ sFVOC = NaN; sRVOC = NaN}
      # All
-    #allnames = allBOTH.filter$names[ind[ind1B]]
-    #allPI = allBOTH.filter$PI[ind[ind1B]]
-    #write.csv(NMVOC.table, 'NMVOCtable.csv')
+    allnames = allBOTH.filter$names[ind[ind1B]]
+    allPI = allBOTH.filter$PI[ind[ind1B]]
+    NMVOC.table = as.data.frame(cbind(allnames, allPI))
+    write.csv(NMVOC.table, 'NMVOCtable.csv')
     newline$FinalEF = sFVOC
     newline$FinalERtoCO = sRVOC
-    newline$variable = 'NMVOC'
-    newline$names = 'NMVOC'
+    newline$variable = 'VOC'
+    newline$names = 'VOC'
     newline$formula = 'N/A'
     newline$USEME = 2
     newline$FinalR2 =1 
@@ -1124,8 +1140,8 @@ if (doprocessSTEP2 == 1){
     
     newline2$FinalEF = sFVOC
     newline2$FinalERtoCO = sRVOC
-    newline2$variable = 'Short-lived NMVOC'
-    newline2$names = 'Short-lived NMVOC'
+    newline2$variable = 'Short-lived VOC'
+    newline2$names = 'Short-lived VOC'
     newline2$formula = 'N/A'
     newline2$USEME = 2
     newline2$LifetimeCat = 2
@@ -1148,8 +1164,8 @@ if (doprocessSTEP2 == 1){
     
     newline3$FinalEF = sFVOC
     newline3$FinalERtoCO = sRVOC
-    newline3$variable = 'Long-lived NMVOC'
-    newline3$names = 'Long-lived NMVOC'
+    newline3$variable = 'Long-lived VOC'
+    newline3$names = 'Long-lived VOC'
     newline3$formula = 'N/A'
     #newline3$PI = ''
     newline3$mWs = 800
@@ -1162,7 +1178,128 @@ if (doprocessSTEP2 == 1){
   # ----- save for processing
   save(allBOTH.filter, file='AllBOTH.filterP2.RData')
 } else (load('AllBOTH.filterP2.RData'))
+# ---- Give all passes the 5hz MCE ----
+ff = unique(allBOTH.filter$uniqueid) 
+allBOTH.filter$MCE = NaN
+for (i in 1:length(ff)){
+  ind = which(allBOTH.filter$uniqueid == ff[i] )
+  allBOTH.filter$MCE[ind] = max(as.numeric(allBOTH.filter$mce.5hz[ind]), na.rm=TRUE) # they should all be the same, just fill in
+}
 
+# Get rid of any zero emission factors
+ind = which(allBOTH.filter$FinalEF == 0)
+allBOTH.filter$FinalEF[ind] = NaN
+
+# Also need to check that we have a good CH4 EF for each
+ind = which(allBOTH.filter$variable == 'CH4_DACOM_DISKIN' & !is.finite(allBOTH.filter$FinalEF)) 
+badCH4passes = allBOTH.filter$uniqueid[ind]
+
+cc = c()
+for (i in 1:length(badCH4passes)){
+  ind = which(allBOTH.filter$uniqueid == badCH4passes[i])
+  allBOTH.filter$FinalEF[ind] = NaN
+  allBOTH.filter$FinalERtoCO[ind] = NaN
+}
+
+# Make a NOx as NO
+ind = which(allBOTH.filter$formula == 'NO' & allBOTH.filter$USEME == 1)
+tmpNO = allBOTH.filter[ind,]
+
+ind = which(allBOTH.filter$formula == 'NO2' & allBOTH.filter$USEME == 1)
+tmpNO2 = allBOTH.filter[ind,]
+
+for (i in 1:length(tmpNO$variable)){
+  ind = which(tmpNO2$uniqueid == tmpNO$uniqueid[i])
+  tmpNO$FinalEF[i] = tmpNO$FinalEF[i] + tmpNO2$FinalEF[ind] * 30/46
+  tmpNO$FinalERtoCO[i] = tmpNO$FinalERtoCO[i] + tmpNO2$FinalERtoCO[ind] 
+  tmpNO$variable[i] = 'NOx (as NO)'
+  tmpNO$names[i] = 'NOx (as NO)'
+  tmpNO$formula[i] = 'NOx (as NO)'
+  
+}
+allBOTH.filter = rbind(allBOTH.filter,tmpNO)
+# ---- Total carbon with CO+CO2+CH4 vs. everything -----
+#plot(allBOTH.filter$TC2CO.1hz, allBOTH.filter$TC1CO.1hz, xlim=c(0,45), ylim=c(0,45))
+#abline(lm(allBOTH.filter$TC1CO.1hz~allBOTH.filter$TC2CO.1hz+0))
+# -------- min vs. max MCE across each fire -----
+ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' &
+              allBOTH.filter$fire != "Copper Breaks" &
+              allBOTH.filter$fire != "Vivian" &
+              allBOTH.filter$fire != "Invictus" &
+             allBOTH.filter$fuel != 'coniferous/decidous')
+fireMCEmin = aggregate(allBOTH.filter$MCE[ind], by=list(allBOTH.filter$fire[ind], allBOTH.filter$fuel[ind]), FUN='min', na.rm=TRUE)
+fireMCEmax = aggregate(allBOTH.filter$MCE[ind], by=list(allBOTH.filter$fire[ind], allBOTH.filter$fuel[ind]), FUN='max', na.rm=TRUE)
+fireMCEmin = as.data.frame(fireMCEmin)
+colnames(fireMCEmin)=c('Fire','Fuel','MCEmin')
+fireMCEmin$MCEmax = fireMCEmax$x
+fireMCEmin$CT = NaN
+for (i in 1:length(fireMCEmin$Fire)){
+  ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' & is.finite(allBOTH.filter$FinalEF)&
+                allBOTH.filter$fire == fireMCEmin$Fire[i])
+  fireMCEmin$CT[i] = length(ind)
+}
+fireMCEmin$Diff = (fireMCEmin$MCEmax-fireMCEmin$MCEmin)*100/fireMCEmin$MCEmin
+fireMCEmin = fireMCEmin[order(fireMCEmin$Diff,decreasing = TRUE),]
+
+# Hamburger example
+doHamburger = 0
+if (doHamburger ==1){
+  ind = which(allfires.5hz$fire == 'Hamburger' & allfires.5hz$Time_Start >= 72647)
+  pass = allfires.5hz[ind,]
+  cz = 1.2
+  par(mfrow=c(1,1),mar = c(3, 4, 2, 4), cex=cz)
+  yy=max(pass$CO2_7000_ppm, na.rm=TRUE)
+  tt=3
+  pass$Time_Start2 = seq(1,length(pass$Time_Start))
+  plot(pass$Time_Start, pass$CO2_7000_ppm_DISKIN, ylab = "CO2, ppm",type='o',lwd=tt,
+       main = "", xlab = "Time", ylim=c(min(pass$CO2_7000_ppm_DISKIN, na.rm=TRUE), yy))
+  par(new = TRUE, cex=cz)
+  plot(pass$Time_Start, pass$CO_DACOM_DISKIN, xaxt = "n", yaxt = "n",type='o',lwd=tt,pch=16,cex=0.5,
+       ylab = "", xlab = "", col = "red", lty = 2, ylim=c(0,max(pass$CO_DACOM_DISKIN, na.rm=TRUE)))
+  axis(side = 4, cex=cz)
+  mtext("CO, ppb", side = 4, line = 2, cex=cz)
+  legend("topright", c("CO2", "CO"), col = c("black", "red"), bty='n',lty = c(1, 2))
+       
+  pass$Pass = NaN
+  ind = which(pass$Time_Start >= 72647& pass$Time_Start < 72650.0 )
+  pass$Pass[ind] = 1
+  ind = which(pass$Time_Start >= 72651 & pass$Time_Start < 72655.0 )
+  pass$Pass[ind] = 2
+  ind = which(pass$Time_Start >= 72655 & pass$Time_Start < 72659.8 )
+  pass$Pass[ind] = 3
+  ind = which(pass$Time_Start >= 72870 & pass$Time_Start < 72879.0 )
+  pass$Pass[ind] = 4
+  ind = which(pass$Time_Start >= 72880 & pass$Time_Start < 72885.0 )
+  pass$Pass[ind] = 5
+  ind = which(pass$Time_Start >= 73305 & pass$Time_Start < 73335.0 )
+  pass$Pass[ind] = 6
+  ind = which(pass$Time_Start >= 73336 & pass$Time_Start < 73341.0 )
+  pass$Pass[ind] = 7
+  ind = which(pass$Time_Start >=  73341 & pass$Time_Start < 73347.0 )
+  pass$Pass[ind] = 8
+  ind = which(pass$Time_Start >=  73567 & pass$Time_Start < 73578.0)
+  pass$Pass[ind] = 9
+  ggplot(pass) + geom_point(aes(x=CO2_7000_ppm_DISKIN, y=CO_DACOM_DISKIN, col=factor(Pass)))+theme_classic()
+  ind = which(is.nan(pass$Pass))
+  pass$Pass[ind] = 1
+  # Value used to transform the data
+  coeff <- 15
+  a.diff = max(pass$CO_DACOM_DISKIN, na.rm=TRUE) - min(pass$CO_DACOM_DISKIN, na.rm=TRUE)
+  b.diff = max(pass$CO2_7000_ppm_DISKIN, na.rm=TRUE) - min(pass$CO2_7000_ppm_DISKIN, na.rm=TRUE)
+  a.min = min(pass$CO_DACOM_DISKIN, na.rm=TRUE)
+  b.min= min(pass$CO2_7000_ppm_DISKIN, na.rm=TRUE)
+  b = pass$CO2_7000_ppm_DISKIN
+  ggplot(pass, aes(x=Time_Start2,y=CO_DACOM_DISKIN)) +
+    geom_point( aes(col=factor(Pass)), size=2) + 
+    geom_point(aes(y = (b - b.min) / b.diff * a.diff + a.min)) +
+    #geom_line( aes(y=CO2_7000_ppm_DISKIN * coeff), size=2) +
+    #scale_y_continuous(    name = "CO, ppb",
+    #  sec.axis = sec_axis(~./coeff, name="CO2, ppm", limits=c(400,560))) + 
+    scale_y_continuous(name='CO, ppb',sec.axis = sec_axis(trans = ~((. -a.min) * b.diff / a.diff) + b.min,
+                                                          name = "CO2, ppm"))+
+    theme_classic() +  theme(axis.title.y = element_text( size=13),
+      axis.title.y.right = element_text( size=13)  ) + labs(col="Plume #")
+}  
 # Really want max CO for each plume
 ind = which(allBOTH.filter$names == 'Carbon Monoxide')
 maxCO.5hz = allBOTH.filter$maxval.5hz[ind]
@@ -1178,6 +1315,61 @@ for (i in 1:length(passes)){
 # Do we still have negative EFs????
 ind = which(allBOTH.filter$FinalEF < 0 & allBOTH.filter$Category != 5 & is.finite(allBOTH.filter$Category))
 allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN; allBOTH.filter$MCE[ind] = NaN
+# --Remove aged blackwater
+ind = which(allBOTH.filter$fire == 'BlackwaterRiver' & allBOTH.filter$MAtoF.5hz > 0.2)
+allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN; allBOTH.filter$MCE[ind] = NaN
+
+dokludge = 1
+if (dokludge == 1){
+  # ------ kludge for particle number since I forgot to precalculate it -----
+  indA = which(allBOTH.filter$variable == 'CNgt6nm' & allBOTH.filter$fire != 'Invictus')
+  indB= which( allBOTH.filter$variable == 'Ngt100nm_LAS_stdPT' & allBOTH.filter$fire != 'Invictus')
+  indC = which(allBOTH.filter$names == 'CCN_034' & allBOTH.filter$fire != 'Invictus')
+  indD = which(allBOTH.filter$variable == 'CNgt20nm' & allBOTH.filter$fire != 'Invictus')
+  indE = which(allBOTH.filter$variable == 'CNgt3nm'& allBOTH.filter$fire != 'Invictus')
+  
+  ind1 = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN'& allBOTH.filter$fire != 'Invictus')
+  fuel = allBOTH.filter$fuel[ind1]
+  tmpCContent = allBOTH.filter$Start*0 + 500 # Assuming 50 % C, 500 g/kg
+  ind = which(fuel == 'corn' | fuel == 'soybean' | fuel == 'winter wheat' | fuel == 'rice')
+  tmpCContent[ind] = 415.1 
+  ind =which(fuel == 'grass' | fuel == 'shrub')
+  tmpCContent[ind] = 462.7
+  ind = which(fuel == 'pile' | fuel == 'slash') 
+  tmpCContent[ind] =  511.1
+  
+  ind2 = which(allBOTH.filter$variable == 'CH4_DACOM_DISKIN'& allBOTH.filter$fire != 'Invictus')
+  ind3 = which(allBOTH.filter$variable == 'CO2_ppb'& allBOTH.filter$fire != 'Invictus')
+  c1 = allBOTH.filter$FinalERtoCO[indA]/(allBOTH.filter$FinalERtoCO[ind1]*allBOTH.filter$nCs[ind1]+
+                                           allBOTH.filter$FinalERtoCO[ind2]*allBOTH.filter$nCs[ind2]+  # just CO, CO2, CH4
+                                           allBOTH.filter$FinalERtoCO[ind3] *allBOTH.filter$nCs[ind3]) # particles/cm3/ppbC
+  allBOTH.filter$FinalEF[indA] =  (c1*6.022E23/2.6E10/12)*tmpCContent[indA] #conversion at 273K and 1atm
+  allBOTH.filter$PI[indA] = 'MOORE'
+  
+  c1 = allBOTH.filter$FinalERtoCO[indB]/(allBOTH.filter$FinalERtoCO[ind1]*allBOTH.filter$nCs[ind1]+
+                                           allBOTH.filter$FinalERtoCO[ind2]*allBOTH.filter$nCs[ind2]+  # just CO, CO2, CH4
+                                           allBOTH.filter$FinalERtoCO[ind3] *allBOTH.filter$nCs[ind3]) # particles/cm3/ppbC
+  allBOTH.filter$FinalEF[indB] =  (c1*6.022E23/2.6E10/12)*tmpCContent[indB] #conversion at 273K and 1atm
+  allBOTH.filter$PI[indB] = 'MOORE'
+  
+  c1 = allBOTH.filter$FinalERtoCO[indC]/(allBOTH.filter$FinalERtoCO[ind1]*allBOTH.filter$nCs[ind1]+
+                                           allBOTH.filter$FinalERtoCO[ind2]*allBOTH.filter$nCs[ind2]+  # just CO, CO2, CH4
+                                           allBOTH.filter$FinalERtoCO[ind3] *allBOTH.filter$nCs[ind3]) # particles/cm3/ppbC
+  allBOTH.filter$FinalEF[indC] =  (c1*6.022E23/2.6E10/12)*tmpCContent[indC] #conversion at 273K and 1atm
+  allBOTH.filter$PI[indC] = 'MOORE'
+  
+  c1 = allBOTH.filter$FinalERtoCO[indD]/(allBOTH.filter$FinalERtoCO[ind1]*allBOTH.filter$nCs[ind1]+
+                                           allBOTH.filter$FinalERtoCO[ind2]*allBOTH.filter$nCs[ind2]+  # just CO, CO2, CH4
+                                           allBOTH.filter$FinalERtoCO[ind3] *allBOTH.filter$nCs[ind3]) # particles/cm3/ppbC
+  allBOTH.filter$FinalEF[indD] =  (c1*6.022E23/2.6E10/12)*tmpCContent[indD] #conversion at 273K and 1atm
+  allBOTH.filter$PI[indD] = 'MOORE'
+  
+  c1 = allBOTH.filter$FinalERtoCO[indE]/(allBOTH.filter$FinalERtoCO[ind1]*allBOTH.filter$nCs[ind1]+
+                                           allBOTH.filter$FinalERtoCO[ind2]*allBOTH.filter$nCs[ind2]+  # just CO, CO2, CH4
+                                           allBOTH.filter$FinalERtoCO[ind3] *allBOTH.filter$nCs[ind3]) # particles/cm3/ppbC
+  allBOTH.filter$FinalEF[indE] =  (c1*6.022E23/2.6E10/12)*tmpCContent[indE] #conversion at 273K and 1atm
+  allBOTH.filter$PI[indE] = 'MOORE'
+}
 # ----------------- AVERAGES ------------------------------
 # Average by fire
 #allBOTH.filter.avg.fire = aggregate(allBOTH.filter, by=list(allBOTH.filter$fire,allBOTH.filter$fuel, allBOTH.filter$variable), FUN='mean', na.rm=TRUE)
@@ -1186,12 +1378,26 @@ allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN; allBOT
    # Average by  by individual fuel and species
 #allBOTH.filter.avg.fire.fuel = aggregate(allBOTH.filter.avg.fire, by=list(allBOTH.filter.avg.fire$Group.2, allBOTH.filter.avg.fire$Group.3), FUN='mean', na.rm=TRUE)
 #allBOTH.filter.sd.fire.fuel = aggregate(allBOTH.filter.avg.fire, by=list(allBOTH.filter.avg.fire$Group.2, allBOTH.filter.avg.fire$Group.3), FUN='sd', na.rm=TRUE)
-# ----- Anything set to USEME = 0 here is already in the NMVOC EF, so this is double counted. Need to go back and fix at the end probably.
+# ----- Anything set to USEME = 0 here is already in the VOC EF, so this is double counted. Need to go back and fix at the end probably.
 #       
 #ind = which(allBOTH.filter$variable == 'PM1' & allBOTH.filter$names == 'Organic Carbon')
 #allBOTH.filter <- allBOTH.filter[-c(ind), ]
+q1 = 0.25; q2=0.75
 
-allBOTH.filter.median = aggregate(allBOTH.filter, by=list(allBOTH.filter$variable), FUN='median', na.rm=TRUE)
+# Just for ag + prescribed
+ind = which(allBOTH.filter$fuel == 'corn' | allBOTH.filter$fuel == 'soybean' |  allBOTH.filter$fuel == 'rice' |
+              allBOTH.filter$fuel == 'pile' | allBOTH.filter$fuel == 'slash' )
+quantile(allBOTH.filter$MCE[ind], na.rm=TRUE)
+allBOTH.filter.median = aggregate(allBOTH.filter[ind,], by=list(allBOTH.filter$variable[ind]), FUN='median', na.rm=TRUE)
+allBOTH.filter.25 = aggregate(allBOTH.filter$FinalEF[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q1),na.rm=TRUE)
+allBOTH.filter.75 = aggregate(allBOTH.filter$FinalEF[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q2),na.rm=TRUE)
+allBOTH.filter.25ER = aggregate(allBOTH.filter$FinalERtoCO[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q1),na.rm=TRUE)
+allBOTH.filter.75ER = aggregate(allBOTH.filter$FinalERtoCO[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q2),na.rm=TRUE)
+allBOTH.filter.median$FinalEF_25 = allBOTH.filter.25$x
+allBOTH.filter.median$FinalEF_75 = allBOTH.filter.75$x
+allBOTH.filter.median$FinalERtoCO_25 = allBOTH.filter.25ER$x
+allBOTH.filter.median$FinalERtoCO_75 = allBOTH.filter.75ER$x
+
 ind = which(allBOTH.filter$fuel == 'corn')
 allBOTH.filter.corn.median = aggregate(allBOTH.filter[ind,],
     by=list(allBOTH.filter$variable[ind]), FUN='median', na.rm=TRUE)
@@ -1206,7 +1412,7 @@ allBOTH.filter.sd.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,a
 
 allBOTH.filter.median.fuel$FinalEF_mean = allBOTH.filter.mean.fuel$FinalEF
 allBOTH.filter.median.fuel$FinalEF_sd = allBOTH.filter.sd.fuel$FinalEF
-q1 = 0.25; q2=0.75
+
 allBOTH.filter.25.fuel = aggregate(allBOTH.filter$FinalEF, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q1),na.rm=TRUE)
 allBOTH.filter.75.fuel = aggregate(allBOTH.filter$FinalEF, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q2),na.rm=TRUE)
 allBOTH.filter.25.fuelER = aggregate(allBOTH.filter$FinalERtoCO, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q1),na.rm=TRUE)
@@ -1217,7 +1423,8 @@ allBOTH.filter.median.fuel$FinalEF_75 = allBOTH.filter.75.fuel$x
 allBOTH.filter.median.fuel$FinalERtoCO_25 = allBOTH.filter.25.fuelER$x
 allBOTH.filter.median.fuel$FinalERtoCO_75 = allBOTH.filter.75.fuelER$x
 
-# need to recover kind, formula, and names
+# need to recover fire, kind, formula, and names
+allBOTH.filter.median.fuel$variable = allBOTH.filter.median.fuel$Group.2
 for (i in 1:length(allBOTH.filter.median.fuel$kind)){
   ind = which(allBOTH.filter$variable == allBOTH.filter.median.fuel$Group.2[i])
   allBOTH.filter.median.fuel$kind[i] = allBOTH.filter$kind[ind[1]]
@@ -1225,6 +1432,14 @@ for (i in 1:length(allBOTH.filter.median.fuel$kind)){
   allBOTH.filter.median.fuel$names[i] = allBOTH.filter$names[ind[1]]
   allBOTH.filter.median.fuel$PI[i] = allBOTH.filter$PI[ind[1]]
  # print(c(allBOTH.filter$variable[ind[1]], allBOTH.filter.median.fuel$Group.2[i]))
+}
+for (i in 1:length(allBOTH.filter.median$kind)){
+  ind = which(allBOTH.filter$variable == allBOTH.filter.median$Group.1[i])
+  allBOTH.filter.median$kind[i] = allBOTH.filter$kind[ind[1]]
+  allBOTH.filter.median$formula[i] = allBOTH.filter$formula[ind[1]]
+  allBOTH.filter.median$names[i] = allBOTH.filter$names[ind[1]]
+  allBOTH.filter.median$PI[i] = allBOTH.filter$PI[ind[1]]
+  # print(c(allBOTH.filter$variable[ind[1]], allBOTH.filter.median.fuel$Group.2[i]))
 }
 for (i in 1:length(allBOTH.filter.mean.fuel$kind)){
   ind = which(allBOTH.filter$variable == allBOTH.filter.mean.fuel$Group.2[i])
@@ -1245,13 +1460,34 @@ for (i in 1:length(ff)){
 }
 allBOTH.filter.median.fuel= getplumesANDmcebyfuel(allBOTH.filter.median.fuel, allBOTH.filter )
 
-
 # --------------------------- Speciate these NOAA PTRMS species based on TOGA -----------------------------------------
 # --------- Sum of m-xylene p-xylene o-xylene and ethyl benzene -------
 # -------- AcetonePropanal --------------
 # -------- MVK/MACR/2Butenals -------
 allBOTH.filter.median.fuel = speciateSpecies(allBOTH.filter.median.fuel)
+allBOTH.filter.median = speciateSpecies(allBOTH.filter.median)
+ # C4Carbonyls_NOAAPTR_ppbv
+ind = which(allBOTH.filter.median.fuel$variable == 'C4Carbonyls_NOAAPTR_ppbv_WARNEKE')
+ind = which(allBOTH.filter.median.fuel$names == 'MEK')
 
+# Make larger fuel categories
+allBOTH.filter$fuelORIG = allBOTH.filter$fuel
+allBOTH.filter$fuel2 = allBOTH.filter$fuel
+ind = which(allBOTH.filter$fuel2 == 'corn' | allBOTH.filter$fuel2 == 'soybean' | allBOTH.filter$fuel2 == 'rice' |
+              allBOTH.filter$fuel2 == 'winter wheat')
+allBOTH.filter$fuel2[ind] = 'agriculture'
+ind = which(allBOTH.filter$fuel2 == 'pile' | allBOTH.filter$fuel2 == 'slash' | allBOTH.filter$fuel2 == 'shrub')
+allBOTH.filter$fuel2[ind] = 'prescribed'
+ind = which(allBOTH.filter$fire == 'BlackwaterRiver')
+allBOTH.filter$fuel2[ind] = 'Blackwater'
+
+# MCE hist
+ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN')
+tmpCO = allBOTH.filter[ind,]
+ind = which(tmpCO$fuel2 == 'Blackwater' & tmpCO$MAtoF.5hz > 0.2)
+tmpCO$FinalEF[ind] = NaN
+ind = which(tmpCO$fuel2 != 'forest' & tmpCO$fuel2 != 'coniferous/decidous' & is.finite(tmpCO$FinalEF))
+min(tmpCO$MCE[ind])
 # ------- names --------
 bnames=c('OCS_WAS_BLAKE', 'DMS_WAS_BLAKE', 'CFC12_WAS_BLAKE', 'CFC11_WAS_BLAKE', 'CFC113_WAS_BLAKE', 'CFC114_WAS_BLAKE', 
          'HFC152a_WAS_BLAKE', 'HFC134a_WAS_BLAKE', 'HFC365mfc_WAS_BLAKE', 'HCFC22_WAS_BLAKE', 'HCFC142b_WAS_BLAKE', 'HCFC141b_WAS_BLAKE', 
@@ -1380,8 +1616,8 @@ write.csv(cors.toga, 'cors.togaCORN.csv')
 # Don't report negative TOGA correlations
 ind = which(is.finite(cors.toga$cors.toga) & cors.toga$cors.toga < 0)
 
-
 # ----- which iWAS  species dont correlate with CO? ------
+dev.off()
 cors.iwas = c(); pval.iwas=c(); counts = c()
 cc = colnames(iwas.all)
 for (i in 1:length(gnames)){
@@ -1410,10 +1646,11 @@ cors.iwas$pval = pval.iwas
 cors.iwas$counts = counts
 
 # ----- which WAS  species dont correlate with CO? ------
+dev.off()
 cors.was.ag = c(); pval.was.ag=c(); counts.ag = c()
 cors.was.pb = c(); pval.was.pb=c(); counts.pb = c()
 cc = colnames(was.all)
-par(mfrow=c(5,4))
+par(mfrow=c(2,2))
 for (i in 1:length(bnames)){
   ind = which(cc == bnames[i])
   yy=unlist(was.all[,ind])
@@ -1501,6 +1738,8 @@ for (i in 1:length(allBOTH.filter.median.fuel$AndreaeEF)){
   }
   if (length(ind) >2){print(">2")}
 }
+print(c("Done Andreae"))
+# ---- ---
 # # --------- Get Akagi emission factors ------------
 # allBOTH.filter.median.fuel$AkagiEF = NaN
 # allBOTH.filter.median.fuel$AkagiEFsd = NaN
@@ -1518,209 +1757,65 @@ for (i in 1:length(allBOTH.filter.median.fuel$AndreaeEF)){
 # }
 # 
 # ------ Want R2 to CO from the data------
-allBOTH.filter.median.fuel$RtoCOoverall = NaN
-for ( i in 1:length(allBOTH.filter.median.fuel$Group.2)){
-  cc1 = colnames(allfires.1hz); cc2 = colnames(allfires.5hz)
-  cc3 = colnames(toga.all); cc4 = colnames(was.all); cc5 = colnames(iwas.all)
-  # just do corn to remove any fuel dependence
-  ind1 = which(cc1 == allBOTH.filter.median.fuel$variable[i])
-  ind1B = which(allfires.1hz$fuel == 'corn')
-  ind2 = which(cc2 == allBOTH.filter.median.fuel$variable[i])
-  ind2B = which(allfires.5hz$fuel == 'corn')
-  ind3 = which(cc3 == allBOTH.filter.median.fuel$variable[i])
-  ind3B = which(toga.all$fuel == 'corn')
-  ind4 = which(cc4 == allBOTH.filter.median.fuel$variable[i])
-  ind4B = which(was.all$fuel == 'corn')
-  ind5 = which(cc5 == allBOTH.filter.median.fuel$variable[i])
-  ind5B = which(iwas.all$fuel == 'corn')
-  if (length(ind1) > 0){
-    tmp = as.numeric(allfires.1hz[ind1B,ind1])
-    iq = which(is.finite(tmp))
-    if (length(iq) > 2){tt = cor.test(as.numeric(allfires.1hz$CO_DACOM_DISKIN[ind1B]), tmp)}
-    allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
-  }
-  if (length(ind2) > 0){
-    tmp = as.numeric(allfires.5hz[ind2B,ind2])
-    iq = which(is.finite(tmp))
-    if (length(iq) > 2){tt = cor.test(as.numeric(allfires.5hz$CO_DACOM_DISKIN[ind2B]), tmp)}
-    allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
-  }
-  if (length(ind3) > 0){
-    tmp = (toga.all[ind3B,ind3])
-    tmp = unlist(tmp)
-    tmp = as.numeric(tmp)
-    iq = which(is.finite(tmp))
-    if (length(iq) > 2){tt = cor.test(as.numeric(toga.all$CO_DACOM_DISKIN_BECKY[ind3B]), tmp)}
-    allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
-  }
-  if (length(ind4) > 0){
-    tmp = as.numeric(was.all[ind4B,ind4])
-    iq = which(is.finite(tmp))
-    if (length(iq) > 2){tt = cor.test(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[ind4B]), tmp)}
-    allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
-  }
-  if (length(ind5) > 0){
-    tmp = as.numeric(as.numeric(iwas.all[ind5B,ind5]))
-    iq = which(is.finite(tmp))
-    if (length(iq) > 2){tt = cor.test(as.numeric(iwas.all$CO_DACOM_DISKIN_GILMAN[ind5B]), tmp)}
-    allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
-  }
-}
-
-# --- MCE analysis Fig X ----- 
-ind = which(allBOTH.filter.median.fuel$Group.1 == 'corn' & allBOTH.filter.median.fuel$USEME == 1 &
-              is.finite(allBOTH.filter.median.fuel$corMCE_FINAL) & allBOTH.filter.median.fuel$variable != 'CO_DACOM_DISKIN' &
-              allBOTH.filter.median.fuel$variable != 'CO2_ppb' & is.finite(allBOTH.filter.median.fuel$Category) & allBOTH.filter.median.fuel$Category != 5 &
-              allBOTH.filter.median.fuel$formula != 'N/A')
-uVOC = allBOTH.filter.median.fuel[ind,]
-ind = which(allBOTH.filter.median.fuel$Group.1 == 'slash'  & allBOTH.filter.median.fuel$USEME == 1)
-uVOC.slash = allBOTH.filter.median.fuel[ind,]
-
-# does corn have a statistically different slope from slash? 
-uVOC$DiffSlashCorn = NaN
-for (i in 1:length(uVOC$Group.1)){
-  ind = which(uVOC$names[i] == uVOC.slash$names & uVOC.slash$USEME == 1)
-  if (length(ind) == 1){
-    slope1 = c(uVOC$slopeMCE[i] - uVOC$slopeError[i], uVOC$slopeMCE[i] + uVOC$slopeError[i])
-    slope2 = c(uVOC.slash$slopeMCE[ind] - uVOC.slash$slopeError[ind], uVOC.slash$slopeMCE[ind] + uVOC.slash$slopeError[ind])
-    diff = (uVOC.slash$slopeMCE[ind] - uVOC$slopeMCE[i])*100/uVOC$slopeMCE[i]
-    uVOC$DiffSlashCorn[i] =diff
-  }
-}
-ind = which(uVOC$DiffSlashCorn > 50)
-uVOC$DiffSlashCorn[ind] = median(uVOC$DiffSlashCorn[ind]) # 119
-ind = which(uVOC$DiffSlashCorn > -25 & uVOC$DiffSlashCorn < 25)
-uVOC$DiffSlashCorn[ind] = median(uVOC$DiffSlashCorn[ind]) # -7
-ind = which(uVOC$DiffSlashCorn < -50)
-uVOC$DiffSlashCorn[ind] = median(uVOC$DiffSlashCorn[ind]) # -67
-ind = which(uVOC$DiffSlashCorn < -25 & uVOC$DiffSlashCorn > -50)
-uVOC$DiffSlashCorn[ind] = median(uVOC$DiffSlashCorn[ind]) # -33
-
-uVOC = uVOC[order(uVOC$corMCE_FINAL),]
-ind = which(uVOC$variable != 'PM1')
-uVOC = uVOC[ind,]
-uVOC$NUM = seq(1,length(uVOC$Group.1))
-# color this plot by whether corn is unique
-ind = which(uVOC$kind == 'nitrogen' | uVOC$kind == 'nitrate' | uVOC$kind == 'alkyl nitrate')
-uVOC$kind[ind] = 'NOy'
-ind = which(uVOC$kind == 'CH2O')
-uVOC$kind[ind] = 'oVOC'
-
-ind = which(uVOC$kind == 'CH4')
-uVOC$kind[ind] = 'alkane'
-
-# Try different categories
-uVOC$kind2 = uVOC$kind
-uVOC$kind2[3] = "aldehyde"
-uVOC$kind2[4] = "furans"
-uVOC$kind2[6] = "aldehyde"
-uVOC$kind2[7] = "aldehyde"
-uVOC$kind2[8] = "ketone"
-uVOC$kind2[9] = "aldehyde"
-uVOC$kind2[10] = "aldehyde"
-uVOC$kind2[11] = "ketone"
-uVOC$kind2[12] = "aldehyde"
-uVOC$kind2[13] = "phenolics"
-uVOC$kind2[14] = "phenolics"
-uVOC$kind2[15] = "carboxylic acid" # acetic acid is majority
-uVOC$kind2[17] = "phenolics" #o-cresol?
-uVOC$kind2[20] = "allene"
-uVOC$kind2[24] = "amine"
-uVOC$kind2[25] = "furans"
-uVOC$kind2[26] = "nitrile"
-uVOC$kind2[27] = "furans"
-uVOC$kind2[28] = "phenolics" 
-uVOC$kind2[29] = "alcohol" 
-uVOC$kind2[30] = "furans"
-uVOC$kind2[31] = "ketone"
-uVOC$kind2[32] = "furans"
-uVOC$kind2[33] = "ketone"
-uVOC$kind2[36] = "ketone"
-uVOC$kind2[37] = "nitrile"
-uVOC$kind2[40] = "ketone" # metyl glyoxal, also an aldehyde
-uVOC$kind2[47] = "allene"
-uVOC$kind2[48] = "aldehyde"
-uVOC$kind2[50] = "peroxide"
-uVOC$kind2[59] = "peroxide"
-uVOC$kind2[65] = "phenolics" 
-uVOC$kind2[67] = "terpenes" 
-uVOC$kind2[70] = "aldehyde"
-uVOC$kind2[72] = "quinone"
-uVOC$kind2[73] = "thiol"
-uVOC$kind2[74] = "peroxide"
-uVOC$kind2[78] = "furans"
-uVOC$kind2[83] = "ester"
-uVOC$kind2[84] = "nitrile"
-uVOC$kind2[88] = "furans"
-uVOC$kind2[97] = "phenolics" 
-uVOC$kind2[99] = "ketone"
-uVOC$kind2[102] = "aldehyde"
-uVOC$kind2[103] = "nitrile"
-uVOC$kind2[105] = "furans"
-uVOC$kind2[107] = "ester"
-uVOC$kind2[108] = "alcohol"
-uVOC$kind2[111] = "nitrile"
-uVOC$kind2[112] = "furans" # furans?
-
-ind = which(uVOC$names != ' Furan and fragments')
-uVOC = uVOC[ind,]
-uVOC$corMCE_FINAL = round(uVOC$corMCE_FINAL, digits = 2)
-uVOC = uVOC[order(uVOC$corMCE_FINAL),]
-uVOC$NUM = seq(1,length(uVOC$Group.1))
-
-library(pals)
-cornEFMCE = ggplot(uVOC , aes(y=corMCE_FINAL, x=NUM, fill=kind2)) + #ylim(0,-1)+
-  geom_bar(position="dodge", stat="identity") + theme_classic()+ 
-  geom_text(aes(x =NUM,y = 0,label = names), size=5,
-            vjust = 0,  hjust = 0,angle = 90, nudge_y = 0.01, nudge_x = 0.2)+
-  ylab('R EF MCE') + xlab(c(""))+ylab("Correlation with MCE") +
-  scale_fill_manual(values=as.vector(polychrome(26)))+ theme(legend.position = "top")+labs(fill="")
+# allBOTH.filter.median.fuel$RtoCOoverall = NaN
+# for ( i in 1:length(allBOTH.filter.median.fuel$Group.2)){
+#   cc1 = colnames(allfires.1hz); cc2 = colnames(allfires.5hz)
+#   cc3 = colnames(toga.all); cc4 = colnames(was.all); cc5 = colnames(iwas.all)
+#   # just do corn to remove any fuel dependence
+#   ind1 = which(cc1 == allBOTH.filter.median.fuel$variable[i])
+#   ind1B = which(allfires.1hz$fuel == 'corn')
+#   ind2 = which(cc2 == allBOTH.filter.median.fuel$variable[i])
+#   ind2B = which(allfires.5hz$fuel == 'corn')
+#   ind3 = which(cc3 == allBOTH.filter.median.fuel$variable[i])
+#   ind3B = which(toga.all$fuel == 'corn')
+#   ind4 = which(cc4 == allBOTH.filter.median.fuel$variable[i])
+#   ind4B = which(was.all$fuel == 'corn')
+#   ind5 = which(cc5 == allBOTH.filter.median.fuel$variable[i])
+#   ind5B = which(iwas.all$fuel == 'corn')
+#   if (length(ind1) > 0){
+#     tmp = as.numeric(allfires.1hz[ind1B,ind1])
+#     iq = which(is.finite(tmp))
+#     if (length(iq) > 2){tt = cor.test(as.numeric(allfires.1hz$CO_DACOM_DISKIN[ind1B]), tmp)}
+#     allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
+#   }
+#   if (length(ind2) > 0){
+#     tmp = as.numeric(allfires.5hz[ind2B,ind2])
+#     iq = which(is.finite(tmp))
+#     if (length(iq) > 2){tt = cor.test(as.numeric(allfires.5hz$CO_DACOM_DISKIN[ind2B]), tmp)}
+#     allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
+#   }
+#   if (length(ind3) > 0){
+#     tmp = (toga.all[ind3B,ind3])
+#     tmp = unlist(tmp)
+#     tmp = as.numeric(tmp)
+#     iq = which(is.finite(tmp))
+#     if (length(iq) > 2){tt = cor.test(as.numeric(toga.all$CO_DACOM_DISKIN_BECKY[ind3B]), tmp)}
+#     allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
+#   }
+#   if (length(ind4) > 0){
+#     tmp = as.numeric(was.all[ind4B,ind4])
+#     iq = which(is.finite(tmp))
+#     if (length(iq) > 2){tt = cor.test(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[ind4B]), tmp)}
+#     allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
+#   }
+#   if (length(ind5) > 0){
+#     tmp = as.numeric(as.numeric(iwas.all[ind5B,ind5]))
+#     iq = which(is.finite(tmp))
+#     if (length(iq) > 2){tt = cor.test(as.numeric(iwas.all$CO_DACOM_DISKIN_GILMAN[ind5B]), tmp)}
+#     allBOTH.filter.median.fuel$RtoCOoverall[i] = tt$estimate 
+#   }
+# }
 
 # ----------------------------------------------------------------------------
-# --------- here run TestTable.R -------
-# ----------------------------------------------------------------------------
-# ---------- Table 1 ------------
-ind = which(allBOTH.filter$fuel == 'corn' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-cornplumes = length(ind)
-cornfires = length(unique(allBOTH.filter$fire[ind]))
-cornmce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-ind = which(allBOTH.filter$fuel == 'soybean' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-soyplumes = length(ind)
-soyfires = length(unique(allBOTH.filter$fire[ind]))
-soymce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-ind = which(allBOTH.filter$fuel == 'rice' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-riceplumes = length(ind)
-ricefires = length(unique(allBOTH.filter$fire[ind]))
-ricemce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-ind = which(allBOTH.filter$fuel == 'winter wheat' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-wheatplumes = length(ind)
-wheatfires = length(unique(allBOTH.filter$fire[ind]))
-wheatmce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-ind = which(allBOTH.filter$fuel == 'grass' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-grassplumes = length(ind)
-grassfires = length(unique(allBOTH.filter$fire[ind]))
-grassmce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-ind = which(allBOTH.filter$fuel == 'slash' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-slashplumes = length(ind)
-slashfires = length(unique(allBOTH.filter$fire[ind]))
-slashmce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-ind = which(allBOTH.filter$fuel == 'pile' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-pileplumes = length(ind)
-pilefires = length(unique(allBOTH.filter$fire[ind]))
-pilemce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
+# --------- here run TestTableJustEF.R -------
+# --------- then run SupplementXioaxi.R -------
+# --------- then run SlopeDifferences.R -------
+# --------- then run UniqueSpecies.R -------
 
-ind = which(allBOTH.filter$fuel == 'shrub' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-shrubplumes = length(ind)
-shrubfires = length(unique(allBOTH.filter$fire[ind]))
-shrubmce = quantile(allBOTH.filter$mce.5hz[ind], na.rm=TRUE)
-fires = c(cornfires,ricefires,soyfires, wheatfires, grassfires, slashfires, pilefires, shrubfires  )
-plumes = c(cornplumes,riceplumes, soyplumes, wheatplumes, grassplumes, slashplumes, pileplumes, shrubplumes  )
-mce = round(c(cornmce[3],ricemce[3],soymce[3],wheatmce[3],grassmce[3],slashmce[3],pilemce[3],shrubmce[3]),2)
-mce25 = round(c(cornmce[2],ricemce[2],soymce[2],wheatmce[2],grassmce[2],slashmce[2],pilemce[2],shrubmce[2]),2)
-mce75 = round(c(cornmce[4],ricemce[4],soymce[4],wheatmce[4],grassmce[4],slashmce[4],pilemce[4],shrubmce[4]),2)
-table1 = cbind(fires, plumes,mce, mce25,mce75)
-rownames(table1) = c("corn", "rice","soy","wheat","grass","slash","pile","shrub")
-table1 = as.data.frame(table1)
+# Get average size distribution by species
+
+# ----------------------------------------------------------------------------
+
 dothis=0
 if (dothis == 1){
     ind = which(allBOTH.filter$fuel == 'corn')
@@ -1779,174 +1874,11 @@ if (dothis == 1){
     grassvsfuel= fuelvsfuel(allBOTH.filter,"grass","CO_DACOM_DISKIN")
     
     distinctMCE = cbind(cornvsfuel, ricevsfuel, soyvsfuel,pilevsfuel, slashvsfuel, grassvsfuel)
-    runplots =0
+    runplots =1
     if (runplots == 1){
-        
-      ind2 = which(allBOTH.filter$variable == 'HCN_NOAAPTR_ppbv_WARNEKE' & allBOTH.filter$fuel == 'corn')
-      ind2 = which(allBOTH.filter$variable == 'CH3CN_NOAAPTR_ppbv_WARNEKE' & allBOTH.filter$fuel == 'corn')
-      ind2 = which(allBOTH.filter$variable == 'NO2_ACES_WOMACK' )#& allBOTH.filter$fuel == 'corn')
-      ind = which(allBOTH.filter$variable == 'HNO2_ACES_WOMACK' )#& allBOTH.filter$fuel == 'corn')
       
-      ggplot(allBOTH.filter[ind,])+geom_point(aes(x=allBOTH.filter$FinalEF[ind], y=allBOTH.filter$FinalEF[ind2], col=fuel, shape=fuel),stroke=3, size=4)+
-        ylab("NO2 (ACES)")+xlab("HONO (ACES)")+theme_classic()+
-        #scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+labs(col="",shape="")+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+ theme(text = element_text(size = 20)) 
-      # ---- Figure1: Plot CH4 EF vs. MCE for separated fuel types -----
-      CH4vsMCE = plotSpeciesMCE(allBOTH.filter,'CH4_DACOM_DISKIN','Methane','CH4','CH4')
-      # Figure CH4
-      ggsave('CH4vsMCE.ps',CH4vsMCE,width = 7*1.25*1.25, height=7*1.25)
-      # ------- Figure SO2 -------------
-      SO2vsMCE = plotSpeciesMCE(allBOTH.filter,'SO2_LIF_ROLLINS','SO2','SO2','SO2')
-      ggsave('SO2vsMCE.ps',SO2vsMCE,width = 7*1.25*1.25, height=7*1.25)
-      
-      # ------- Figure aerosols ----------------
-      PM1vsMCE = plotSpeciesMCE(allBOTH.filter,'PM1','PM1','SO2','SO2')
-      ECvsMCE = plotSpeciesMCE(allBOTH.filter,'BC_SCHWARZ','BlackCarbon','Black Carbon','BC')
-      xiaoxi$OC = xiaoxi$OA/2
-      OCvsMCE = plotSpeciesMCE(allBOTH.filter,'OC_JIMENEZ','OrganicCarbon','Organic Carbon','OC')
-      LGvsMCE = plotSpeciesMCE(allBOTH.filter,'C6H10O5_JIMENEZ','Levoglucosan','Levoglucosan','Levoglucosan')
-      
-      ClvsMCE = plotSpeciesMCE(allBOTH.filter,'NR_Chloride_JIMENEZ','Cl','Chloride','Chl')
-      SO4vsMCE = plotSpeciesMCE(allBOTH.filter,'Sulfate_JIMENEZ','Sulfate','Sulfate','SO4')
-      NITvsMCE = plotSpeciesMCE(allBOTH.filter,'Nitrate_JIMENEZ','Nitrate','Nitrate','NO3')
-      NH4vsMCE = plotSpeciesMCE(allBOTH.filter,'Ammonium_JIMENEZ','Ammonium','Ammonium','NH4')
-      KvsMCE = plotSpeciesMCE(allBOTH.filter,'Potassium_JIMENEZ','K','K','K')
-      NCATsMCE = plotSpeciesMCE(allBOTH.filter,'C6H5NO4_JIMENEZ','4-Nitrocatechol','4-Nitrocatechol','4-Nitrocatechol')
-      allPM =ggarrange(OCvsMCE,LGvsMCE,ECvsMCE,ClvsMCE,NH4vsMCE,KvsMCE,
-                common.legend = TRUE,nrow=2,ncol=3,
-                labels = c("a)","b)","c)","d)","e)","f)"),
-                hjust = c(-5,-5,-6,-6))
-      ggsave('allPM.ps',allPM,width = 7*1.25*1.25, height=7*1.25)
-      
-      ind = which(allBOTH.filter$variable == 'OC_JIMENEZ' & allBOTH.filter$fuel != 'forest' )#& allBOTH.filter$fuel == 'corn')
-      OC = allBOTH.filter$FinalEF[ind]
-      ind = which(allBOTH.filter$variable == 'BC_SCHWARZ' & allBOTH.filter$fuel != 'forest' )#& allBOTH.filter$fuel == 'corn')
-      EC = allBOTH.filter$FinalEF[ind]
-      ggplot(allBOTH.filter[ind,])+geom_point(aes(x=MCE, y=EC/OC, col=fuel))+theme_classic()
-        geom_point(data=xiaoxi,aes(x=xiaoxi$MCE, xiaoxi$BC/xiaoxi$OC), col='green')
-      
-        # ------- Figure  total VOCs ----------------
-        ind = which(allBOTH.filter$variable == 'Short-lived NMVOC' & allBOTH.filter$fuel == 'corn')
-      cor.test(allBOTH.filter$MCE[ind], allBOTH.filter$FinalEF[ind])
-      ind = which(allBOTH.filter$variable == 'Long-lived NMVOC' & allBOTH.filter$fuel == 'corn')
-      cor.test(allBOTH.filter$MCE[ind], allBOTH.filter$FinalEF[ind])
-      # Figure ShortVOC
-      ShortVOCvsMCE = plotSpeciesMCE(allBOTH.filter,'Short-lived NMVOC','Short-lived VOC','NMVOC','NMVOC')
-      LongVOCvsMCE = plotSpeciesMCE(allBOTH.filter,'Long-lived NMVOC','Long-lived VOC','NMVOC','NMVOC')
-      # ------- Figure individual VOCs ----------------
-      #AcetaldehydevsMCE = plotSpeciesMCE(allBOTH.filter,'CH3CHO_NOAAPTR_ppbv_WARNEKE','Acetaldehyde','SO2','SO2')
-      FormaldehydevsMCE    = plotSpeciesMCE(allBOTH.filter,'Formaldehyde_FRIED_HANISCO','Formaldehyde','Formaldehyde','Formaldehyde')
-      FormaldehydevsMCE2    = plotSpeciesMCE(allBOTH.filter,'CH2O_ISAF_HANISCO','Formaldehyde','Formaldehyde','Formaldehyde')
-      FormaldehydevsMCE3    = plotSpeciesMCE(allBOTH.filter,'CH2O_CAMS_pptv_FRIED','Formaldehyde','Formaldehyde','Formaldehyde')
-      C2H4vsMCE    = plotSpeciesMCE(allBOTH.filter,'Ethene_GILMAN_BLAKE','C2H4','Ethene','Ethene')
-      AcetvsMCE    = plotSpeciesMCE(allBOTH.filter,'Acetone_NOAAiWAS_GILMAN','Acetone','Acetone','Acetone')
-      AcrvsMCE    = plotSpeciesMCE(allBOTH.filter,'Acrolein_NOAAPTR_ppbv_WARNEKE','Acrolein','Acrolein','Acrolein')
-      EthanevsMCE    = plotSpeciesMCE(allBOTH.filter,'C2H6_CAMS_pptv_FRIED','Ethane','Ethane','Ethane')
-      TOLUvsMCE    = plotSpeciesMCE(allBOTH.filter,'Toluene_NOAAPTR_ppbv_WARNEKE','Toluene','Toluene','Toluene')
-      #Depolymerization in lignin (300–500C)produces guaiacols, (iso)eugenol, and syringol.
-      SYRvsMCE    = plotSpeciesMCE(allBOTH.filter,'Syringol_NOAAPTR_ppbv','Syringol','Syringol','Syringol')
-      GuaiacolvsMCE    = plotSpeciesMCE(allBOTH.filter,'Guaiacol_NOAAPTR_ppbv_WARNEKE','Guaiacol','Guaiacol','Guaiacol')
-      #Furans and furfurals are dominantly formed from cellulose and hemicellulose (300–400oC).
-      FuranvsMCE    = plotSpeciesMCE(allBOTH.filter,'Furan_ppt_BLAKE_','Furan','Furan','Furan')
-      Furan2MevsMCE    = plotSpeciesMCE(allBOTH.filter,'2-Methylfuran_BLAKE_ppt','2-Methylfuran','2-Methylfuran','2-Methylfuran')
-      Furan3MevsMCE    = plotSpeciesMCE(allBOTH.filter,'3-Methylfuran_BLAKE_ppt','3-Methylfuran','3-Methylfuran','3-Methylfuran')
-     # FurfuralvsMCE    = plotSpeciesMCE(allBOTH.filter,'Furfural_ppt','Furfural','Furfural','Furfural')
-      FurfuralvsMCE    = plotSpeciesMCE(allBOTH.filter,'Furfural_NOAAPTR_ppbv_WARNEKE','Furfural','Furfural','Furfural')
-      #Higher temperatures allow reaction #of functional groups and covalent bonds in polymers and
-      #monomers. The resulting fragmentation emits various VOCs:for example, hydroxyacetone, acetaldehyde, and acetic acid
-      #from depolymerization of cellulose and/or hemicellulose
-      AcetaldehydevsMCE    = plotSpeciesMCE(allBOTH.filter,'CH3CHO_NOAAPTR_ppbv_WARNEKE','Acetaldehyde','Acetaldehyde','Acetaldehyde')
-      AceticvsMCE    = plotSpeciesMCE(allBOTH.filter,'GlycolaldehydeCH3COOH_NOAAPTR_ppbv_WARNEKE','GlycoaldehydeCH3COOH','GlycoaldehydeCH3COOH','GlycoaldehydeCH3COOH')
-      HACvsMCE    = plotSpeciesMCE(allBOTH.filter,'C3H6O2_NOAAPTR_ppbv_WARNEKE','Hydroxyacetone','Hydroxyacetone','Hydroxyacetone')
-      
-      #Higher temperature pyrolysis breaks progressively stronger bonds in char (> 500C).
-      #This aromatization process gives off aromatic compounds with short substituents (e.g., phenol), 
-      #nonsubstituted aromatics (e.g.,benzene), and polycyclic aromatic hydrocarbons (PAHs) such as naphthalene).
-      BenzenevsMCE    = plotSpeciesMCE(allBOTH.filter,'Benzene_NOAAPTR_ppbv_WARNEKE','Benzene','Benzene','Benzene')
-      StyrenevsMCE    = plotSpeciesMCE(allBOTH.filter,'Styrene_NOAAPTR_ppbv_WARNEKE','Styrene','Styrene','Styrene')
-      C8vsMCE    = plotSpeciesMCE(allBOTH.filter,'C8Aromatics_NOAAPTR_ppbv_WARNEKE','Xylenes','Xylenes','Xylenes')
-      C9vsMCE    = plotSpeciesMCE(allBOTH.filter,'C9Aromatics_NOAAPTR_ppbv_WARNEKE','C9','C9','C9')
-      NaphthalenevsMCE    = plotSpeciesMCE(allBOTH.filter,'Naphthalene_NOAAPTR_ppbv_WARNEKE','Naphthalene','Naphthalene','Naphthalene')
-      PhenolvsMCE    = plotSpeciesMCE(allBOTH.filter,'PHENOL_WENNBERG','Phenol2','Phenol2','Phenol2')
-      PhenolvsMCE2    = plotSpeciesMCE(allBOTH.filter,'Phenol_NOAAPTR_ppbv_WARNEKE','Phenol','Phenol','Phenol')
-      CycHexvsMCE= plotSpeciesMCE(allBOTH.filter,'CycHexane_WAS_BLAKE','Cyclohexane','Cyclohexane','Cyclohexane')
-    # Toluene outlier
-      aroms = ggarrange(BenzenevsMCE,StyrenevsMCE, CycHexvsMCE, TOLUvsMCE+ylim(limits=c(0,1.1)), C8vsMCE, C9vsMCE, common.legend = TRUE)
-      # Ethene_GILMAN_
-     # PhenolvsMCE2    = plotSpeciesMCE(allBOTH.filter,'Phenol_NOAAPTR_ppbv_WARNEKE','Phenol','SO2','SO2')
-      #?
-      #MonovsMCE    = plotSpeciesMCE(allBOTH.filter,'beta-Pinene/Myrcene_BLAKE_ppt','beta-Pinene/Myrcene','SO2','SO2')
-      MonovsMCE    = plotSpeciesMCE(allBOTH.filter,'Monoterpenes_NOAAPTR_ppbv_WARNEKE','Terpenes','Terpenes','Monoterpenes')
-      CatvsMCE = plotSpeciesMCE(allBOTH.filter,'Catecholx5MeFurfural_NOAAPTR_ppbv_WARNEKE','Catechol/5MeFurfural','Catechol','Catechol')
-    
-      EOHvsMCE = plotSpeciesMCE(allBOTH.filter,'C2H5OH_NOAAPTR_ppbv_WARNEKE','Ethanol','Ethanol','Ethanol')
-      CH3OHvsMCE = plotSpeciesMCE(allBOTH.filter,'CH3OH_NOAAPTR_ppbv_WARNEKE','Methanol','Methanol','Methanol')
-      GLYOXALvsMCE = plotSpeciesMCE (allBOTH.filter,'CHOCHO_ACES_WOMACK','Glyoxal','Glyoxal','Glyoxal')
-      ISOPvsMCE = plotSpeciesMCE (allBOTH.filter,'Isoprene_NOAAPTR_ppbv_WARNEKE','Isoprene','Isoprene','Isoprenehydroperoxyaldehydes')
-      HCOOHvsMCE = plotSpeciesMCE (allBOTH.filter,'Formic acid_VERES_WARNEKE','Formic Acid','Formic acid','HCOOH')
-     
-      #ind = which(allBOTH.filter$kind == 'aromatic')
-      #aromsplot = unique(allBOTH.filter$variable[ind])
 
-      #for (i in 1:length(aromsplot)){
-      #  plotSpeciesMCE(allBOTH.filter,aromsplot[i],aromsplot[i],aromsplot[i],aromsplot[i])
-      #}
-       ggarrange(ShortVOCvsMCE,LongVOCvsMCE,
-                common.legend = TRUE,nrow=1,ncol=2,
-                labels = c("a)","b)"),
-                hjust = c(-5,-5))
-      allVOCplot = ggarrange(FormaldehydevsMCE,AcetaldehydevsMCE,CatvsMCE, 
-                GuaiacolvsMCE,FuranvsMCE,
-                HACvsMCE, PhenolvsMCE,NaphthalenevsMCE, BenzenevsMCE,
-                MonovsMCE,EOHvsMCE, CH3OHvsMCE,
-                GLYOXALvsMCE, ISOPvsMCE, HCOOHvsMCE,
-                common.legend = TRUE,nrow=5,ncol=3,
-                labels = c("a)","b)","c)","d)","e)","f)","g)","h)","i)","j)","k)","l)","m)","n)","o)"),
-                hjust = c(-8))
-      ggsave("allVOCplot.pdf", allVOCplot, width = 7*1.25*2, height=7*1.25*2)
-      # Figure NH3
-      NOvsMCE = plotSpeciesMCE(allBOTH.filter,'Nitrogen oxide_ROLLINS_RYERSON','NO','NO','NO')
-      NO2vsMCE = plotSpeciesMCE(allBOTH.filter,'Nitrogen dioxide_WOMACK_RYERSON','NO2','NO2','NO2')
-      HNO2vsMCE = plotSpeciesMCE(allBOTH.filter,'Nitrous acid_WOMACK_VERES','HNO2','HNO2','HNO2')
-      CH3CNvsMCE = plotSpeciesMCE(allBOTH.filter,'CH3CN_NOAAPTR_ppbv_WARNEKE','Acetonitrile','Acetonitrile','Acetonitrile')
-      HCNvsMCE = plotSpeciesMCE(allBOTH.filter,'Hydrogen cyanide_VERES_WENNBERG_','HCN','CH3CN','CH3CN')
-      NH3vsMCE = plotSpeciesMCE(allBOTH.filter,'NH3_WISTHALER','Ammonia','NH3','NH3')
-      HNCOvsMCE = plotSpeciesMCE(allBOTH.filter,'Isocyanic acid_VERES_WARNEKE','HNCO','HNCO','HNCO')
-      HCNvsMCE = plotSpeciesMCE(allBOTH.filter,'Hydrogen cyanide_VERES_WENNBERG_','HydrogenCyanide','Hydrogen cyanide','HCN')
-      CH3NO3vsMCE = plotSpeciesMCE(allBOTH.filter,'Methyl nitrate_BLAKE_ppt','MethylNitrate','MethylNitrate','MethylNitrate')
-      ggarrange(NH3vsMCE,NOvsMCE,NO2vsMCE, HNO2vsMCE,HCNvsMCE,CH3CNvsMCE, common.legend = TRUE,nrow=2,
-                ncol=3,labels = c("a)","b)","c)","d)","e)","f)"),
-                hjust = c(-5,-5,-6,-6,-5,-8))
-      # Figure CH3Cl
-      CH3ClvsMCE = plotSpeciesMCE(allBOTH.filter,'CH3Cl_WAS_BLAKE','Chloromethane','CH3Cl','Chloromethane')
-      CH3IvsMCE = plotSpeciesMCE(allBOTH.filter,'Methyl Iodide_BLAKE_ppt','MethylIodide','CH3I','Methyl Iodide')
-      CH3BrvsMCE = plotSpeciesMCE(allBOTH.filter,'Bromomethane_ppt_BLAKE','Bromomethane','CH3Br','Bromomethane')
-      CH2Cl2vsMCE = plotSpeciesMCE(allBOTH.filter,'Dichloromethane_BLAKE_ppt','Dichloromethane','Dichloromethane','Dichloromethane')
-      
-      ind = which(was.all$fuel != 'forest' & was.all$fuel != 'house' & was.all$fuel != '?')
-      ggplot(was.all[ind,])+geom_point(aes(x=CO_DACOM_DISKIN_BLAKE, y=CH2Cl2_WAS_BLAKE, col=fuel), size=4)+theme_classic()+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)
-      
-      ind = which(toga.all$fuel != 'forest' & toga.all$fuel != 'house' & toga.all$fuel != '?')
-      ggplot(toga.all[ind,])+geom_point(aes(x=as.numeric(CO_DACOM_DISKIN_BECKY), y=CH2Cl2_ppt, col=fuel), size=4)+theme_classic()+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)
-      
-      #CH3ClvsCO = plotSpeciesCO(was.all,'CH3Cl_WAS_BLAKE','CO_DACOM_DISKIN_BLAKE','Chloromethane','Chloromethane','Chloromethane')
-      # CH3COOClvsCO = plotSpeciesCO(allfires.1hz,'CH3COOCl_NOAACIMS_VERES','CO_DACOM_DISKIN','Chloroacetic acid','Chloromethane','Chloromethane')
-      #C2H5ClvsCO = plotSpeciesCO(was.all,'C2H5Cl_WAS_BLAKE','CO_DACOM_DISKIN_BLAKE','Chloromethane','Chloromethane','Chloromethane')
-      #C6H5ClvsCO = plotSpeciesCO(toga.all,'ClBenzene_ppt','CO_DACOM_DISKIN','Chlorobenzene','Chloromethane','Chloromethane')
-      ###CH2Br2vsCO = plotSpeciesCO(was.all,'CH2Br2_WAS_BLAKE','CO_DACOM_DISKIN_BLAKE','Dibromomethane','Chloromethane','Chloromethane')
-      #CH3BrvsCO = plotSpeciesCO(was.all,'CH3Br_WAS_BLAKE','CO_DACOM_DISKIN_BLAKE','Bromomethane','Chloromethane','Chloromethane')
-      #CH3BrvsCO = plotSpeciesCO(toga.all,'CH3Br_ppt','CO_DACOM_DISKIN','Bromomethane','Chloromethane','Chloromethane')
-      # Figure halogen
-      allHal = ggarrange(CH3ClvsMCE,CH3BrvsMCE,CH3IvsMCE, common.legend = TRUE,ncol=3,labels = c("a)","b)","c)"),
-                hjust = c(-5,-8,-8))
-      ggsave(allHal, file='allHal.ps',width = 7*1.25*2, height=7*1.25*2/3)
-      # all variables
+    # all variables
       
       # Andreae comparison
       
@@ -1956,1062 +1888,15 @@ if (dothis == 1){
         # need at least 25% of the data?
         ind = which(allBOTH.filter$variable == vv & is.finite(allBOTH.filter$FinalEF) & allBOTH.filter$USEME == 1)
         ind3 = which(allBOTH.filter$variable == vv )
-        
+        nn = allBOTH.filter$names[ind3]
         if (length(ind)/length(ind3) > 0.25){
-          ff=plotSpeciesMCE(allBOTH.filter, vv,vv,vv)
+          ff=plotSpeciesMCE(allBOTH.filter, vv,nn[1],vv,vv)
           print(ff)
-          ggsave(filename=paste(vv, '.ps', sep=''),ff, path='/Users/ktravis1/OneDrive - NASA/FIREX/MCEplots/')
+          ggsave(filename=paste(vv, '.ps', sep=''),ff, path='/Users/ktravis1/OneDrive - NASA/FIREX/FiguresMCE/')
 
         }
       }
-      
-      ind = which(allBOTH.filter$formula == 'HCN' & allBOTH.filter$USEME == 1 & allBOTH.filter$fuel != 'forest')
-      ind2 = which(allBOTH.filter$formula == 'HCN' & allBOTH.filter$USEME == 1 & allBOTH.filter$fuel == 'slash')
-      tt = lmodel2(allBOTH.filter$FinalEF[ind2]~ allBOTH.filter$MCE[ind2])
-      ggplot(allBOTH.filter[ind,]) + geom_point(aes(x=MCE,y=FinalEF, col=fuel), size=2)+ theme_classic()+
-        geom_abline(mapping=aes(intercept=tt$coefficients[1], slope=tt$coefficients[2]))
-      CH4vsMCE = CH4vsMCE + 
-       # geom_point(data=xiaoxi.avg, aes(x=mean[1], y=mean[indC]), pch=0,col='green',stroke=2,size=3)+
-        #geom_errorbar(data=xiaoxi.avg,aes(xmin=mean[1]-sd[1],xmax=mean[1]+sd[1], y=mean[indC]),col='green', width=1.3*2, position=position_dodge(0.05))+
-        #geom_errorbar(data=xiaoxi.avg,aes(x=mean[1], ymin=mean[indC] - sd[indC], ymax=mean[indC]+ sd[indC]),col='green', width=0.0025, position=position_dodge(0.05))+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_errorbar(data=andreae,aes(xmin=as.numeric(andreae$average[1])-as.numeric(andreae$std.dev.[1]),xmax=as.numeric(andreae$average[1])+as.numeric(andreae$std.dev.[1]), y=as.numeric(andreae$average[indB])),col='purple', width=1.3*2, position=position_dodge(0.05))+
-        geom_errorbar(data=andreae,aes(x=as.numeric(andreae$average[1]), ymin=as.numeric(andreae$average[indB])-as.numeric(andreae$std.dev.[indB]),ymax=as.numeric(andreae$average[indB])+as.numeric(andreae$std.dev.[indB])),col='purple', width=0.0025, position=position_dodge(0.05))+
-      
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-        geom_errorbar(data=akagi,aes(xmin=akagi$PastureEF[1]-as.numeric(akagi$PastureSD[1]),
-                                     xmax=akagi$PastureEF[1]+as.numeric(akagi$PastureSD[1]), 
-                                     y=akagi$PastureEF[indA]),col='pink', width=1.3*2, position=position_dodge(0.05))+
-        geom_errorbar(data=akagi,aes(x=akagi$PastureEF[1],
-                                     ymin=akagi$PastureEF[indA] - as.numeric(akagi$PastureSD[indA]),
-                                     ymax=akagi$PastureEF[indA] + as.numeric(akagi$PastureSD[indA])),
-                      col='pink', width=0.0025, position=position_dodge(0.05))+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_errorbar(data=akagi,aes(xmin=akagi$CropEF[1]-as.numeric(akagi$CropSD[1]),
-                                       xmax=akagi$CropEF[1]+as.numeric(akagi$CropSD[1]), 
-                                       y=akagi$CropEF[indA]),col='pink', width=1.3*2, position=position_dodge(0.05))+
-        geom_errorbar(data=akagi,aes(x=akagi$CropEF[1],
-                                       ymin=akagi$CropEF[indA] - as.numeric(akagi$CropSD[indA]),
-                                       ymax=akagi$CropEF[indA] + as.numeric(akagi$CropSD[indA])),
-                        col='pink', width=0.0025, position=position_dodge(0.05))+
-        
-        geom_point(data=mccarty, aes(x=mccarty$mce, y=mccarty$ch4, col='grey', size=5, shape=fuel, stroke=3))+
-        geom_errorbar(data=mccarty,aes(x=mccarty$mce,
-                                     ymin=mccarty$ch4 - mccarty$ch4SD ,
-                                     ymax=mccarty$ch4 + mccarty$ch4SD ),
-                      col='grey', width=0.0025, position=position_dodge(0.05))
-      # add in my averages
-      indK = which(allBOTH.filter.ag.avg$Group.1 == 'CH4_DACOM_DISKIN')
-        CH4vsMCE+geom_point(data=allBOTH.filter.ag.avg[indK,],aes(x=mce.5hz,y=FinalEF), size=3, col='purple')+
-          geom_errorbar(data=allBOTH.filter.ag.avg[indK,],aes(x=allBOTH.filter.ag.avg$mce.5hz[indK],
-                                       ymin=allBOTH.filter.ag.avg$FinalEF[indK] - allBOTH.filter.ag.avg$FinalEF.ag.sd[indK],
-                                       ymax=allBOTH.filter.ag.avg$FinalEF[indK] + allBOTH.filter.ag.avg$FinalEF.ag.sd[indK]),
-                        col='purple', width=0.0025, position=position_dodge(0.05))+
-          geom_errorbar(data=allBOTH.filter.ag.avg[indK,],aes(xmin=allBOTH.filter.ag.avg$mce.5hz[indK]-allBOTH.filter.ag.avg$mce.ag.sd[indK],
-                                                              xmax=allBOTH.filter.ag.avg$mce.5hz[indK]+allBOTH.filter.ag.avg$mce.ag.sd[indK],
-                                                              y=allBOTH.filter.ag.avg$FinalEF[indK]) ,
-                        col='purple',  width=1.3*2, position=position_dodge(0.05))+
-          geom_point(data=allBOTH.filter.sc.avg[indK,],aes(x=mce.5hz,y=FinalEF), size=3, col='pink')+   
-          geom_errorbar(data=allBOTH.filter.sc.avg[indK,],aes(x=allBOTH.filter.sc.avg$mce.5hz[indK],
-                                                              ymin=allBOTH.filter.sc.avg$FinalEF[indK] - allBOTH.filter.sc.avg$FinalEF.sc.sd[indK],
-                                                              ymax=allBOTH.filter.sc.avg$FinalEF[indK] + allBOTH.filter.sc.avg$FinalEF.sc.sd[indK]),
-                        col='pink', width=0.0025, position=position_dodge(0.05))+
-          geom_errorbar(data=allBOTH.filter.sc.avg[indK,],aes(xmin=allBOTH.filter.sc.avg$mce.5hz[indK]-allBOTH.filter.sc.avg$mce.sc.sd[indK],
-                                                              xmax=allBOTH.filter.sc.avg$mce.5hz[indK]+allBOTH.filter.sc.avg$mce.sc.sd[indK],
-                                                              y=allBOTH.filter.sc.avg$FinalEF[indK]) ,
-                        col='pink',  width=1.3*2, position=position_dodge(0.05))+
-          theme_classic()
-      
-      allplot = as.data.frame(cbind(mce=c(akagi$CropEF[1],akagi$PastureEF[1],as.numeric(andreae$average[1]), xiaoxi.avg$mean[1], mccarty$mce, allBOTH.filter.CO.avg$mce.5hz),
-                      co = (c(akagi$CropEF[indA],akagi$PastureEF[indA],as.numeric(andreae$average[indB]), xiaoxi.avg$mean[indC], mccarty$co, allBOTH.filter.CO.avg$FinalEF)),
-                      coSD = (c(akagi$CropSD[indA],akagi$PastureSD[indA],as.numeric(andreae$std.dev.[indB]), xiaoxi.avg$sd[indC], mccarty$coSD, allBOTH.filter.CO.avg$FinalEF.sd)),
-                      fuel = c("agricultural residue","pasture maintenance","agricultural residue","rice",mccarty$fuel,allBOTH.filter.CO.avg$fuel),
-                      study = c("Akagi","Akagi","Andreae","Liu","McCarty","McCarty","McCarty","McCarty","McCarty","McCarty","McCarty","This Study","This Study","This Study","This Study","This Study","This Study","This Study","This Study")))
-      
-      # Basic box plot
-      ind = which(allBOTH.filter.ag$variable == 'CO_DACOM_DISKIN')
-      ind2 = which(allBOTH.filter.sc$variable == 'CO_DACOM_DISKIN')
-      p <- ggplot() + 
-        geom_boxplot(data=allBOTH.filter.ag[ind,], aes(x=1, y=as.numeric(FinalEF)))+
-        geom_boxplot(data=allBOTH.filter.sc[ind2,], aes(x=2, y=as.numeric(FinalEF)))+
-        geom_boxplot(data=xiaoxi,aes(x=3,y=xiaoxi$CO))+ylab('CO, g/kg')+
-        geom_boxplot(data=akagi[indB,],aes(x=4,y=CropEF))
-      
-      ggplot(allplot, aes(x=as.numeric(mce), y=as.numeric(co))) + 
-        geom_bar(position="dodge", stat="identity") + theme_classic()+ 
-       geom_text(aes(x =as.numeric(mce),y = 0,label =paste(fuel,study)), size=5,
-                  vjust = -1,  hjust = 0,angle = 90, nudge_y = 0.01, nudge_x = 0.002)+
-        ylab('CO EF, g/kg')
-      ggplot(allplot) + geom_point(aes(x=as.numeric(mce), y=as.numeric(co),col=study, size=fuel), size=5) + theme_classic()
-      
-      ggsave(COvsMCE, file='COvsMCE.ps')
-      sz=25
-      
-      # ------ Figure 2 - NO fire -------------
-      
-      ind =which(allBOTH.filter$variable == 'NO_LIF_ROLLINS' )
-      ind2 =which(allBOTH.filter$variable == 'NO_RYERSON' )
-      plot(allBOTH.filter$FinalEF[ind], allBOTH.filter$FinalEF[ind2], xlab='Rollins NO', ylab='Ryerson NO')
-      abline(lm(allBOTH.filter$FinalEF[ind2]~allBOTH.filter$FinalEF[ind]))
-      abline(0,1,lty=2)
-      ind =which(allBOTH.filter$variable == 'NO2_ACES_WOMACK' )
-      ind2 =which(allBOTH.filter$variable == 'NO2_RYERSON' )
-      plot(allBOTH.filter$FinalEF[ind], allBOTH.filter$FinalEF[ind2], xlab='Womack NO2', ylab='Ryerson NO2')
-      abline(lm(allBOTH.filter$FinalEF[ind2]~allBOTH.filter$FinalEF[ind]))
-      abline(0,1,lty=2)
-      
-      
-      abline(0,1, lty=2)
-      Makeplots(allBOTH.filter,'NO_RYERSON','NO','NO','NO')
-      ind = which(allBOTH.filter$variable == 'NO_LIF_ROLLINS' )
-      ind2 = which(allBOTH.filter$variable == 'NO_LIF_ROLLINS' & allBOTH.filter$mce.5hz >= 0.09)
-      par(mfrow=c(2,1),cex=1.5,oma=c(.1,.1,.1,.1))
-      plot(allBOTH.filter$mce.5hz[ind], allBOTH.filter$FinalEF[ind], xlab='', ylab=expression(paste('NO, g/kg')), main='Corn')
-      points(allBOTH.filter$mce.5hz[ind2], allBOTH.filter$FinalEF[ind2], pch=19, col='orange')
-      abline(lm(allBOTH.filter$FinalEF[ind]~allBOTH.filter$mce.5hz[ind]))
-      cor.test(allBOTH.filter$mce.5hz[ind], allBOTH.filter$FinalEF[ind])
-      ind = which(allBOTH.filter$variable == 'NO2_ACES_WOMACK' )
-      ind2 = which(allBOTH.filter$variable == 'NO2_ACES_WOMACK' & allBOTH.filter$mce.5hz >= 0.09)
-      plot(allBOTH.filter$mce.5hz[ind], allBOTH.filter$FinalEF[ind], xlab='MCE', ylab=expression(paste('NO'[2],', g/kg')), main='')
-      points(allBOTH.filter$mce.5hz[ind2], allBOTH.filter$FinalEF[ind2], pch=19, col='orange')
-      abline(lm(allBOTH.filter$FinalEF[ind]~allBOTH.filter$mce.5hz[ind]))
-      cor.test(allBOTH.filter$mce.5hz[ind], allBOTH.filter$FinalEF[ind])
-      
-      
-      ind = which(allBOTH.filter$variable == 'NO_LIF_ROLLINS' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz >R2filter)
-      tmp.avg = aggregate(allBOTH.filter[ind,], by=list(allBOTH.filter$fuel[ind]), FUN='mean', na.rm=TRUE)
-      indBW = which(allBOTH.blackwater.filter$variable == 'NO_LIF_ROLLINS' & is.finite(allBOTH.blackwater.filter$FinalEF))
-                    
-      #akagi NO: crop, 2.06 @ 0.925 MCE; NO2
-      indA = which(akagi$Species == 'NO')
-      indC  = which(xiaoxi.avg$var == 'NO')
-      NOfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4)+
-        ylab("NO EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = c(0.19, 0.7))+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=NO), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-        geom_point(data=allBOTH.blackwater.filter[indBW,],aes(x=mce.5hz,y=FinalEF), col='black', size=5, stroke=3)#+
-       # geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)
-      
-      
-      indA = which(akagi$Species == 'NO')
-      NOfireEFavg = ggplot(tmp.avg) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-       # geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, size=fuel))+
-        geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1,col=Group.1), size=8, stroke=1)+
-        ylab("NO EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = c(0.19, 0.7))+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi.avg, aes(x=mean[1], y=mean[indC]), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        # annotate(geom="text", x=0.83, y=0.8, label="Liu et al., 2016",size=6, col='green')+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)
-      
-      NOfireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel,shape=fuel), size=4)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("NO ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      # ------ Figure 2B - NO2 fire -------------
-      ind = which(allBOTH.filter$variable == 'NO2_ACES_WOMACK' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indA = which(akagi$Species == 'NO2')
-      indBW = which(allBOTH.blackwater.filter$variable == 'NO2_ACES_WOMACK' & is.finite(allBOTH.blackwater.filter$FinalEF))
-      
-      NO2fireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel,shape=fuel),size=4)+
-        ylab(expression(paste("NO"[2]," EF, g/kg"))) + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=NO2), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-      geom_point(data=allBOTH.blackwater.filter[indBW,],aes(x=mce.5hz,y=FinalEF), col='black', size=5, stroke=3)#+
-      
-      NO2fireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel),size=4)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab(expression(paste("NO"[2]," ER, ppt/ppb CO"))) + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      allNO = ggarrange(NOfireEF, NOfireER, NO2fireEF, NO2fireER, common.legend = TRUE)
-      ggsave(AllNO, file='AllNO.ps')
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      # ------ Figure 2C - HNO2 fire -------------
-      ind = which(allBOTH.filter$variable == 'HNO2_ACES_WOMACK' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'HONO')
-      
-      HNO2fireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel),size=4, stroke=3)+
-        ylab("HONO EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+#ylim(c(0,1.5))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +  labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)
-        
-      HNO2fireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel),size=4)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("HONO ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+#ylim(c(0,6.5))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      ind = which(allBOTH.filter$variable == 'HNO2_NOAACIMS_VERES' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      HNO2fireEF2 = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel),size=4, stroke=3)+
-        ylab("HONO EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+#ylim(c(0,1.5))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +  labs(col="",shape="") +
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)
-      
-      HNO2fireER2 = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel),size=4)+
-        ylab("HONO ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+#ylim(c(0,6.5))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")#+@theme(legend.text = element_text(color = cbp1))
-      
-      allHONO=ggarrange(HNO2fireEF,  HNO2fireER,HNO2fireEF2, HNO2fireER2,
-                common.legend = TRUE,labels = c("a) Womack","b) Womack","c) Veres","d) Veres"),
-                hjust =-2)
-      ggsave(AllHONO, file='AllHONO.ps')
-      # theme(text = element_text(size = 20)) +
-      #scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      #  annotate(geom="text", x=0.83, y=1.1, label="Liu et al., 2016",size=6, col='green')
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      
-      # Which fires am I not using
-      allfires=unique(allBOTH$fire)
-      usingfires=unique(allBOTH.filter$fire)
-      ind = which(allfires %nin% usingfires)
-      
-      # ------ Figure 2D - CH3CN fire -------------
-      ind = which(allBOTH.filter$variable == 'CH3CN_NOAAPTR_ppbv_WARNEKE' & 
-                    is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.5hz > R2filter)
-      indB = which(andreae$Species == 'Acetonitrile')
-      indA = which(akagi$Species == 'Acetonitrile')
-      indK = which(allBOTH.filter.ag.avg$Group.1 == 'CH3CN_NOAAPTR_ppbv_WARNEKE')
-      CH3CNfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel,shape=fuel), size=4, stroke=3)+
-        ylab("CH3CN EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Acetonitrile), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      #+
-      #  geom_point(data=allBOTH.filter.ag.avg[indK,], aes(x=mce.5hz, y=FinalEF), col='black',size=5,shape=3, stroke=3)+
-      #  geom_point(data=allBOTH.filter.sc.avg[indK,], aes(x=mce.5hz, y=FinalEF), col='black',size=5,shape=4, stroke=3)
-      
-      CH3CNfireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel,shape=fuel), size=4, stroke=3)+
-        ylab("CH3CN ER, ppt/ppbCO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        #geom_point(data=xiaoxi, aes(x=MCE, y=Acetonitrile), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")
-      +
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-        geom_point(data=allBOTH.filter.ag.avg[indK,], aes(x=mce.5hz, y=FinalEF), col='black',size=5,shape=3, stroke=3)+
-        geom_point(data=allBOTH.filter.sc.avg[indK,], aes(x=mce.5hz, y=FinalEF), col='black',size=5,shape=4, stroke=3)
-      
-      
-      ind = which(allBOTH.filter$variable == 'HCN_NOAAPTR_ppbv_WARNEKE' & 
-                    is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.5hz > R2filter)
-      indB = which(andreae$Species == 'HCN')
-      indA = which(akagi$Species == 'HydrogenCyanide')
-      indK = which(allBOTH.filter.ag.avg$Group.1 == 'HCN_NOAAPTR_ppbv_WARNEKE')
-      HCNfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel,shape=fuel), size=4, stroke=3)+
-        ylab("HCN EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=HCN), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-        geom_point(data=allBOTH.filter.ag.avg[indK,], aes(x=mce.5hz, y=FinalEF), col='black',size=5,shape=3, stroke=3)+
-        geom_point(data=allBOTH.filter.sc.avg[indK,], aes(x=mce.5hz, y=FinalEF), col='black',size=5,shape=4, stroke=3)
-      
-      
-      # theme(text = element_text(size = 20)) +
-      #scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      #annotate(geom="text", x=0.83, y=1.1, label="Liu et al., 2016",size=6, col='green')
-      HCNfireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel))+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("HCN ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Acetonitrile), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")
-      
-      AllCH3CN=ggarrange(CH3CNfireEF, CH3CNfireER,common.legend = TRUE)
-      ggsave(AllCH3CN, file='AllCH3CN.ps')
-      # theme(text = element_text(size = 20)) +
-      #scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      #  annotate(geom="text", x=0.83, y=1.1, label="Liu et al., 2016",size=6, col='green')
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      # ------ Figure 2H - SO2 fire -------------
-      ind = which(allBOTH.filter$variable == 'SO2_LIF_ROLLINS' )
-      ind2 = which(allBOTH.filter$variable == 'SO2_LIF_ROLLINS' & allBOTH.filter$mce.5hz >= 0.93)
-      plot(allBOTH.filter$mce.5hz[ind], allBOTH.filter$FinalEF[ind], xlab='MCE', ylab=expression(paste('SO'[2],', g/kg')), main='Corn')
-      points(allBOTH.filter$mce.5hz[ind2], allBOTH.filter$FinalEF[ind2], pch=19, col='orange')
-      abline(lm(allBOTH.filter$FinalEF[ind2]~allBOTH.filter$mce.5hz[ind2]))
-      cor.test(allBOTH.filter$mce.5hz[ind2], allBOTH.filter$FinalEF[ind2])
-      indBW = which(allBOTH.blackwater.filter$variable == 'SO2_LIF_ROLLINS' & is.finite(allBOTH.blackwater.filter$FinalEF))
-      
-      ind = which(allBOTH.filter$variable == 'SO2_LIF_ROLLINS' & allBOTH.filter$fuel == 'slash')
-      cor.test(allBOTH.filter$mce.5hz[ind], allBOTH.filter$FinalEF[ind])
-      
-      
-      ind = which(allBOTH.filter$variable == 'SO2_LIF_ROLLINS' & 
-                    is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.5hz > R2filter)
-      indB = which(andreae$Species == 'SO2')
-      indA = which(akagi$Species == 'SO2')
-      
-      SO2fireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel,shape=fuel), size=4)+
-        ylab(expression(paste("SO"[2]," EF, g/kg"))) + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ))+
-        scale_shape_manual(values =fuelshapes)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=SO2), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)#+
-      #  geom_point(data=allBOTH.blackwater.filter[indBW,],aes(x=mce.5hz,y=FinalEF), col='black', size=5, stroke=3)#+
-      SO2fireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel), size=4)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab(expression(paste("SO"[2]," ER, ppt/ppb CO")))+ xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      AllSO2=ggarrange(SO2fireEF, SO2fireER,common.legend = TRUE)
-      ggsave(AllSO2, file='AllSO2.ps')
-      # theme(text = element_text(size = 20)) +
-      #scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      #  annotate(geom="text", x=0.83, y=1.1, label="Liu et al., 2016",size=6, col='green')
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      
-      # ------ Figure 2K - Nitrate fire -------------
-      ind = which(allBOTH.filter$variable == 'Nitrate_JIMENEZ' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      #indB = which(andreae$Species == 'BC or EC')
-      indA = which(akagi$Species == 'Nitrate')
-      NitratefireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=3)+
-        ylab("Nitrate EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=NO3), pch=0,col='green',stroke=2)+
-        labs(col="",shape="") +
-       # geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2J - BC fire -------------
-      ind = which(allBOTH.filter$variable == 'BC_SCHWARZ' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'BC or EC')
-      indA = which(akagi$Species == 'BlackCarbon')
-      BCfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("BC EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=BC), pch=0,col='green',stroke=2)+
-        labs(col="",shape="") +
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      BCfireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel), size=4, stroke=2)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("BC ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      
-      AllBC=ggarrange(BCfireEF, BCfireER,common.legend = TRUE)
-      ggsave(AllBC, file='AllBC.ps')
-      # ------ Figure 2L - NH3 fire -------------
-      ind = which(allBOTH.filter$variable == 'NH3_WISTHALER' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'NH3')
-      indA = which(akagi$Species == 'Ammonia')
-      NH3fireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4)+
-        ylab("NH3 EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="") +
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      NH3fireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel), size=4)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("NH3 ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      
-      AllNH3=ggarrange(NH3fireEF, NH3fireER,common.legend = TRUE)
-      ggsave(AllNH3, file='AllNH3.ps')
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      
-      # ------ Figure 2I - Cl2 fire -------------
-      ind = which(allBOTH.filter$variable == 'Cl2_NOAACIMS_VERES' & 
-                    is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Cl2')
-      indA = which(akagi$Species == 'Cl2')
-      
-      Cl2fireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel,shape=fuel))+
-        ylab(expression(paste("Cl2 EF, g/kg"))) + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        #geom_point(data=xiaoxi, aes(x=MCE, y=Acetonitrile), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")#+
-      #  geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-      #  geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-       # geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      Cl2fireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel))+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab(expression(paste("Cl2 ER, ppt/ppb CO")))+ xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      ggarrange(Cl2fireEF, Cl2fireER,common.legend = TRUE)
-      ggsave(AllCl2, file='AllCl2.ps')
-      # theme(text = element_text(size = 20)) +
-      #scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      #  annotate(geom="text", x=0.83, y=1.1, label="Liu et al., 2016",size=6, col='green')
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      
-      ind = which(allBOTH.filter$variable == 'OC_JIMENEZ')
-      tmpOC = allBOTH.filter$FinalERtoCO[ind]
-      ind = which(allBOTH.filter$variable == 'BC_SCHWARZ')
-      tmpBC = allBOTH.filter$FinalERtoCO[ind]
-      mce = allBOTH.filter$mce.5hz[ind]
-      fuel = allBOTH.filter$fuel[ind]
-      dat = as.data.frame(cbind(tmpOC, tmpBC, mce,fuel))
-      dat$BC_OC = as.numeric(dat$tmpBC)/as.numeric(dat$tmpOC)
-       ggplot(dat) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=as.numeric(mce), y=BC_OC, col=fuel, shape=fuel), size=4,stroke=2)+
-        ylab("BC/OC") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) + ylim(c(0,0.3))
-         
-        geom_point(data=xiaoxi, aes(x=MCE, y=OA/1.8), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      
-      # ------ Figure 2E - OA fire -------------
-      ind = which(allBOTH.filter$variable == 'OC_JIMENEZ' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'OC')
-      indA = which(akagi$Species == 'OrganicCarbon')
-       OCfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4,stroke=2)+
-        ylab("OC EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=OA/1.8), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      OCfireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel), size=4,stroke=2)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("OC ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      
-      ggarrange(OCfireEF, OCfireER,BCfireEF, BCfireER,common.legend = TRUE)
-      
-      # correlation with MCE
-      cor.test(allBOTH.filter$FinalEF[ind], allBOTH.filter$mce.5hz[ind])
-      
-      # ------ Figure 2I - Syringol fire -------------
-      ind = which(allBOTH.filter$variable == 'Guaiacol_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      #indB = which(andreae$Species == 'Glycolaldehyde_acetic acid')
-      #indA = which(akagi$Species == 'Glycolaldehyde')
-      
-      GuaiacolfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Guaiacol EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        # geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")#+
-      #geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-      #geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-      #geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2N - Hydroxyacetone fire -------------
-      ind = which(allBOTH.filter$variable == 'C3H6O2_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Acetol (hydroxyacetone) ')
-      indB=indB[1]
-      indA = which(akagi$Species == 'Acetol')
-      
-      C3H6O2fireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("C3H6O2 EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        ggtitle('(sum of methyl acetate ethyl formate and hydroxyacetone)')+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-       geom_point(data=xiaoxi, aes(x=MCE, y=Hydroxyacetone), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      
-      # ------ Figure 2I - Syringol fire -------------
-      ind = which(allBOTH.filter$variable == 'Syringol_NOAAPTR_ppbv' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      #indB = which(andreae$Species == 'Glycolaldehyde_acetic acid')
-      #indA = which(akagi$Species == 'Glycolaldehyde')
-      
-      SyringolfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Syringol EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        # geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")#+
-        #geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        #geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        #geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2Z - Napthalene fire -------------
-      ind = which(allBOTH.filter$variable == 'Naphthalene_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'PAHs')
-      #indA = which(akagi$Species == 'Ethylene')
-      
-      PAHfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Naphthalene EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-      #  geom_point(data=xiaoxi, aes(x=MCE, y=Monoterpenes), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)#+
-      #  geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-      #  geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2Z - Monoterpenes fire -------------
-      ind = which(allBOTH.filter$variable == 'Monoterpenes_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter )
-      indB = which(andreae$Species == 'Terpenes')
-      #indA = which(akagi$Species == 'Ethylene')
-      
-      TerpenesfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Terpenes EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Monoterpenes), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)#+
-      #  geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-      #  geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2Q - Isoprene fire -------------
-      ind = which(allBOTH.filter$variable == 'Isoprene_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter )
-      indB = which(andreae$Species == 'Isoprene')
-      indA = which(akagi$Species == 'Isoprene')
-      
-      IsoprenefireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Isoprene EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Isoprenepentadienescyclopentenefuran), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      
-      # ------ Figure 2Z - Isoprene fire -------------
-      ind = which(allBOTH.filter$variable == 'Isoprene_ppt' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Isoprene')
-      indA = which(akagi$Species == 'Isoprene')
-      
-      IsoprenefireEF2 = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+ylim(c(0,4))+
-        ylab("Isoprene (TOGA) EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        # geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2W - Ethene fire -------------
-      ind = which(allBOTH.filter$variable == 'Ethene_WAS_BLAKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'C2H4')
-      indA = which(akagi$Species == 'Ethylene')
-      
-      EthenefireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Ethene EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        # geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      
-      # ------ Figure 2G - GLYC fire -------------
-      ind = which(allBOTH.filter$variable == 'GlycolaldehydeCH3COOH_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Glycolaldehyde_acetic acid')
-      indA = which(akagi$Species == 'Glycolaldehyde')
-      
-      GLYCfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Glycoaldehyde/Acetic Acid EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-       # geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      # ------ Figure 2F - Benz fire -------------
-      ind = which(allBOTH.filter$variable == 'Toluene_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Toluene')
-      indA = which(akagi$Species == 'Toluene')
-      
-      TOLUfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Toluene EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Toluene), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      
-      # ------ Figure 2F - Benz fire -------------
-      ind = which(allBOTH.filter$variable == 'Benzene_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Benzene')
-      indA = which(akagi$Species == 'Benzene')
-      
-      BENZfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("Benzene EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-         geom_point(data=xiaoxi, aes(x=MCE, y=Benzene), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      
-      # ------ Figure 2F - CH2O fire -------------
-      ind = which(allBOTH.filter$variable == 'CH2O_ISAF_HANISCO' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      indB = which(andreae$Species == 'Formaldehyde')
-      indA = which(akagi$Species == 'Formaldehyde')
-      
-      CH2OfireEF = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-        ylab("CH2O EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      CH2OfireER = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, shape=fuel), size=4)+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("CH2O ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      ind = which(allBOTH.filter$variable == 'CH2O_CAMS_pptv_FRIED' & is.finite(allBOTH.filter$FinalEF) &
-                    allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-      
-      CH2OfireEF2 = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel,shape=fuel), size=4, stroke=2)+
-        ylab("CH2O EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-        labs(col="",shape="")+
-        geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-        geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-        geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-      
-      CH2OfireER2 = ggplot(allBOTH.filter[ind,]) + 
-        theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-        geom_point(aes(x=mce.5hz, y=FinalERtoCO*1E3, col=fuel, size=fuel))+
-        # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-        ylab("CH2O ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-        scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-        scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-        theme(legend.background=element_blank())+#theme(legend.position = "none")+
-        theme(text = element_text(size = sz)) +
-        labs(col="",shape="")
-      
-      ggarrange(CH2OfireEF, CH2OfireEF2, common.legend = TRUE,
-                labels = c("a) Hanisco ","b) Fried"),
-                hjust =-2)
-    }
-    
-   
-    
-    par(cex=1.2)
-    ind = which(VOCsum$fuel == 'corn')
-    ggplot(VOCsum[ind,])+geom_point(aes(x=mce.5hz, y=ERtoCO.5hz, col=NN),size=5)+
-         xlab('MCE')+ ylab('VOC, ppt/ppb CO')+ggtitle('Corn')
-    tl = lm(VOCsum$ERtoCO.5hz[ind]~VOCsum$mce.5hz[ind])
-    abline(tl)
-    # get pie chart
-    ind = which(is.finite(VOCsum$FinalEF))
-    forpie = which(test$uniqueid %in% unique(VOCsum$ff[ind]))
-    testpie = test[forpie,]
-    #testpie.avg = aggregate(testpie)
-    
-    # ------ Figure 2Q - CHOCHO fire -------------
-    ind = which(allBOTH.filter$variable == 'CHOCHO_ACES_WOMACK' & is.finite(allBOTH.filter$FinalEF) &
-                  allBOTH.filter$FinalR2 > R2filter & allBOTH.filter$R2toCO.1hz > R2filter)
-    indB = which(andreae$Species == 'Glyoxal')
-    #indA = which(akagi$Species == 'Glyoxal')
-    zER = c(0.0014,0.0011,0.0012,0.0008,0.0012,0.0003,0.0014,0.0016,0.0020,0.0021,0.0009, 0.0015,0.0010, 0.0028,0.0014,0.0018, 0.0044)
-    zMCE = c(0.93,0.917,  0.927,0.945,NaN,0.919,0.92,NaN,0.974,0.962,0.941,0.936,  0.93,NaN, 0.948,NaN, 0.969)
-    zERCO2CO = zMCE/(1-zMCE)
-    zEF = 0.41*1E3*mWCHOCHO/12 * zER/(1+zERCO2CO)
-    zarzana =as.data.frame(cbind(zER,zMCE,zEF))
-    
-    CHOCHOfireEF = ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=MCE, y=FinalEF, col=fuel, shape=fuel), size=4, stroke=2)+
-      ylab("CHOCHO EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      labs(col="",shape="")+
-      geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-      geom_point(data=zarzana, aes(x=zMCE,y=zEF))
-    #      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-#      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)
-    
-    CHOCHOfireER = ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=MCE, y=FinalERtoCO*1E3, col=fuel, shape=fuel), size=4, stroke=2)+
-      # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-      ylab("CHOCHO ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+#theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      labs(col="",shape="")+
-      geom_point(data=zarzana, aes(x=zMCE,y=zER*1E3))
-    
-    ggarrange(CHOCHOfireEF, CHOCHOfireER, common.legend = TRUE,
-              labels = c("a) EF ","b) ER"),
-              hjust =-2)
-
-    # ---------------------------------actually make it-------
-    xiaoxi$VOC = xiaoxi$Formaldehyde + xiaoxi$Methanol + xiaoxi$Hydroxyacetone + xiaoxi$Acetaldehyde + xiaoxi$MVKMACRcrotonaldehyde+
-      xiaoxi$Isoprenehydroperoxyaldehydes+xiaoxi$Isoprenepentadienescyclopentenefuran+xiaoxi$Benzene+xiaoxi$Monoterpenes+xiaoxi$Toluene
-    indB = which(andreae$Species == 'Total NMOG, including unidentifiedd'); indB=indB[1]
-    indA = which(akagi$Species == 'NMOC') # identified, identified + unidenentifed, use #2
-    indA = indA[2]
-    VOCfireEF = ggplot(VOCsum) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=FinalEF, col=fuel, shape=fuel),size=5, stroke=2)+
-      ylab("VOC EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      geom_point(data=xiaoxi, aes(x=MCE, y=VOC), pch=0,col='green',stroke=2)+
-      geom_point(data=andreae, aes(x=as.numeric(andreae$average[1]), y=as.numeric(andreae$average[indB])), col='purple',stroke=3, size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3, stroke=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4, stroke=3)+
-      labs(col="",shape="")#+
-    VOCfireER = ggplot(VOCsum) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=ERtoCO.5hz*1E3, col=fuel, shape=fuel),size=5, stroke=2)+
-      # geom_point(data=tmp.avg,aes(x=mce.5hz,y=FinalEF,  shape=Group.1),col='grey', size=8, stroke=1)+
-      ylab("VOC ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+#theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      labs(col="",shape="")
-    
-    
-    VOCfireEFshort = ggplot(VOCsum) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=FinalEFshort, col=fuel, shape=fuel),size=5, stroke=2)+
-      ylab("Short-lived VOC EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      #  geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green',stroke=2)+
-      labs(col="",shape="")#+
-    VOCfireERshort = ggplot(VOCsum) + 
-      theme_classic()+
-      geom_point(aes(x=mce.5hz, y=ERtoCO.5hzshort*1E3, col=fuel),size=5)+
-      ylab("VOC ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+#theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      labs(col="",shape="")
-    
-    VOCfireEFlong = ggplot(VOCsum) + 
-      theme_classic()+#
-      geom_point(aes(x=mce.5hz, y=FinalEFlong,  col=fuel, shape=fuel),size=5, stroke=2)+
-      ylab("Long-lived VOC EF, g/kg") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      labs(col="",shape="")#+
-    VOCfireERlong = ggplot(VOCsum) + 
-      theme_classic()+
-      geom_point(aes(x=mce.5hz, y=ERtoCO.5hzlong*1E3, col=fuel),size=5)+
-      ylab("VOC ER, ppt/ppb CO") + xlab("MCE")  + xlim(c(0.8, 1))+
-      scale_color_manual(values = c(cbp1 ), limits=fuellimits)+
-      scale_shape_manual(values =fuelshapes, limits=fuellimits)+
-      theme(legend.background=element_blank())+#theme(legend.position = "none")+
-      theme(text = element_text(size = sz)) +
-      labs(col="",shape="")
-    ggarrange(VOCfireEFshort, VOCfireERshort,VOCfireEFlong, VOCfireERlong,common.legend = TRUE, labels=c("Short-lived EF","Short-lived ER","Long-lived EF","Long-lived ER"))
-    ggarrange(VOCfireEF, VOCfireER)
-    # which fires have a relationship of VOC ER with MCE
-    ind = which(VOCsum$fuel == 'corn')
-    cor.test(VOCsum$mce.5hz[ind], VOCsum$ERtoCO.5hz[ind])
-    ind = which(VOCsum$fuel == 'rice')
-    cor.test(VOCsum$mce.5hz[ind], VOCsum$ERtoCO.5hz[ind])
-    ind = which(VOCsum$fuel == 'soybean')
-    cor.test(VOCsum$mce.5hz[ind], VOCsum$ERtoCO.5hz[ind])
-             
-    ind = which(VOCsum$fuel == 'slash')
-    cor.test(VOCsum$mce.5hz[ind], VOCsum$ERtoCO.5hz[ind])
-    ind = which(VOCsum$fuel == 'grass')
-    cor.test(VOCsum$mce.5hz[ind], VOCsum$ERtoCO.5hz[ind])
-    ind = which(VOCsum$fuel == 'pile')
-    cor.test(VOCsum$mce.5hz[ind], VOCsum$ERtoCO.5hz[ind])
-    
-    # ----------- Average agricultural table ---------- -----
-    
-    
-    # -------- Is corn distinct from others? ----------
-    allBOTH.filter.avg$CornvsFuel1hz = NaN
-    allBOTH.filter.avg$CornvsFuel5hz = NaN
-    for (i in 1:length(allBOTH.filter.avg$Group.1)){
-      # Get everything for corn
-      ind = which(allBOTH.filter$fuel == 'corn' & allBOTH.filter$variable == allBOTH.filter.avg$Group.1[i] )
-      # Get everything for other fuels
-      ind2 = which(allBOTH.filter$fuel != 'corn' & allBOTH.filter$variable == allBOTH.filter.avg$Group.1[i])
-      # Maake sure there is enough corn data
-      tti = which(!is.nan(allBOTH.filter$EF1.1hz[ind]) & !is.na(allBOTH.filter$EF1.1hz[ind]))
-      tti2 = which(!is.nan(allBOTH.filter$EF1.1hz[ind2]) & !is.na(allBOTH.filter$EF1.1hz[ind2]))
-      if (length(tti) > 1 & length(tti2) > 1){
-        tcornvsother.1hz = t.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$EF1.1hz[ind2])
-        allBOTH.filter.avg$CornvsFuel1hz[i] = tcornvsother.1hz$p.value
-      }  
-      tti = which(!is.nan(allBOTH.filter$EF1.5hz[ind]) & !is.na(allBOTH.filter$EF1.5hz[ind]))
-      tti2 = which(!is.nan(allBOTH.filter$EF1.5hz[ind2]) & !is.na(allBOTH.filter$EF1.5hz[ind2]))
-      if (length(tti) > 1 & length(tti2) > 1){
-        tcornvsother.5hz = t.test(allBOTH.filter$EF1.5hz[ind], allBOTH.filter$EF1.5hz[ind2])
-        allBOTH.filter.avg$CornvsFuel5hz[i] = tcornvsother.5hz$p.value
-      }
-    }
-    
-    ind = which(allBOTH.filter.avg$CornvsFuel5hz < 0.05) # 43/60
-    ind = which(allBOTH.filter.avg$CornvsFuel1hz < 0.05) # 101/262
+      # ----------- Average agricultural table ---------- -----
     
     
     # Make a histogram plot or something of the correlation with MCE
@@ -3145,101 +2030,7 @@ if (dothis == 1){
     allBOTH.filter.sc.avg$mce.5hz[ind]
     allBOTH.filter.sc.sd$mce.5hz[ind]
     
-    # ---------- Average Table by Fuel --------
-    # ----------- Different fuels
-    allBOTH.filter.avg.fuel$FinalERtoCO.sd = allBOTH.filter.sd.fuel$FinalERtoCO
-    allBOTH.filter.avg.fuel$FinalEF.sd = allBOTH.filter.sd.fuel$FinalEF
-    
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'corn')
-    tmpCORN = allBOTH.filter.avg.fuel[ind,] ; tmpCORN$Group.1 = tmpCORN$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.ag$fuel == 'corn')
-    tmpCORN  = getplumesANDmce(tmpCORN, allBOTH.filter.ag[ind2,] )
-    tmpCORN$kind = ''
-    for (i in 1:length(tmpCORN$kind.1hz)){
-      ind = which(tmpCORN$Group.1[i] == allBOTH.filter$variable)
-      tmpCORN$kind[i] = allBOTH.filter$kind[ind[1]]
-      tmpCORN$Category.5hz[i] = as.numeric(allBOTH.filter$Category.5hz[ind[1]])
-      tmpCORN$Category.1hz[i] = as.numeric(allBOTH.filter$Category.1hz[ind[1]])
-    }
-    ind = which(allBOTH.filter.sd.fuel$variable == 'corn')
-    AverageTableCORN = getAverageTable(tmpCORN, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpCORN$Group.1 == "CO_DACOM_DISKIN")
-    tmpCORN$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    write.csv(AverageTableCORN,file="AverageTableCorn.csv")
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'rice')
-    tmpRICE = allBOTH.filter.avg.fuel[ind,] ; tmpRICE$Group.1 = tmpRICE$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.ag$fuel == 'rice')
-    tmpRICE  = getplumesANDmce(tmpRICE, allBOTH.filter.ag[ind2,] )
-    AverageTableRICE = getAverageTable(tmpRICE, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpRICE$Group.1 == "CO_DACOM_DISKIN")
-    tmpRICE$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'soybean')
-    tmpSOYBEAN = allBOTH.filter.avg.fuel[ind,] ; tmpSOYBEAN$Group.1 = tmpSOYBEAN$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.ag$fuel == 'soybean')
-    tmpSOYBEAN  = getplumesANDmce(tmpSOYBEAN, allBOTH.filter.ag[ind2,] )
-    AverageTableSOYBEAN = getAverageTable(tmpSOYBEAN, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpSOYBEAN$Group.1 == "CO_DACOM_DISKIN")
-    tmpSOYBEAN$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'winter wheat')
-    tmpWHEAT = allBOTH.filter.avg.fuel[ind,] ; tmpWHEAT$Group.1 = tmpWHEAT$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.ag$fuel == 'winter wheat')
-    tmpWHEAT  = getplumesANDmce(tmpWHEAT, allBOTH.filter.ag[ind2,] )
-    AverageTableWHEAT = getAverageTable(tmpWHEAT, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpWHEAT$Group.1 == "CO_DACOM_DISKIN")
-    tmpWHEAT$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'grass')
-    tmpGRASS = allBOTH.filter.avg.fuel[ind,] ; tmpGRASS$Group.1 = tmpGRASS$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.sc$fuel == 'grass')
-    tmpGRASS  = getplumesANDmce(tmpGRASS, allBOTH.filter.sc[ind2,] )
-    AverageTableGRASS = getAverageTable(tmpGRASS, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpGRASS$Group.1 == "CO_DACOM_DISKIN")
-    tmpGRASS$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'pile')
-    tmpPILE = allBOTH.filter.avg.fuel[ind,] ; tmpPILE$Group.1 = tmpPILE$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.sc$fuel == 'pile')
-    tmpPILE  = getplumesANDmce(tmpPILE, allBOTH.filter.sc[ind2,] )
-    AverageTablePILE = getAverageTable(tmpPILE, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpPILE$Group.1 == "CO_DACOM_DISKIN")
-    tmpPILE$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    
-    ind = which(allBOTH.filter.avg.fuel$Group.1 == 'slash')
-    tmpSLASH = allBOTH.filter.avg.fuel[ind,] ; tmpSLASH$Group.1 = tmpSLASH$Group.2
-    tmp2 = allBOTH.filter.sd.fuel[ind,]
-    ind2 = which(allBOTH.filter.sc$fuel == 'slash')
-    tmpSLASH  = getplumesANDmce(tmpSLASH, allBOTH.filter.sc[ind2,] )
-    AverageTableSLASH = getAverageTable(tmpSLASH, allBOTH.filter.sd.fuel[ind,])
-    ind = which(tmpSLASH$Group.1 == "CO_DACOM_DISKIN")
-    tmpSLASH$mce.5hz[ind]
-    ind = which(tmp2$Group.2 == "CO_DACOM_DISKIN")
-    tmp2$mce.5hz[ind]
-    
-    test = cbind(AverageTableCORN, AverageTableSOYBEAN, AverageTableRICE,AverageTableWHEAT,AverageTableAG,
-                 AverageTableGRASS, AverageTablePILE, AverageTableSLASH, AverageTableSC)
-    ind = which(is.finite(test[,2]))
-    test = test[ind,]
-    write.csv(test, file='AllEFs.csv')
+  
     # -----------
     
     # ---- Compare to Andreae, 2019 ------
@@ -3317,461 +2108,7 @@ if (dothis == 1){
     ind = which(allBOTH.filter$fuel == 'corn' & allBOTH.filter$variable == 'CO_DACOM_DISKIN')
     plot(allBOTH.filter$mce.5hz[ind], allBOTH.filter$EF1.5hz[ind], pch=19, main='All Corn EFs')
     # then plot all 
-    
-    # ----- Willow
-    ind = which(allBOTH.filter$fire == 'Willow')
-    allBOTH.filter.Willow = allBOTH.filter[ind,]
-    ind = which(allBOTH.filter.Willow$variable == 'CO_DACOM_DISKIN')
-    ggplot(allBOTH.filter.Willow[ind,]) + geom_point(aes(x=mce.5hz, y=EF1.5hz, col=MAtoF.5hz))+
-      scale_color_viridis()
-    
-    # monoterpene outliers
-    ind = which(allBOTH.filter$variable == 'Monoterpenes_NOAAPTR_ppbv_WARNEKE')
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+geom_label(aes(x=mce.5hz, y=EF1.5hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=EF1.5hz, col=fuel),size=5)
-    
-    # HONO
-    ind = which(allBOTH.filter$variable == 'HNO2_NOAACIMS_VERES' & is.finite(allBOTH.filter$ChosenEF.1hz))
-    varHNO2 = as.data.frame(allBOTH.filter$ChosenEF.1hz[ind])
-    colnames(varHNO2) = 'HNO2_NOAACIMS_VERES' 
-    varHNO2$mce = allBOTH.filter$mce.1hz[ind]
-    varHNO2$EF1.1hz = allBOTH.filter$EF1.1hz[ind]
-    varHNO2$EF1CO.1hz = allBOTH.filter$EF1CO.1hz[ind]
-    varHNO2$EF1int.1hz = allBOTH.filter$EF1int.1hz[ind]
-    varHNO2$EF1COint.1hz = allBOTH.filter$EF1COint.1hz[ind]
-    
-    varHNO2$mce5 = allBOTH.filter$mce.5hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varHNO2$maxCO = test$maxval.5hz[ind]
-    varHNO2$fuel = test$fuel[ind]
-    
-    # HCHO
-    ind = which(allBOTH.filter$variable == "CH2O_ISAF_HANISCO" & is.finite(allBOTH.filter$FinalEF))
-    varCH2O = as.data.frame(allBOTH.filter$FinalEF[ind])
-    colnames(varCH2O) = 'CH2O_ISAF_HANISCO' 
-    varCH2O$mce = allBOTH.filter$mce.5hz[ind]
-    varCH2O$EF1.5hz = allBOTH.filter$EF1.5hz[ind]
-    varCH2O$EF1CO.5hz = allBOTH.filter$EF1CO.5hz[ind]
-    varCH2O$EF1int.5hz = allBOTH.filter$EF1int.5hz[ind]
-    varCH2O$EF1COint.5hz = allBOTH.filter$EF1COint.5hz[ind]
-    varCH2O$mce5 = allBOTH.filter$mce.5hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varCH2O$maxCO = test$maxval.5hz[ind]
-    varCH2O$fuel = test$fuel[ind]
-    indB = which(andreae$Species == 'Formaldehyde')
-    indA = which(akagi$Species == 'Formaldehyde')
-    CH2Ofire=ggplot(varCH2O) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=CH2O_ISAF_HANISCO, col=fuel,size=maxCO))+
-      ylab("CH2O (ISAF) EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz))+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ),name="")+xlim(c(0.8,1))+  
-      geom_point(data=xiaoxi, aes(x=MCE, y=Formaldehyde), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[49]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[42]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[42]), col='pink', size=5, shape=4)
-    
-    # Toluene
-    ind = which(allBOTH.filter$variable == 'Toluene_NOAAPTR_ppbv_WARNEKE' & is.finite(allBOTH.filter$ChosenEF.5hz))
-    varTOLUENE = as.data.frame(allBOTH.filter$ChosenEF.5hz[ind])
-    colnames(varTOLUENE) = 'Toluene_NOAAPTR_ppbv_WARNEKE' 
-    varTOLUENE$mce = allBOTH.filter$mce.5hz[ind]
-    varTOLUENE$EF1.5hz = allBOTH.filter$EF1.5hz[ind]
-    varTOLUENE$EF1CO.5hz = allBOTH.filter$EF1CO.5hz[ind]
-    varTOLUENE$EF1int.5hz = allBOTH.filter$EF1int.5hz[ind]
-    varTOLUENE$EF1COint.5hz = allBOTH.filter$EF1COint.5hz[ind]
-    varTOLUENE$mce5 = allBOTH.filter$mce.5hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varTOLUENE$maxCO = test$maxval.5hz[ind]
-    varTOLUENE$fuel = test$fuel[ind]
-    indB = which(andreae$Species == 'Toluene')
-    indA = which(akagi$Species == 'Toluene')
-    TOLUENEfire=ggplot(varTOLUENE) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=Toluene_NOAAPTR_ppbv_WARNEKE, col=fuel,size=maxCO))+
-      ylab("Toluene EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz))+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ),name="")+xlim(c(0.8,1))+  
-      geom_point(data=xiaoxi, aes(x=MCE, y=Toluene), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[indB]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[indA]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[indA]), col='pink', size=5, shape=4)
-    
-    # Glyoxal
-    ind = which(allBOTH.filter$names == 'Glyoxal' & is.finite(allBOTH.filter$FinalERtoCO))
-    varCHOCHO = as.data.frame(allBOTH.filter$FinalERtoCO[ind])
-    colnames(varCHOCHO) = 'CHOCHO_ACES_WOMACK' 
-    varCHOCHO$mce = allBOTH.filter$MCE[ind]
-    varCHOCHO$FinalEF = allBOTH.filter$FinalEF[ind]
-    varCHOCHO$FinalERtoCO = allBOTH.filter$FinalERtoCO[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varCHOCHO$maxCO = test$maxval.5hz[ind]
-    varCHOCHO$fuel = test$fuel[ind]
-    
-    CH3COCHOfire=ggplot(varCH3COCHO) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=EF1.1hz, col=fuel,size=maxCO))+
-      # geom_point(aes(x=mce5, y=CH3COCHO_ACES_WOMACK, col='red',size=maxCO))+
-      ylab("Methylglyoxal EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz))+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ),name="")+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[53]), col='purple', size=5, shape=3)
-    
-    cor.test(varCH3COCHO$CH3COCHO_ACES_WOMACK, varCH3COCHO$mce5)
-    ind = which(varCH3COCHO$fuel == 'corn')
-    cor.test(varCH3COCHO$CH3COCHO_ACES_WOMACK[ind], varCH3COCHO$mce5[ind])
-    
-    
-    # Methylglyoxal
-    ind = which(allBOTH.filter$variable == 'CH3COCHO_ACES_WOMACK' & is.finite(allBOTH.filter$ChosenEF.1hz))
-    varCH3COCHO = as.data.frame(allBOTH.filter$ChosenEF.1hz[ind])
-    colnames(varCH3COCHO) = 'CH3COCHO_ACES_WOMACK' 
-    varCH3COCHO$mce = allBOTH.filter$mce.1hz[ind]
-    varCH3COCHO$EF1.1hz = allBOTH.filter$EF1.1hz[ind]
-    varCH3COCHO$EF1CO.1hz = allBOTH.filter$EF1CO.1hz[ind]
-    varCH3COCHO$mce5 = allBOTH.filter$mce.5hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varCH3COCHO$maxCO = test$maxval.5hz[ind]
-    varCH3COCHO$fuel = test$fuel[ind]
-    
-    CH3COCHOfire=ggplot(varCH3COCHO) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=EF1.1hz, col=fuel,size=maxCO))+
-      # geom_point(aes(x=mce5, y=CH3COCHO_ACES_WOMACK, col='red',size=maxCO))+
-      ylab("Methylglyoxal EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz))+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ),name="")+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[53]), col='purple', size=5, shape=3)
-    
-    cor.test(varCH3COCHO$CH3COCHO_ACES_WOMACK, varCH3COCHO$mce5)
-    ind = which(varCH3COCHO$fuel == 'corn')
-    cor.test(varCH3COCHO$CH3COCHO_ACES_WOMACK[ind], varCH3COCHO$mce5[ind])
-    
-    Fig2 = ggarrange(CH3OHfire,CH2Ofire,common.legend = TRUE)
-    ggsave(Fig2, file='Fig2.ps',width = 7*1.25*2, height=7*1.25*2/3)
-    # methylglyoxal outliers
-    ind = which(allBOTH.filter$variable == 'CH3COCHO_ACES_WOMACK' & is.finite(allBOTH.filter$EF1.1hz))
-    tmpEF = allBOTH.filter[ind,]
-    goodpasses = tmpEF$uniqueid
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=EF1.1hz, col=fuel),size=5)+#xlim()
-      ylab("Methylglyoxal EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.8, 0.93))+
-      theme(text = element_text(size = sz)) 
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.5hz[ind])
-    ind = which(allBOTH.filter$variable == 'CH3COCHO_ACES_WOMACK'& allBOTH.filter$fuel == 'corn')
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.5hz[ind])
-    
-    ind = which(allBOTH.filter$variable == 'OC_JIMENEZ')
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.1hz, y=EF1.1hz, col=fuel),size=5)+
-      ylab("OC EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.2, 0.3))+
-      theme(text = element_text(size = sz)) 
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.1hz[ind])
-    ind = which(allBOTH.filter$variable == 'OC_JIMENEZ' & allBOTH.filter$fuel == 'corn')
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.1hz[ind])
-    
-    ind = which(allBOTH.filter$variable == 'CH3OH_TOGA_APEL' & allBOTH.filter$EF1.1hz <= 230)# &
-    #              allBOTH.filter$fuel == 'corn')
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=EF1.1hz, col=fuel),size=5)+
-      ylab("Acetaldehyde EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.2, 0.3))+
-      theme(text = element_text(size = sz)) 
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.5hz[ind])
-    
-    ind = which(allBOTH.filter$variable == 'BC_SCHWARZ')
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.1hz, y=EF1.1hz, col=fuel),size=5)+
-      ylab("BC EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.2, 0.3))+
-      theme(text = element_text(size = sz)) 
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.1hz[ind])
-    ind = which(allBOTH.filter$variable == 'BC_SCHWARZ' & allBOTH.filter$fuel == 'corn')
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.1hz[ind])
-    
-    ind = which(allBOTH.filter$variable == 'All5HzVOC')
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=EF1.5hz, col=fuel),size=5)+
-      ylab("VOC, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.2, 0.3))+
-      theme(text = element_text(size = sz)) 
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.1hz[ind])
-    ind = which(allBOTH.filter$variable == 'BC_SCHWARZ' & allBOTH.filter$fuel == 'corn')
-    cor.test(allBOTH.filter$EF1.1hz[ind], allBOTH.filter$mce.1hz[ind])
-    
-    # ------------- Methanol with CO size -------
-    ind = which(allBOTH.filter$variable == 'CH3OH_NOAAPTR_ppbv_WARNEKE')# & allBOTH.filter$ChosenEF.R2.5hz < R2filter)# allBOTH.filter$EF1.5hz < 7)
-    toinvestigate = as.data.frame(cbind(fire=allBOTH.filter$fire[ind], 
-                                        pass=allBOTH.filter$pass[ind], R2=allBOTH.filter$R2toX.5hz[ind],
-                                        R2CO=allBOTH.filter$R2toCO.5hz[ind],
-                                        fuel=allBOTH.filter$fuel[ind],
-                                        mce = allBOTH.filter$mce.5hz[ind]))
-    varCH3OH = as.data.frame(allBOTH.filter$ChosenEF.5hz[ind] )
-    colnames(varCH3OH) = 'CH3OH_NOAAPTR_ppbv_WARNEKE'
-    varCH3OH$EF1.5hz = allBOTH.filter$EF1.5hz[ind]
-    varCH3OH$mce5 = allBOTH.filter$mce.5hz[ind]
-    varCH3OH$mce = allBOTH.filter$mce.1hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varCH3OH$maxCO = test$maxval.5hz[ind]
-    varCH3OH$fuel = test$fuel[ind]
-    indA = which(akagi$Species == 'Methanol')
-    CH3OHfire = ggplot(varCH3OH) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=CH3OH_NOAAPTR_ppbv_WARNEKE, col=fuel,size=maxCO))+
-      ylab("Methanol EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) +
-      geom_point(data=xiaoxi, aes(x=MCE, y=Methanol), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[42]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[40]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[40]), col='pink', size=5, shape=4)
-    
-    cor.test(varCH3OH$CH3OH_NOAAPTR_ppbv_WARNEKE, varCH3OH$mce5)
-    ind = which(varCH3OH$fuel == 'corn')
-    cor.test(varCH3OH$CH3OH_NOAAPTR_ppbv_WARNEKE[ind], varCH3OH$mce5[ind])
-    
-    # investigate 1hz MCE outliers
-    diff=(allBOTH.filter$mce.1hz - allBOTH.filter$mce.5hz)/allBOTH.filter$mce.5hz
-    ind = which(abs(diff) > 0.05)
-    iqq = unique(allBOTH.filter$uniqueid[ind])
-    ind = which(allBOTH.filter$uniqueid %in% iqq)
-    toinvestigate = allBOTH.filter[ind,]
-    ind = which(toinvestigate$variable == 'CO_DACOM_DISKIN')
-    toinvestigate = toinvestigate[ind,]
-    
-    
-    # ------ OC fire ------
-    OCfire1 = ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.1hz, y=EF1.1hz*2, col=fuel),size=5)+
-      ylab("OA EF, g/kg") + xlab("MCE") + xlim(c(0.8, 1))+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz))  + geom_point(data=xiaoxi, aes(x=mce, y=oa), pch=0,col='green')
-    ind = which(allBOTH.filter$variable == 'OC_JIMENEZ' & is.finite(allBOTH.filter$EF1.1hz))
-    
-    # ------------- Furfural with CO size -------
-    ind = which(allBOTH.filter$variable == 'Furfural_NOAAPTR_ppbv_WARNEKE')# & allBOTH.filter$ChosenEF.R2.5hz < R2filter)# allBOTH.filter$EF1.5hz < 7)
-    toinvestigate = as.data.frame(cbind(fire=allBOTH.filter$fire[ind], 
-                                        pass=allBOTH.filter$pass[ind], R2=allBOTH.filter$R2toX.5hz[ind],
-                                        R2CO=allBOTH.filter$R2toCO.5hz[ind],
-                                        fuel=allBOTH.filter$fuel[ind],
-                                        mce = allBOTH.filter$mce.5hz[ind]))
-    varFURFURAL = as.data.frame(allBOTH.filter$ChosenEF.5hz[ind] )
-    colnames(varFURFURAL) = 'FURFURAL_NOAAPTR_ppbv_WARNEKE'
-    varFURFURAL$EF1.5hz = allBOTH.filter$EF1.5hz[ind]
-    varFURFURAL$mce5 = allBOTH.filter$mce.5hz[ind]
-    varFURFURAL$mce = allBOTH.filter$mce.1hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varFURFURAL$maxCO = test$maxval.5hz[ind]
-    varFURFURAL$fuel = test$fuel[ind]
-    indA = which(akagi$Species == 'Methanol')
-    FURFURALfire = ggplot(varFURFURAL) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=FURFURAL_NOAAPTR_ppbv_WARNEKE, col=fuel,size=maxCO))+
-      ylab("Methanol EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) +
-      geom_point(data=xiaoxi, aes(x=MCE, y=Methanol), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[42]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[40]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[40]), col='pink', size=5, shape=4)
-    
-    cor.test(varFURFURAL$FURFURAL_NOAAPTR_ppbv_WARNEKE, varFURFURAL$mce5)
-    ind = which(varFURFURAL$fuel == 'corn')
-    cor.test(varFURFURAL$FURFURAL_NOAAPTR_ppbv_WARNEKE[ind], varFURFURAL$mce5[ind])
-    
-    # ----------------- NO with MCE -------
-    ind = which(allBOTH.filter$variable == 'NO_LIF_ROLLINS')
-    varNO = as.data.frame(allBOTH.filter$ChosenEF.5hz[ind])
-    colnames(varNO) = 'NO_LIF_ROLLINS' 
-    varNO$EF1.5hz = allBOTH.filter$EF1.5hz[ind]
-    varNO$EF1.1hz = allBOTH.filter$EF1.1hz[ind]
-    varNO$EF1CO.5hz = allBOTH.filter$EF1CO.5hz[ind]
-    
-    varNO$mce5 = allBOTH.filter$mce.5hz[ind]
-    varNO$mce = allBOTH.filter$mce.1hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varNO$maxCO = test$maxval.5hz[ind]
-    varNO$fuel = test$fuel[ind]
-    ind = which(test$variable == 'NO2_ACES_WOMACK')
-    varNO$NO2_ACES_WOMACK = test$EF1.1hz[ind]
-    ind = which(test$variable == 'NO_RYERSON')
-    varNO$NO_RYERSON = test$EF1.1hz[ind]
-    ind = which(test$variable == 'NO_RYERSON')
-    varNO$NO_RYERSON = test$EF1.1hz[ind]
-    ind = which(test$variable == 'NO2_RYERSON')
-    varNO$NO2_RYERSON = test$EF1.1hz[ind]
-    varNO$NOx = varNO$EF1.5hz + varNO$NO2_ACES_WOMACK
-    
-    NOfire = ggplot(varNO) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=NOx, col=fuel,size=maxCO))+
-      ylab("NOx EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) +
-      geom_point(data=xiaoxi, aes(x=MCE, y=NO+NO2), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))+
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[97]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[100]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[100]), col='pink', size=5, shape=4)
-    
-    cor.test(varNO$NO_LIF_ROLLINS, varNO$mce5)
-    ind = which(varNO$fuel == 'corn' & varNO$mce5 > 0.95)
-    cor.test(varNO$NO_LIF_ROLLINS[ind], varNO$mce5[ind])
-    # ------------- CH4 with CO size -------
-    ind = which(allBOTH.filter$variable == 'CH4_DACOM_DISKIN')
-    
-    varCH4 = as.data.frame(allBOTH.filter$ChosenEF.5hz[ind] ) 
-    colnames(varCH4) = 'CH4_DACOM_DISKIN' 
-    varCH4$EF1.5hz = allBOTH.filter$EF1.5hz[ind]
-    varCH4$EF1CO.5hz = allBOTH.filter$EF1CO.5hz[ind]
-    varCH4$EF1intfill.5hz = allBOTH.filter$EF1intfill.5hz[ind]
-    varCH4$EF1COintfill.5hz = allBOTH.filter$EF1COintfill.5hz[ind]
-    varCH4$mce5 = allBOTH.filter$mce.5hz[ind]
-    varCH4$mce = allBOTH.filter$mce.5hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varCH4$maxCO = test$maxval.5hz[ind]
-    varCH4$fuel = test$fuel[ind]
-    indA = which(akagi$Species == 'Methane')
-    CH4fire = ggplot(varCH4) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=EF1CO.5hz, col=fuel,size=maxCO))+
-      ylab("CH4 EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) +
-      #geom_point(data=xiaoxi, aes(x=MCE, y=OA/2), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))  +
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[4]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[4]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[4]), col='pink', size=5, shape=4)
-    
-    cor.test(varCH4$CH4_JIMENEZ, varCH4$mce5)
-    ind = which(varCH4$fuel == 'corn')
-    cor.test(varCH4$CH4_JIMENEZ[ind], varCH4$mce5[ind])
-    
-    # ------------- OC with CO size -------
-    ind = which(allBOTH.filter$variable == 'OC_JIMENEZ' & is.finite(allBOTH.filter$EF1.1hz))
-    
-    varOC = as.data.frame(allBOTH.filter$ChosenEF.1hz[ind] ) # roughly the OA/OC
-    colnames(varOC) = 'OC_JIMENEZ' 
-    varOC$EF1.1hz = allBOTH.filter$EF1.1hz[ind]
-    varOC$EF1CO.1hz = allBOTH.filter$EF1CO.1hz[ind]
-    varOC$EF1intfill.1hz = allBOTH.filter$EF1intfill.1hz[ind]
-    varOC$EF1COintfill.1hz = allBOTH.filter$EF1COintfill.1hz[ind]
-    varOC$mce5 = allBOTH.filter$mce.5hz[ind]
-    varOC$mce = allBOTH.filter$mce.1hz[ind]
-    goodpasses2 = allBOTH.filter$uniqueid[ind]
-    tmp = which(allBOTH.filter$uniqueid %in% goodpasses2)
-    test = allBOTH.filter[tmp,]
-    ind = which(test$variable == 'CO_DACOM_DISKIN')
-    varOC$maxCO = test$maxval.5hz[ind]
-    varOC$fuel = test$fuel[ind]
-    indA = which(akagi$Species == 'Organic Carbon')
-    OCfire = ggplot(varOC) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce5, y=OC_JIMENEZ, col=fuel,size=maxCO))+
-      ylab("OC EF, g/kg") + xlab("MCE")+
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) +
-      geom_point(data=xiaoxi, aes(x=MCE, y=OA/2), pch=0,col='green')+
-      scale_shape_manual(values=c(19,15,17,18,7,8,4))+
-      scale_color_manual(values = c(cbp1 ))+xlim(c(0.8,1))  +
-      geom_point(data=andreae, aes(x=andreae$average[1], y=andreae$average[115]), col='purple', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$CropEF[1], y=akagi$CropEF[110]), col='pink', size=5, shape=3)+
-      geom_point(data=akagi, aes(x=akagi$PastureEF[1], y=akagi$PastureEF[110]), col='pink', size=5, shape=4)
-    
-    cor.test(varOC$OC_JIMENEZ, varOC$mce5)
-    ind = which(varOC$fuel == 'corn')
-    cor.test(varOC$OC_JIMENEZ[ind], varOC$mce5[ind])
-    
-    Fig3 = ggarrange(OCfire,NOfire,common.legend = TRUE)
-    ggsave(Fig3, file='Fig3.ps',width = 7*1.25*2, height=7*1.25*2/3)
-    
-    ind = which(allBOTH.filter$variable == 'All5HzVOC'& is.finite(allBOTH.filter$EF1.5hz))
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=EF1.5hz, col=fuel),size=5)+
-      ylab("VOC EF, g/kg") + xlab("MCE") +
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) 
-    
-    ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' )
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      #geom_point(aes(x=mce.5hz, y=EF1.5hz, col=fuel),size=5)+
-      geom_point(aes(x=mce_int.1hz, y=EF1int.1hz, col=fuel),size=5)+
-      
-      ylab("CO EF, g/kg") + xlab("MCE") +
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.7))+
-      theme(text = element_text(size = sz)) +
-      geom_point(data=xiaoxi, aes(x=mce, y=co), col='green')
-    
-    ind = which(allBOTH.filter$variable == 'CH4_DACOM_DISKIN' )
-    ggplot(allBOTH.filter[ind,]) + 
-      theme_classic()+#geom_label(aes(x=mce.1hz, y=EF1.1hz, label=fire),nudge_x = .005,nudge_y = .05)+
-      geom_point(aes(x=mce.5hz, y=EF1.5hz, col=fuel),size=5)+
-      ylab("CH4 EF, g/kg") + xlab("MCE") +
-      theme(legend.background=element_blank())+theme(legend.position = c(0.18, 0.27))+
-      theme(text = element_text(size = sz)) 
-    ind = which(allBOTH.filter$variable == 'CH4_DACOM_DISKIN' & allBOTH.filter$fuel == 'corn')
-    cor.test(allBOTH.filter$EF1.5hz[ind], allBOTH.filter$mce.5hz[ind])
-              
-    ind = which(Ricearoni.1hz.EF$variable == 'CH2O_ppt')
-    
-              
+
     # Plot sampled fires
     co.ch4.821.5hz = getICARTTdataSIMPLE('Aircraft/FASTDATA/FIREXAQ-DACOM-5Hz_DC8_20190821_R1.ict')
     co.ch4.823.5hz = getICARTTdataSIMPLE('Aircraft/FASTDATA/FIREXAQ-DACOM-5Hz_DC8_20190823_R1.ict')
@@ -3785,7 +2122,6 @@ if (dothis == 1){
     ggplot(co.ch4.821.5hz)+geom_line(aes(x=Time_Start,y=CO_DACOM)) + scale_y_log10()+theme_classic()+
       geom_point(data=allfires.5hz[ind,], aes(x=Time_Start, y=CO_DACOM_DISKIN), col='red', cex=0.5)+
       geom_hline(aes(yintercept=400))+ggtitle("8/21")
-    
     ind = which(allfires.5hz$Day_Of_Year_YANG == 235)
     ggplot(co.ch4.823.5hz)+geom_line(aes(x=Time_Start,y=CO_DACOM)) + scale_y_log10()+theme_classic()+
       geom_point(data=allfires.5hz[ind,], aes(x=Time_Start, y=CO_DACOM_DISKIN), col='red', cex=0.5)+
@@ -3917,107 +2253,6 @@ if (dothis == 1){
       ggplot(allBOTH.filter.allfuels[ind,])+geom_point(aes(x=mce.5hz,y=FinalEF, col=fuel), size=3)+theme_classic()+
         geom_point(data=allBOTH.blackwater.filter[ind2,],aes(x=mce.5hz,y=FinalEF), col='black')+xlab("MCE")+ylab("EF OC, g/kg")
       
-      # ---------- OC 
-      ind = which(allBOTH.filter.allfuels$variable == 'OC_JIMENEZ' & allBOTH.filter.allfuels$fire != 'BlackwaterRiver' )
-      averagebyfuel = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelsd = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='sd', na.rm=TRUE)
-      ind = which(allBOTH.blackwater.filter$variable == 'OC_JIMENEZ' )
-      averagebyfuelB = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelBsd = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='sd', na.rm=TRUE)
-      
-      iA = which(akagi$Species == 'OrganicCarbon')
-      fuel = c(averagebyfuel$Group.1, averagebyfuelB$Group.1,'Akagi: savannah','Akagi: pasture maintenance','Akagi: crop residue')
-      EF = c(averagebyfuel$FinalEF, averagebyfuelB$FinalEF,akagi$Savannah[iA],akagi$PastureEF[iA],akagi$CropEF[iA])
-      mce = c(averagebyfuel$mce.5hz, averagebyfuelB$mce.5hz, 0.94,0.88,0.91)
-      EFsd = c(averagebyfuelsd$FinalEF, averagebyfuelBsd$FinalEF,akagi$`Savannah SD`[iA],akagi$PastureSD[iA],akagi$CropSD[iA])
-      mcesd = c(averagebyfuelsd$mce.5hz, averagebyfuelBsd$mce.5hz,NaN,NaN,NaN)
-      averagebyfuel2 = as.data.frame(cbind(fuel,EF,mce, EFsd, mcesd))
-      averagebyfuel2$EF = as.numeric(averagebyfuel2$EF);averagebyfuel2$EFsd = as.numeric(averagebyfuel2$EFsd)
-      averagebyfuel2$mce = as.numeric(averagebyfuel2$mce);averagebyfuel2$mcesd = as.numeric(averagebyfuel2$mcesd)
-      ind = which(is.finite(averagebyfuel2$EF))
-      ggplot(averagebyfuel2[ind,]) + geom_point(aes(x=mce, y=EF, col=fuel), size=5)+
-        theme_classic()+xlab("MCE")+ylab("EF OC, g/kg")+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(xmin=mce-mcesd,xmax=mce+mcesd, y=EF,col=fuel),  position=position_dodge(0.05))+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(x=mce,ymin=EF-EFsd, ymax=EF+EFsd,col=fuel), position=position_dodge(0.05))+
-        theme(legend.background=element_blank())+ theme(text = element_text(size = 20)) +
-        scale_colour_hue()
-      
-      # ---------- C2H6 
-      ind = which(allBOTH.filter.allfuels$variable == 'C2H6_CAMS_pptv_FRIED' & allBOTH.filter.allfuels$fire != 'BlackwaterRiver' )
-      averagebyfuel = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelsd = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='sd', na.rm=TRUE)
-      ind = which(allBOTH.blackwater.filter$variable == 'C2H6_CAMS_pptv_FRIED' )
-      averagebyfuelB = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelBsd = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='sd', na.rm=TRUE)
-      
-      iA = which(akagi$Species == 'Ethane')
-      fuel = c(averagebyfuel$Group.1, averagebyfuelB$Group.1,'Akagi: savannah','Akagi: pasture maintenance','Akagi: crop residue')
-      EF = c(averagebyfuel$FinalEF, averagebyfuelB$FinalEF,akagi$Savannah[iA],akagi$PastureEF[iA],akagi$CropEF[iA])
-      mce = c(averagebyfuel$mce.5hz, averagebyfuelB$mce.5hz, 0.94,0.88,0.91)
-      EFsd = c(averagebyfuelsd$FinalEF, averagebyfuelBsd$FinalEF,akagi$`Savannah SD`[iA],akagi$PastureSD[iA],akagi$CropSD[iA])
-      mcesd = c(averagebyfuelsd$mce.5hz, averagebyfuelBsd$mce.5hz,NaN,NaN,NaN)
-      averagebyfuel2 = as.data.frame(cbind(fuel,EF,mce, EFsd, mcesd))
-      averagebyfuel2$EF = as.numeric(averagebyfuel2$EF);averagebyfuel2$EFsd = as.numeric(averagebyfuel2$EFsd)
-      averagebyfuel2$mce = as.numeric(averagebyfuel2$mce);averagebyfuel2$mcesd = as.numeric(averagebyfuel2$mcesd)
-      ind = which(is.finite(averagebyfuel2$EF))
-      ggplot(averagebyfuel2[ind,]) + geom_point(aes(x=mce, y=EF, col=fuel), size=5)+
-        theme_classic()+xlab("MCE")+ylab("EF C2H6, g/kg")+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(xmin=mce-mcesd,xmax=mce+mcesd, y=EF,col=fuel),  position=position_dodge(0.05))+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(x=mce,ymin=EF-EFsd, ymax=EF+EFsd,col=fuel), position=position_dodge(0.05))+
-        theme(legend.background=element_blank())+ theme(text = element_text(size = 20)) +
-        scale_colour_hue()
-      
-      
-      # ---------- CO
-      ind = which(allBOTH.filter.allfuels$variable == 'CO_DACOM_DISKIN' & allBOTH.filter.allfuels$fire != 'BlackwaterRiver' )
-      averagebyfuel = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelsd = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='sd', na.rm=TRUE)
-      ind = which(allBOTH.blackwater.filter$variable == 'CO_DACOM_DISKIN' )
-      averagebyfuelB = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelBsd = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='sd', na.rm=TRUE)
-      
-      iA = which(akagi$Species == 'Carbon Monoxide')
-      fuel = c(averagebyfuel$Group.1, averagebyfuelB$Group.1,'Akagi: savannah','Akagi: pasture maintenance','Akagi: crop residue','Akagi: temperature')
-      EF = c(averagebyfuel$FinalEF, averagebyfuelB$FinalEF,akagi$Savannah[iA],akagi$PastureEF[iA],akagi$CropEF[iA],akagi$TemperateEF[iA])
-      mce = c(averagebyfuel$mce.5hz, averagebyfuelB$mce.5hz, 0.94,0.88,0.91,0.95)
-      EFsd = c(averagebyfuelsd$FinalEF, averagebyfuelBsd$FinalEF,akagi$`Savannah SD`[iA],akagi$PastureSD[iA],akagi$CropSD[iA],akagi$`Temperate SD`[iA])
-      mcesd = c(averagebyfuelsd$mce.5hz, averagebyfuelBsd$mce.5hz,NaN,NaN,NaN,NaN)
-      averagebyfuel2 = as.data.frame(cbind(fuel,EF,mce, EFsd, mcesd))
-      averagebyfuel2$EF = as.numeric(averagebyfuel2$EF);averagebyfuel2$EFsd = as.numeric(averagebyfuel2$EFsd)
-      averagebyfuel2$mce = as.numeric(averagebyfuel2$mce);averagebyfuel2$mcesd = as.numeric(averagebyfuel2$mcesd)
-      ind = which(is.finite(averagebyfuel2$EF))
-      ggplot(averagebyfuel2[ind,]) + geom_point(aes(x=mce, y=EF, col=fuel), size=5)+
-        theme_classic()+xlab("MCE")+ylab("EF CO, g/kg")+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(xmin=mce-mcesd,xmax=mce+mcesd, y=EF,col=fuel),  position=position_dodge(0.05))+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(x=mce,ymin=EF-EFsd, ymax=EF+EFsd,col=fuel), position=position_dodge(0.05))+
-        theme(legend.background=element_blank())+ theme(text = element_text(size = 20)) +
-        scale_colour_hue()
-      
-      # ---------- Benzene 
-      ind = which(allBOTH.filter.allfuels$variable == 'Benzene_NOAAPTR_ppbv_WARNEKE' & allBOTH.filter.allfuels$fire != 'BlackwaterRiver' )
-      averagebyfuel = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelsd = aggregate(allBOTH.filter.allfuels[ind,], by=list(allBOTH.filter.allfuels$fuel[ind]), FUN='sd', na.rm=TRUE)
-      ind = which(allBOTH.blackwater.filter$variable == 'Benzene_NOAAPTR_ppbv_WARNEKE' )
-      averagebyfuelB = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='mean', na.rm=TRUE)
-      averagebyfuelBsd = aggregate(allBOTH.blackwater.filter[ind,], by=list(allBOTH.blackwater.filter$fuel[ind]), FUN='sd', na.rm=TRUE)
-      
-      iA = which(akagi$Species == 'Benzene')
-      fuel = c(averagebyfuel$Group.1, averagebyfuelB$Group.1,'Akagi: savannah','Akagi: pasture maintenance','Akagi: crop residue')
-      EF = c(averagebyfuel$FinalEF, averagebyfuelB$FinalEF,akagi$Savannah[iA],akagi$PastureEF[iA],akagi$CropEF[iA])
-      mce = c(averagebyfuel$mce.5hz, averagebyfuelB$mce.5hz, 0.94,0.88,0.91)
-      EFsd = c(averagebyfuelsd$FinalEF, averagebyfuelBsd$FinalEF,akagi$`Savannah SD`[iA],akagi$PastureSD[iA],akagi$CropSD[iA])
-      mcesd = c(averagebyfuelsd$mce.5hz, averagebyfuelBsd$mce.5hz,NaN,NaN,NaN)
-      averagebyfuel2 = as.data.frame(cbind(fuel,EF,mce, EFsd, mcesd))
-      averagebyfuel2$EF = as.numeric(averagebyfuel2$EF);averagebyfuel2$EFsd = as.numeric(averagebyfuel2$EFsd)
-      averagebyfuel2$mce = as.numeric(averagebyfuel2$mce);averagebyfuel2$mcesd = as.numeric(averagebyfuel2$mcesd)
-      ind = which(is.finite(averagebyfuel2$EF))
-      ggplot(averagebyfuel2[ind,]) + geom_point(aes(x=mce, y=EF, col=fuel), size=5)+
-        theme_classic()+xlab("MCE")+ylab("EF Benzene, g/kg")+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(xmin=mce-mcesd,xmax=mce+mcesd, y=EF,col=fuel),  position=position_dodge(0.05))+
-        geom_errorbar(data=averagebyfuel2[ind,],aes(x=mce,ymin=EF-EFsd, ymax=EF+EFsd,col=fuel), position=position_dodge(0.05))+
-        theme(legend.background=element_blank())+ theme(text = element_text(size = 20)) +
-        scale_colour_hue()
-      
       # average blackwater?
       #cut out aged
       ind = which(allBOTH.blackwater.filter$MAtoF.5hz <= 0.2) # remove aged
@@ -4039,60 +2274,189 @@ if (dothis == 1){
     }
 }
 
-# TOGA/WAS meacetate
-plot( toga.all$C3H6O2_NOAAPTR_TM,toga.all$MeAcetate_ppt, pch=19, xlab='Methyl acetate, ppt', ylab='C3H6O2 (NOAA PTRMS), ppt')
-xx=toga.all$C3H6O2_NOAAPTR_TM
-yy=as.numeric(toga.all$MeAcetate_ppt)
-tt = lm(yy~xx+0)
+# MEK vs. MEK/2-propanal
+plot( toga.all$C4Carbonyls_NOAAPTR_TM,toga.all$MEK_ppt, pch=19, 
+      xlim=c(0,7.5E3), ylim=c(0, 7.5E3),ylab='MEK, ppt', xlab='C4Carbonyls (NOAA PTRMS), ppt')
+yy=as.numeric(toga.all$MEK_ppt)
+xx=as.numeric(toga.all$C4Carbonyls_NOAAPTR_TM)
+tt = lm(yy~xx)
 abline(tt, col='black')
-text(4000,6000,paste("TOGA slope = ", round(tt$coefficients[1], digits = 2)))
+text(2000,6000,paste("TOGA slope = ", round(tt$coefficients[2], digits = 2)))
 
-points(toga.all$C3H6O2_NOAAPTR_TM, toga.all$MeAcetate_WAS_TM, pch=19, col='red')
-yy=as.numeric(toga.all$MeAcetate_WAS_TM)
-tt2 = lm(yy~xx+0)
+points(toga.all$C4Carbonyls_NOAAPTR_TM, toga.all$MEK_NOAAiWAS_TM, pch=19, col='red')
+yy=as.numeric(toga.all$MEK_NOAAiWAS_TM)
+tt2 = lm(yy~xx)
 abline(tt2, col='red')
-text(4000,5700,paste("WAS slope = ", round(tt2$coefficients[1], digits = 2)), col='red')
+text(2000,5700,paste("iWAS slope = ", round(tt2$coefficients[2], digits = 2)), col='red')
 
-# TOGA pyrrole
-plot( toga.all$C4H5N_NOAAPTR_TM, toga.all$Pyrrole_ppt, pch=19, xlab='C4H5N (NOAA PTRMS), ppt', ylab='Pyrrole, ppt')
-xx=as.numeric(toga.all$C4H5N_NOAAPTR_TM)
-yy=as.numeric(toga.all$Pyrrole_ppt)
-ind = which(xx > 400 & yy < 100) # don't include outliers in slope
-xx[ind]= NaN; yy[ind] = NaN
-tt = lm(yy~xx+0)
-abline(tt, col='black')
-text(300,600,paste("TOGA slope = ", round(tt$coefficients[1], digits = 2)))
+points(toga.all$C4Carbonyls_NOAAPTR_TM, toga.all$MEK_WAS_TM, pch=19, col='blue')
+yy=as.numeric(toga.all$MEK_WAS_TM)
+tt2 = lm(yy~xx)
+abline(tt2, col='red')
+text(2000,5400,paste("WAS slope = ", round(tt2$coefficients[2], digits = 2)), col='blue')
 
-# Monoterpenes
-tmp = as.data.frame(cbind(toga.all$aPinene_ppt,toga.all$bPineneMyrcene_ppt , toga.all$Camphene_ppt ,toga.all$Tricyclene_ppt))
-ind = which(is.finite(toga.all$bPineneMyrcene_ppt) & is.finite(toga.all$Camphene_ppt)) # don't include outliers in slope
-plot( toga.all$Monoterpenes_NOAAPTR_TM[ind],rowSums(tmp[ind,], na.rm=TRUE), pch=19, xlab='Monoterpenes, ppt', ylab='aPinene+bPinene+Myrcene+Camphene+Tricyclene, ppt')
-xx=as.numeric(toga.all$Monoterpenes_NOAAPTR_TM)
-yy=as.numeric(rowSums(tmp, na.rm=TRUE))
+ind = which(is.finite(as.numeric(toga.all$C4Carbonyls_NOAAPTR_TM))& is.finite(as.numeric(toga.all$MEK_NOAAiWAS_TM)) &
+             is.finite(as.numeric(toga.all$MEK_ppt)) & is.finite(as.numeric(toga.all$MEK_WAS_TM)))
 
-xx=xx[ind]; yy=yy[ind]
-tt = lm(yy~xx+0)
-abline(tt, col='black')
-text(400,600,paste("TOGA slope = ", round(tt$coefficients[1], digits = 2)))
 
-# C9 aromatics
-tmp = as.data.frame(cbind(as.numeric(toga.all$x124rimeBenzene_WAS_TM), as.numeric(toga.all$x135rimeBenzene_WAS_TM), as.numeric(toga.all$iPropBenzene_WAS_TM),
-                          as.numeric(toga.all$nPropBenzene_WAS_TM), as.numeric(toga.all$x2EthToluene_WAS_TM), as.numeric(toga.all$x3EthToluene_WAS_TM), 
-                          as.numeric(toga.all$x4EthToluene_WAS_TM)))
-ind = which(is.finite(as.numeric(toga.all$x124rimeBenzene_WAS_TM)) &is.finite(as.numeric(toga.all$x3EthToluene_WAS_TM)) &
-        is.finite( as.numeric(toga.all$x4EthToluene_WAS_TM)) & is.finite(as.numeric(toga.all$nPropBenzene_WAS_TM)) & is.finite(as.numeric(toga.all$x2EthToluene_WAS_TM)))
-plot( as.numeric(toga.all$C9Aromatics_NOAAPTR_TM[ind]),rowSums(tmp[ind,], na.rm=TRUE), pch=19, xlab='C9 aromatics, ppt', ylab='WAS C9 aromatics, ppt', xlim=c(0,800), ylim=c(0,800))
-xx=as.numeric(toga.all$C9Aromatics_NOAAPTR_TM[ind])
-yy=as.numeric(rowSums(tmp[ind,], na.rm=TRUE))
-tt = lm(yy~xx+0)
-abline(tt, col='black')
-text(200,250,paste("WAS slope = ", round(tt$coefficients[1], digits = 2)))
 
-# Isoprene ---
-plot(toga.all$Isoprene_NOAAPTR_TM, toga.all$Isoprene_ppt, ylab='Isoprene, ppt', xlab='NOAA PTRMS Isoprene, ppt', pch=19, xlim=c(0,10E3), ylim=c(0,10E3))
-tt = lm(toga.all$Isoprene_ppt ~toga.all$Isoprene_NOAAPTR_TM)
-abline(tt, col='grey')
-abline(0,1, lty=1)
-points(toga.all$Isoprene_NOAAPTR_TM, toga.all$Isoprene_NOAAiWAS_TM, col='red', pch=19)
-points(toga.all$Isoprene_NOAAPTR_TM, toga.all$Isoprene_WAS_TM, col='blue', pch=19)
+
+  # ------
+ind2 = which(allBOTH.filter$formula == 'HNCO'  & allBOTH.filter$USEME == 1)
+ind1 = which(allBOTH.filter$formula == 'HNO2' & allBOTH.filter$USEME == 1 )
+fuelshapes = c(19,15,17,18,7,8,4,2,16,12)
+cbp1 <- c( "#E69F00", "#56B4E9", "#009E73",
+           "#F0E442", "#0072B2", "#D55E00",
+           "#CC79A7","#000000","#999999","#CC0000")
+fuellimits = c("corn","soybean","rice","winter wheat","grass","pile","slash","shrub")
+ind = which(allfires.1hz$fuel != '?' & allfires.1hz$fuel != 'forest' & allfires.1hz$fuel != 'coniferous/decidous' &
+              allfires.1hz$fuel != '' & allfires.1hz$CO_DACOM_DISKIN > 1500)
+tmp = allfires.1hz[ind,]
+tmp$fuel <- factor(tmp$fuel,
+                            levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub"))
+ggplot(tmp)+geom_point(aes(x=HNCO_NOAACIMS_VERES, y=HNO2_NOAACIMS_VERES, col=fuel), size=3) + theme_classic()+
+  scale_color_manual(values = c(cbp1 ))+
+  scale_shape_manual(values =fuelshapes)
+
+# HNCO/HNCO + HCN
+ind = which(allBOTH.filter$formula == 'HCN' & allBOTH.filter$USEME == 1)
+HCN = allBOTH.filter[ind,]
+ind = which(allBOTH.filter$formula == 'HNCO' & allBOTH.filter$USEME == 1)
+HNCO= allBOTH.filter[ind,]
+ind = which(allBOTH.filter$formula == 'NH3' & allBOTH.filter$USEME == 1)
+NH3= allBOTH.filter[ind,]
+ind = which(allBOTH.filter$formula == 'NH4' & allBOTH.filter$USEME == 1)
+NH4 =allBOTH.filter[ind,]
+ind = which(allBOTH.filter$formula == 'NO2' & allBOTH.filter$USEME == 1& allBOTH.filter$fuel != 'forest' & allBOTH.filter$fuel != 'coniferous/decidous')
+NO2 =allBOTH.filter[ind,]
+ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' & allBOTH.filter$USEME == 1 & allBOTH.filter$fuel != 'forest'& allBOTH.filter$fuel != 'coniferous/decidous')
+CO=allBOTH.filter[ind,]
+ggplot()+geom_point(aes(x= HCN$MCE, y=HNCO$FinalERtoCO/(HCN$FinalERtoCO), col=HNCO$fuel), size=3)
+
+ggplot()+geom_point(aes(x= HCN$MCE, y=HCN$FinalERtoCO/(NH3$FinalERtoCO), col=HNCO$fuel), size=3)
+CO$fuel <- factor(CO$fuel,levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub"))
+
+p1=ggplot()+geom_point(aes(x= CO$MCE, y=NO2$FinalERtoCO/(CO$FinalERtoCO), col=CO$fuel), size=3)+
+  theme_classic()+xlab("MCE")+ylab(expression(paste("NO"[2],"/CO")))+labs(col="",shape="")+
+  theme(legend.background=element_blank())+
+  theme(text = element_text(size = 20)) +
+  scale_color_manual(values = c(cbp1 ))
+
+p2=ggplot()+geom_point(aes(x= CO$MCE, y=NO2$FinalERtoCO, col=CO$fuel), size=3)+
+  theme_classic()+xlab("MCE")+ylab(expression(paste("NO"[2])))+labs(col="",shape="")+
+  theme(legend.background=element_blank())+
+  theme(text = element_text(size = 20)) +
+  scale_color_manual(values = c(cbp1 ))
+
+tmp = merge(CO, NO2, by="uniqueid", suffixes = c("CO","NO2"))
+FinalERtoCOCO = as.numeric(tmp$FinalERtoCOCO)
+FinalERtoCONO2 = as.numeric(tmp$FinalERtoCONO2)
+MCECO = as.numeric(tmp$MCECO)
+tt = as.data.frame(cbind(FinalERtoCOCO, FinalERtoCONO2, MCECO))
+tt$fuel = tmp$fuelCO
+tt.med = aggregate(tt, by=list(tmp$fuelCO), FUN='median', na.rm=TRUE)
+f1 = 'Aircraft/1s_MERGES/firexaq-mrg01-dc8_merge_20190830_RL.ict'
+aug30merge = read.csv(f1, skip=674, header=TRUE)
+
+ind = which(allfires.1hz$fuel != 'forest' & allfires.1hz$fuel != '?' & allfires.1hz$fuel != 'coniferous/decidous' & allfires.1hz$fuel != 'savannah' & allfires.1hz$fuel != '')
+ggplot(allfires.1hz[ind,])+geom_point(aes(x=NO2_CL_RYERSON, y=CH4_DACOM_DISKIN, col=fuel), size=3)+xlab("NO2, ppb")+ylab("CH4, ppb")+theme_classic()
+
+ind = which(allBOTH.filter$names == 'NH3' & allBOTH.filter$USEME == 1)
+NH3= allBOTH.filter[ind,]
+ind = which(allBOTH.filter$formula == 'NH4' & allBOTH.filter$USEME == 1)
+NH4 =allBOTH.filter[ind,]
+
+ind = which(allBOTH.filter$names == 'Furan' & allBOTH.filter$USEME == 1)
+FURAN= allBOTH.filter[ind,]
+ind = which(allBOTH.filter$formula == 'C2H2' & allBOTH.filter$USEME == 1)
+C2H2 =allBOTH.filter[ind,]
+FURANC2H2 = merge(FURAN, C2H2, suffixes = c("FURAN","C2H2"), by="uniqueid")
+#FURANC2H2$fuelFURAN <- factor(FURANC2H2$fuelFURAN,levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub"))
+ind =which(FURANC2H2$fuelC2H2 != 'forest')
+ggplot(FURANC2H2[ind,]) + geom_point(aes(x=MCEFURAN,y=(FinalERtoCOC2H2/0.0393)/(FinalERtoCOFURAN/0.0159),  col=fuelFURAN))+theme_classic()+
+  scale_color_manual(values = c(cbp1 ))
+tmp = aggregate(FURANC2H2, by=list(FURANC2H2$fuelC2H2), FUN='median', na.rm=TRUE)
+tmp$TFACT = (tmp$FinalERtoCOC2H2/0.0393)/(tmp$FinalERtoCOFURAN/0.0159)
+
+tmp$BOTH = tmp$FinalERtoCOFURAN+tmp$FinalERtoCOC2H2
+newDATA = as.data.frame(rbind( tmp$MCEC2H2, tmp$FinalERtoCOC2H2/0.0393, tmp$FinalERtoCOFURAN/0.0159))
+colnames(newDATA) = tmp$Group.1
+rownames(newDATA) = c("MCE","C2H2","Furan")
+library(ggplot2); library(reshape)
+test =  melt(newDATA)
+test$CHAR = rep(c("MCE","C2H2","Furan"),9)
+test$CHAR2 = rep(c("MCE","var","var"),9)
+
+# Basic barplot
+ind = which(test$CHAR == 'MCE')
+ind2 = which(test$CHAR == 'C2H2')
+ind3 = which(test$CHAR == 'Furan')
+
+p<-ggplot() +
+  geom_bar(data=test[ind,], aes(x=test$value[ind], y=test$value[ind2]),stat="identity")+
+  geom_bar(data=test[ind,], aes(x=test$value[ind], y=test$value[ind3]),stat="identity")
+
+ind = which(test$CHAR != 'MCE' & test$variable != 'forest' & test$variable != 'winter wheat' & test$variable != 'shrub')
+ind2 = which(test$CHAR == 'MCE'& test$variable != 'forest' & test$variable != 'winter wheat' & test$variable != 'shrub')
+
+p=ggplot(data=test[ind,], aes(x=variable, y=value, fill=CHAR, label=c(test$value[c(ind2,ind2)]))) +
+  geom_bar(stat="identity")
+p+theme_classic()+ylab('ER, ppt/ppb')# + coord_flip()
+
+
+# --------- EC/OC
+ind = which(allBOTH.filter$variable == 'OC_JIMENEZ' & allBOTH.filter$fuel != 'forest' )#& allBOTH.filter$fuel == 'corn')
+OC = allBOTH.filter$FinalEF[ind]
+ind = which(allBOTH.filter$variable == 'BC_SCHWARZ' & allBOTH.filter$fuel != 'forest' )#& allBOTH.filter$fuel == 'corn')
+EC = allBOTH.filter$FinalEF[ind]
+fuel = allBOTH.filter$fuel[ind]
+MCE = allBOTH.filter$MCE[ind]
+tmp =as.data.frame( cbind(OC,EC,fuel,MCE))
+tmp$fuel <- factor(tmp$fuel,
+                   levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub"))
+ggplot(tmp)+geom_point(aes(x=as.numeric(MCE), y=as.numeric(EC)/as.numeric(OC), col=fuel), size=3)+theme_classic()+
+  geom_point(data=xiaoxi,aes(x=xiaoxi$MCE, xiaoxi$BC/xiaoxi$OC), col='green', pch=0, size=3, lwd=3)+
+  scale_color_manual(values = c(cbp1 ))+ylab("EC/OC")+xlab("MCE")
+cor.test(as.numeric(tmp$EC)/as.numeric(tmp$OC), as.numeric(tmp$MCE))
+# ------------------------
+ggplot(tmp)+geom_point(aes(x=HNCO_NOAACIMS_VERES, y=HNO2_NOAACIMS_VERES, col=fuel), size=3) + theme_classic()+
+  scale_color_manual(values = c(cbp1 ))+
+  scale_shape_manual(values =fuelshapes)
+
+# Range of Dates
+require(chron)
+dS1= chron('2019-01-01', '00:00:00', format=c('y-m-d','h:m:s'))-1
+
+ind = which(allfires.1hz$fuel == 'corn')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'soybean')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'winter wheat')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'rice')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'slash')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'pile')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'grass')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+ind = which(allfires.1hz$fuel == 'shrub')
+dS1+unique(allfires.1hz$Julian_date[ind], na.rm=TRUE)
+
+ind = which(allBOTH.filter$fire == 'Ant' |
+              allBOTH.filter$fire == 'Blanket' | allBOTH.filter$fire == 'Chips' |
+              allBOTH.filter$fire == 'Dip' | allBOTH.filter$fire == 'ChipsDip' |
+              allBOTH.filter$fire == 'Escargot' | allBOTH.filter$fire == 'Frisbee' |
+              allBOTH.filter$fire == 'Guac' | allBOTH.filter$fire == 'Hamburger' |
+              allBOTH.filter$fire == 'IPA' | allBOTH.filter$fire == 'Jello' |
+              allBOTH.filter$fire == 'Mustard' | allBOTH.filter$fire == 'Pushmataha' |
+              allBOTH.filter$fire == 'Kebab' | allBOTH.filter$fire == 'Limoncello')
+
+#aug23 = allBOTH.filter[ind,]
+#ind = which(aug23$formula == 'CO' | aug23$formula == 'CO2' | aug23$formula == 'CH4' | aug23$formula == 'EC' |
+#              aug23$PI == 'MOORE' | aug23$formula == 'OC')
+#aug23 = aug23[ind,]
+#write.csv(aug23,'aug23.csv')
+}
 
