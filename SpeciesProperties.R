@@ -35,7 +35,8 @@ mWNO3 = MolecularWeight(formula=list(N=1,O=3))
 mWO3 = MolecularWeight(formula=list(O=3))
 mWI = MolecularWeight(formula=list(I=1))
 mWSSA = 31.4 #?
-mWCl = 35.453 ; mWBr = 79.904
+mWCl = 35.453 ; mWBr = 79.904; mWK = 39.1
+mWC6H5NO4 = MolecularWeight(formula=list(C=6,H=5, N=1, O=4))
 mWHNO2 = MolecularWeight(formula=list(H=1, N=1, O=2))
 mWCH3COCHO = MolecularWeight(formula=list(H=4, C=3, O=2))
 mWCHOCHO = MolecularWeight(formula=list(H=2, C=2, O=2))
@@ -82,6 +83,7 @@ mWCH2ClCH2Cl=MolecularWeight(formula=list(C=2, H=4, Cl=2))
 mWC2H5Cl=MolecularWeight(formula=list(C=2, H=5, Cl=1))
 mWMeONO2 = 77.04
 mWEthONO2 = 91.07
+MWx2ButONO2iButONO2 =119.12;
 mWnPropONO2 = 105.09; mWx2ButONO2 =119.12; mWx3PentONO2 = 133.15; mWx2PentONO2 = 133.15
 mWEthane = MolecularWeight(formula=list(C=2, H=6)); mWEthene = MolecularWeight(formula=list(C=2, H=4))
 mWEthyne = MolecularWeight(formula=list(C=2, H=2)); mWPropene =MolecularWeight(formula=list(C=3, H=6))
@@ -152,8 +154,6 @@ nCAcetaldehyde = 2; nCpropanal = 3; nCButanal=4; nC2Butenals=4
 nCCH3OH=1; nCC2H5OH=2 ; nCMBO =5; nCfurfural=5; nCHCN = 1; nCch3cn=2
 nCMeAcrylonitrile=4; nCPyrrole=4
 
-
-# kOH
 # ----------- OH rate -----------
 TEMP=298 # K
 OHpropeneHP =  1.90E-12*exp(190/TEMP) # HYPROPO2H from the MCM
@@ -166,7 +166,6 @@ OHchocho = 3.1E-12*exp(340/TEMP)
 OHhcooh = 4.5E-13 #MCM
 OHhnco=7E-16
 OHHCN=	2.20E-14
-OHCH2O=	9.37E-12
 OHCH3OH=	8.95E-13
 OHCH3CN=	2.00E-14
 OHCH3CHO=	1.50E-11
