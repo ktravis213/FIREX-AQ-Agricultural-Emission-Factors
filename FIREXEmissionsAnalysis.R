@@ -7,10 +7,11 @@ source('makeplots.R'); source('speciateSpecies.R')
 require(dplyr); require(plyr)
 source('/Users/ktravis1/OneDrive - NASA/FIREX/plotSpeciesMCE.R')
 
-R2filter = 0.75; R2filterCO = 0.90 # stricter criteria for CO as this defines the plume
+R2filter = 0.7; R2filterCO = 0.90 # stricter criteria for CO as this defines the plume
 R2Bot = 0.5 ; COcutoff = 400 # ppb 
 doprocess=0;doprocessSTEP2 =0
-
+OHval = 5E6
+lifetimecutoff = 6 #
 fuelshapes = c(19,15,2,18,7,8,4,2,16,12,13)
 fuellimits = c("corn","soybean","rice","winter wheat","grass","pile","slash","shrub","forest")
 
@@ -170,8 +171,8 @@ if (doprocess == 1){
   allBOTH = merge(all5hz, all1hz, by=c('variable','fire','fuel', 'transect_source_fire_ID','mWs',
                                        'nCs',"Start","Stop","StartO","StopO","pass","uniqueid"),
                   all = TRUE, suffixes = c(".5hz", ".1hz"))#, incomparables = NA) # x = 1Hz, y=5hz
-  allBOTH$lifetime_5hz_hr = 1/(5E6*as.numeric(allBOTH$OHrate.5hz))/60/60
-  allBOTH$lifetime_1hz_hr = 1/(5E6*as.numeric(allBOTH$OHrate.1hz))/60/60
+  allBOTH$lifetime_5hz_hr = 1/(OHval*as.numeric(allBOTH$OHrate.5hz))/60/60
+  allBOTH$lifetime_1hz_hr = 1/(OHval*as.numeric(allBOTH$OHrate.1hz))/60/60
   
   allBOTH$PI = ''
   for (i in 1:length(allBOTH$PI)){
@@ -346,7 +347,7 @@ if (doprocess == 1){
   for (i in 1:length(ff)){
     for (j in 1:length(gg)){
       ind = which(allBOTH.filter$uniqueid == ff[i] & allBOTH.filter$variable == gg[j])
-      allBOTH.filter$Category.5hz[ind] = max(as.numeric(allBOTH.filter$Category.1hz[ind]), na.rm=TRUE) # they should all be the same, just fill in
+      allBOTH.filter$Category.5hz[ind] = max(c(as.numeric(allBOTH.filter$Category.1hz[ind]),as.numeric(allBOTH.filter$Category.5hz[ind])), na.rm=TRUE) # they should all be the same, just fill in
     }
   }
   
@@ -364,6 +365,8 @@ if (doprocess == 1){
 } else{
   load('AllBOTH.filter.RData')
 }# end do process
+
+
 # ---- Remove very strange outliers -----
 # TOGA struggles with Wiggins-neighbor pass 2 & Limoncello 3
 ind = which(allBOTH.filter$fire == 'Wiggins-neighbor' & allBOTH.filter$pass == 2 & allBOTH.filter$PI == 'ppt')
@@ -422,13 +425,13 @@ if (doprocessSTEP2 == 1){
   
   allBOTH.filter.allfuels = allBOTH.filter
   # provide the dominant fuel class for the 1hz data
-  ff = unique(allBOTH.filter.allfuels$uniqueid)
-  for (i in 1:length(ff)){
-    ind = which(allBOTH.filter.allfuels$uniqueid == ff[i] )
-    allBOTH.filter.allfuels$transect_dominant_fuel.5hz[ind] = max(allBOTH.filter.allfuels$transect_dominant_fuel.1hz[ind], na.rm=TRUE) # they should all be the same, just fill in
-    allBOTH.filter.allfuels$transect_fuel_class.5hz[ind] = max(allBOTH.filter.allfuels$transect_fuel_class.1hz[ind], na.rm=TRUE) # they should all be the same, just fill in
-    allBOTH.filter.allfuels$transect_fuel_confidence.5hz[ind] = max(allBOTH.filter.allfuels$transect_fuel_confidence.1hz[ind], na.rm=TRUE) # they should all be the same, just fill in
-  }
+ # ff = unique(allBOTH.filter.allfuels$uniqueid)
+#  for (i in 1:length(ff)){
+#    ind = which(allBOTH.filter.allfuels$uniqueid == ff[i] )
+#    allBOTH.filter.allfuels$transect_dominant_fuel.5hz[ind] = max(allBOTH.filter.allfuels$transect_dominant_fuel.1hz[ind], na.rm=TRUE) # they should all be the same, just fill in
+#    allBOTH.filter.allfuels$transect_fuel_class.5hz[ind] = max(allBOTH.filter.allfuels$transect_fuel_class.1hz[ind], na.rm=TRUE) # they should all be the same, just fill in
+#    allBOTH.filter.allfuels$transect_fuel_confidence.5hz[ind] = max(allBOTH.filter.allfuels$transect_fuel_confidence.1hz[ind], na.rm=TRUE) # they should all be the same, just fill in
+ # }
   # Dominant fuel class
   #1	Forest
   #2	Savanna
@@ -445,8 +448,8 @@ if (doprocessSTEP2 == 1){
 
   # ------- get rid of non-ag fuels ------------
   # Use the new flags from Amber
-  ind = which(allBOTH.filter.allfuels$transect_fuel_class.5hz >= 3 &
-                allBOTH.filter.allfuels$transect_fuel_class.5hz <= 7)
+  #ind = which(allBOTH.filter.allfuels$transect_fuel_class.5hz >= 3 &
+  #              allBOTH.filter.allfuels$transect_fuel_class.5hz <= 7)
   ind = which(allBOTH.filter.allfuels$fuel != '?' & allBOTH.filter.allfuels$fuel != 'house')
   # lets keep all the fuels but '?' for now, and filter after calculating more stuff
   #ind = which(allBOTH.filter.allfuels$fuel == 'slash' | allBOTH.filter.allfuels$fuel == 'pile' | 
@@ -499,9 +502,9 @@ if (doprocessSTEP2 == 1){
   pot = allBOTH.filter[ind1,]
   for (i in 1:length(oc$variable)){
     newline = oc[i,]
-    vars = c(oc$FinalEF[i]*oc$OAtoOC.1hz[i],bc$FinalEF[i],ammonium$FinalEF[i],
+    vars = c(oc$FinalEF[i]*oc$OAtoOC.5hz[i],bc$FinalEF[i],ammonium$FinalEF[i],
              sulf$FinalEF[i],nit$FinalEF[i],nrcl$FinalEF[i], pot$FinalEF[i])
-    varsER = c(oc$FinalERtoCO[i]*oc$OAtoOC.1hz[i],bc$FinalERtoCO[i],ammonium$FinalERtoCO[i],
+    varsER = c(oc$FinalERtoCO[i]*oc$OAtoOC.51hz[i],bc$FinalERtoCO[i],ammonium$FinalERtoCO[i],
              sulf$FinalERtoCO[i],nit$FinalERtoCO[i],nrcl$FinalERtoCO[i],pot$FinalERtoCO[i])
     # only sum PM1 if we have OC
     newline$FinalEF = NaN
@@ -773,7 +776,7 @@ if (doprocessSTEP2 == 1){
   ind = which(allBOTH.filter$variable == 'CH2Br2_ppt')
   allBOTH.filter$USEME[ind] =-1
   # -- Actually just use TOGA furan, methyl furan, and furfural per GIGI's paper 
-  ind = which(allBOTH.filter$names == 'Furan' & allBOTH.filter$PI == 'WARNEKE'  ) 
+  ind = which(allBOTH.filter$names == ' Furan and fragments' & allBOTH.filter$PI == 'WARNEKE'  ) 
   allBOTH.filter$USEME[ind] = 0
   ind = which(allBOTH.filter$names == 'sum of 2-methylfuran 3-methylfuran and fragments' & allBOTH.filter$PI == 'WARNEKE'  ) 
   allBOTH.filter$USEME[ind] = 0
@@ -819,10 +822,20 @@ if (doprocessSTEP2 == 1){
   ind = which(allBOTH.filter$names == 'Formaldehyde' & allBOTH.filter$PI == 'WARNEKE')
   allBOTH.filter$USEME[ind] = 0
   
-  # All but WAS agree so just keep warneke
-  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI != 'WARNEKE')
-  allBOTH.filter$USEME[ind] = 0
+  # All but WAS agree so just keep warneke for MEK, but average iWAS and TOGA for table
+  #allBOTH.filter = mergelines(allBOTH.filter,  'MEK_ppt','MEK_NOAAiWAS_GILMAN')
   
+  ind = which(allBOTH.filter$names == 'MEK/ 2-methyl propanal' & allBOTH.filter$PI == 'WARNEKE')
+  allBOTH.filter$USEME[ind] = 1
+  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI == 'GILMAN')#
+  allBOTH.filter$USEME[ind] = 0
+  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI == 'BLAKE' )
+  allBOTH.filter$USEME[ind] = 0
+  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' &  allBOTH.filter$PI == 'ppt')
+  allBOTH.filter$USEME[ind] = 0
+  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI != 'WARNEKE' & allBOTH.filter$PI != 'GILMAN' &
+                allBOTH.filter$PI != 'ppt' & allBOTH.filter$PI != 'BLAKE')
+  allBOTH.filter$USEME[ind] = 2
   # Stategy - maybe average the 'short' measurements?
   # ------ Make averages of specific species, set USME for individuals == 0 -----------
   # --- Average Fried and Hanisco HCHO
@@ -863,10 +876,14 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter = mergelines(allBOTH.filter, 'MeCycHexane_NOAAiWAS_GILMAN','MeCycHexane_WAS_BLAKE')
   # --- Average Toga AND BLAKE Camphene
   allBOTH.filter = mergelines(allBOTH.filter, 'Camphene_WAS_BLAKE','Camphene_ppt')
-  # --- Average Toga AND BLAKE Isobutanal
-  allBOTH.filter = mergelines(allBOTH.filter, 'iButanal_WAS_BLAKE','iButanal_ppt')
-  # --- Average Toga AND BLAKE Butanal
-  allBOTH.filter = mergelines(allBOTH.filter, 'Butanal_WAS_BLAKE','Butanal_ppt')
+  # --- Average Toga AND BLAKE Isobutanal # actually just use TOGA
+  ind = which(allBOTH.filter$variable == 'iButanal_WAS_BLAKE')
+  allBOTH.filter$USEME[ind] = 0
+#  allBOTH.filter = mergelines(allBOTH.filter, 'iButanal_WAS_BLAKE','iButanal_ppt')
+  # --- Average Toga AND BLAKE Butanal  # actually just use TOGA
+  #allBOTH.filter = mergelines(allBOTH.filter, 'Butanal_WAS_BLAKE','Butanal_ppt')
+  ind = which(allBOTH.filter$variable == 'Butanal_WAS_BLAKE')
+  allBOTH.filter$USEME[ind] = 0
   # --- Average Toga AND BLAKE CH3I
   allBOTH.filter = mergelines(allBOTH.filter, 'CH3I_WAS_BLAKE','CH3I_ppt')
   # --- Average Toga AND BLAKE CH2Cl2 - does seem emitted from corn
@@ -924,19 +941,23 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter = mergelines3(allBOTH.filter, 'aPinene_ppt','aPinene_WAS_BLAKE','aPinene_NOAAiWAS_GILMAN')
   # --- Average BLAKE, APEL isopropanol
   allBOTH.filter = mergelines(allBOTH.filter, 'iPropanol_ppt','iPropanol_WAS_BLAKE')
-  # --- Average BLAKE, APEL methyl acetate
-  allBOTH.filter = mergelines(allBOTH.filter, 'MeAcetate_ppt','MeAcetate_WAS_BLAKE')
+  # --- Average BLAKE, APEL methyl acetate - actually just use TOGA
+  ind = which(allBOTH.filter$variable == 'MeAcetate_WAS_BLAKE')
+  allBOTH.filter$USEME == 0
+  #  allBOTH.filter = mergelines(allBOTH.filter, 'MeAcetate_ppt','MeAcetate_WAS_BLAKE')
   # Use warneke for the total VOC, but keep for table
-  ind = which(allBOTH.filter$names == 'Methyl acetate')
+  ind = which(allBOTH.filter$variable == 'MeAcetate_ppt')
   allBOTH.filter$USEME[ind] == 2
   # For betapinene/myrcene, lets add was together, then average with TOGA
   ind = which(allBOTH.filter$variable == 'Myrcene_WAS_BLAKE')
   ind2 = which(allBOTH.filter$variable == 'bPinene_WAS_BLAKE')
-  allBOTH.filter$USEME[ind2] = 0
-  allBOTH.filter$FinalEF[ind] = rowSums(cbind(allBOTH.filter$FinalEF[ind],allBOTH.filter$FinalEF[ind2]), na.rm=TRUE)
-  allBOTH.filter$FinalERtoCO[ind] = rowSums(cbind(allBOTH.filter$FinalERtoCO[ind],allBOTH.filter$FinalERtoCO[ind2]), na.rm=TRUE)
-  allBOTH.filter$variable[ind] = 'bPinene/Myrcene_WAS_BLAKE'
-  allBOTH.filter$names[ind] = 'beta-Pinene/Myrcene'
+  tmp1 = allBOTH.filter[ind,]; tmp2 = allBOTH.filter[ind2,]
+
+  tmp1$FinalEF = rowSums(cbind(tmp1$FinalEF,tmp2$FinalEF), na.rm=TRUE)
+  tmp1$FinalERtoCO = rowSums(cbind(tmp1$FinalERtoCO,tmp2$FinalERtoCO), na.rm=TRUE)
+  tmp1$variable = 'bPinene/Myrcene_WAS_BLAKE'
+  tmp1$names = 'beta-Pinene/Myrcene'
+  allBOTH.filter = rbind(allBOTH.filter,tmp1)
   # have zeros though now instead of NaNs
   ind = which(allBOTH.filter$variable == 'bPinene/Myrcene_WAS_BLAKE' & allBOTH.filter$FinalEF == 0.0)
   allBOTH.filter$FinalEF[ind] = NaN
@@ -968,17 +989,21 @@ if (doprocessSTEP2 == 1){
   # --- Average wennberg, gilman, toga acrylonitrile
   allBOTH.filter = mergelines4(allBOTH.filter,'Acrylonitrile_NOAAPTR_ppbv_WARNEKE', 'Acrylonitrile_ppt','Acrylonitrile_NOAAiWAS_GILMAN', 'Acrylonitrile_WAS_BLAKE')
   # --- Average wennberg, veres, warneke, and apel hydrogen cyanide - Ok, per Lu Xu, don't use WARNEKE as it may have a water interference
-  ind = which(allBOTH.filter$variable == 'HCN_NOAAPTR_ppbv_WARNEKE')
-  allBOTH.filter$USEME[ind] =0
-  allBOTH.filter = mergelines3(allBOTH.filter, 'HCN_NOAACIMS_VERES','HCN_WENNBERG','HCN_ppt')
+  # water intereference is now fixed
+  allBOTH.filter = mergelines4(allBOTH.filter, 'HCN_NOAACIMS_VERES','HCN_WENNBERG','HCN_ppt','HCN_NOAAPTR_ppbv_WARNEKE')
   # --- Average Apel AND BLAKE propionitrile
   allBOTH.filter = mergelines(allBOTH.filter, 'PropNitrile_ppt','PropNitrile_WAS_BLAKE')
   # --- Average Apel AND BLAKE DMS
   allBOTH.filter = mergelines(allBOTH.filter, 'PropNitrile_ppt','PropNitrile_WAS_BLAKE')
-  # --- Average BLAKE and APEL 2-methylfuran
-  allBOTH.filter = mergelines(allBOTH.filter, 'x2MeFuran_WAS_BLAKE','x2MeFuran_ppt')
+  # --- Average BLAKE and APEL 2-methylfuran ***actually just use TOGA
+  ind = which(allBOTH.filter$variable == 'x2MeFuran_WAS_BLAKE')
+  allBOTH.filter$USEME[ind] = 0
+  ind = which(allBOTH.filter$variable == 'x3MeFuran_WAS_BLAKE')
+  allBOTH.filter$USEME[ind] = 0
+  
+#  allBOTH.filter = mergelines(allBOTH.filter, 'x2MeFuran_WAS_BLAKE','x2MeFuran_ppt')
   # --- Average BLAKE and APEL 3-methylfuran
-  allBOTH.filter = mergelines(allBOTH.filter, 'x3MeFuran_WAS_BLAKE','x3MeFuran_ppt')
+#  allBOTH.filter = mergelines(allBOTH.filter, 'x3MeFuran_WAS_BLAKE','x3MeFuran_ppt')
   # keep for the table, use WARNEKE for the total
   # actually use TOGA per Gigi's table
   #ind = which(allBOTH.filter$names== '2-Methylfuran' & allBOTH.filter$USEME == 1)
@@ -987,9 +1012,10 @@ if (doprocessSTEP2 == 1){
   #allBOTH.filter$USEME[ind] =2
   # --- Average BLAKE and APEL propane
   allBOTH.filter = mergelines(allBOTH.filter, 'Propane_WAS_BLAKE','Propane_NOAAiWAS_GILMAN')
-  
-  # --- Average GILMAN, BLAKE, APEL Furan
-  allBOTH.filter = mergelines3(allBOTH.filter, 'Furan_ppt','Furan_WAS_BLAKE','Furan_NOAAiWAS_GILMAN')
+  # --- *****  Average GILMAN, BLAKE, APEL Furan - actually just use TOGA *********
+  ind = which(allBOTH.filter$variable == 'Furan_WAS_BLAKE' | allBOTH.filter$variable == 'Furan_NOAAiWAS_GILMAN')
+  allBOTH.filter$USEME[ind] = 0
+#  allBOTH.filter = mergelines3(allBOTH.filter, 'Furan_ppt','Furan_WAS_BLAKE','Furan_NOAAiWAS_GILMAN')
   # For furan, use TOGA per Gigi's paper
   #ind2 = which(allBOTH.filter$names == 'Furan' & allBOTH.filter$USEME == 1 )
   #allBOTH.filter$USEME[ind] = 2 # keep for the table, not for the total
@@ -1046,16 +1072,69 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter = mergelines3(allBOTH.filter, 'DMS_ppt','DMS_WAS_BLAKE','DMS_NOAAPTR_ppbv_WARNEKE')
   
   allBOTH.filter = mergelines3(allBOTH.filter, 'Ethane_WAS_BLAKE','Ethane_NOAAiWAS_GILMAN','C2H6_CAMS_pptv_FRIED')
+  # Oh actually want to report NOy ER
+  ind = which(allBOTH.filter$formula == 'NOy')
+  allBOTH.filter$USEME[ind] = 1
   # ------ Lifetime category ---------
-  ind = which(allBOTH.filter$variable == 'x23Butanedione_NOAAPTR_ppbv_WARNEKE') # fast photolysis
-  allBOTH.filter$lifetime_5hz_hr[ind] = 4 # 
-  allBOTH.filter$lifetime_1hz_hr[ind] = 4 # 1
-  allBOTH.filter$lifetime[ind] = 4 # 1
+  # ------- Add jvalues --------------
+  # jvalues
+  hall1 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190821_R0_20221004T143858.ict')
+  hall2 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190823_R0_20221004T143901.ict')
+  hall3 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190826_R0_20221004T143904.ict')
+  hall4 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190829_R0_20221004T143907.ict')
+  hall5 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190830_R0_20221004T143909.ict')
+  hall6 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190831_R0_20221004T143913.ict')
+  hall7 = getICARTTdataSIMPLE('Aircraft/HALL/firexaq-HALL_dc8_20190903_R0_20221004T143916.ict')
+  hall = rbind(hall1,hall2,hall3,hall4,hall5,hall6,hall7)
+  hall$LST = hall$Time_Start/60/60-5
+  allBOTH.filter$lifetime_jval = NaN
+  ind2 = which(hall$LST >= 10 & hall$LST <= 17)
+  
+  ind = which(allBOTH.filter$names == 'Formaldehyde')
+  allBOTH.filter$lifetime_jval[ind] =1/ mean(hall$jCH2O_H2_CO_CAFS_HALL[ind2]+hall$jCH2O_H_HCO_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Acetaldehyde')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jCH3CHO_CH3_HCO_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Propanal')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jCH3CHO_CH3_HCO_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' | allBOTH.filter$variable == 'C4Carbonyls_NOAAPTR_ppbv_WARNEKE')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jMEK_CH3CO_CH2CH3_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$variable == 'x23Butanedione_NOAAPTR_ppbv_WARNEKE')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$j23Butanedione_NoProductsSpecified_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Acetone')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jAcetone_CH3CO_CH3_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Methylglyoxal')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jCH3COCHO_CH3CO_HCO_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$variable == 'C3H6O2_NOAAPTR_ppbv_WARNEKE')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jHydroxyacetone_CH3CO_CH3O_CAFS_HALL[ind2]+
+                                               hall$jHydroxyacetone_CH3COO_CH3_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Glyoxal')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jCHOCHO_CH2O_CO_CAFS_HALL[ind2]+
+                                               hall$jCHOCHO_H2_2CO_CAFS_HALL[ind2]+ 
+                                               hall$jCHOCHO_HCO_HCO_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Methyl vinyl ketone')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jMVK_NoProductsSpecified_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Methacrolein')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jMAC_NoProductsSpecified_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Nitrous acid')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jHNO2_OH_NO_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Nitric acid')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jHNO3_OH_NO2_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Nitrogen dioxide')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jNO2_NO_O3P_CAFS_HALL[ind2], na.rm=TRUE)/60/60
+  ind = which(allBOTH.filter$names == 'Nitryl chloride')
+  allBOTH.filter$lifetime_jval[ind] = 1/mean(hall$jClNO2_Cl_NO2_CAFS_HALL[ind2][ind2], na.rm=TRUE)/60/60
+  
+  # add lifetimes in parallel
+  allBOTH.filter$lifetime_oh_1hz_hr = allBOTH.filter$lifetime_1hz_hr # don't overwrite this
+  allBOTH.filter$lifetime_oh_5hz_hr = allBOTH.filter$lifetime_5hz_hr # don't overwrite this
+  ind = which(is.finite(allBOTH.filter$lifetime_jval))
+  allBOTH.filter$lifetime_1hz_hr[ind] = 1/( 1/allBOTH.filter$lifetime_oh_1hz_hr[ind] + 1/allBOTH.filter$lifetime_jval[ind])
+  allBOTH.filter$lifetime_5hz_hr[ind] = 1/( 1/allBOTH.filter$lifetime_oh_5hz_hr[ind] + 1/allBOTH.filter$lifetime_jval[ind])
   
   allBOTH.filter$LifetimeCat = 1 # assume fast if I haven't found an OH rate yet
-  ind = which(allBOTH.filter$lifetime_1hz_hr <= 12 | allBOTH.filter$lifetime_5hz_hr <= 12)
+  ind = which(allBOTH.filter$lifetime_1hz_hr <= lifetimecutoff | allBOTH.filter$lifetime_5hz_hr <= lifetimecutoff)
   allBOTH.filter$LifetimeCat[ind] = 1
-  ind = which(allBOTH.filter$lifetime_1hz_hr > 12 | allBOTH.filter$lifetime_5hz_hr > 12)
+  ind = which(allBOTH.filter$lifetime_1hz_hr > lifetimecutoff | allBOTH.filter$lifetime_5hz_hr > lifetimecutoff)
   allBOTH.filter$LifetimeCat[ind] = 2
   
   # Need category to be the same
@@ -1064,7 +1143,9 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter$Category[ind] = allBOTH.filter$Category.1hz[ind]
   
   # For monoterpenes, make everything USEME = 2 except for WARNEKE
-  ind = which(allBOTH.filter$names == 'Camphene' | allBOTH.filter$names == 'beta-Pinene/Myrcene' | allBOTH.filter$names == 'alpha-Pinene' | allBOTH.filter$names == 'Tricyclene')
+  ind = which(allBOTH.filter$names == 'Camphene' | allBOTH.filter$names == 'beta-Pinene/Myrcene' | 
+                allBOTH.filter$names == 'beta-Pinene'| allBOTH.filter$names == 'Myrcene' | 
+                allBOTH.filter$names == 'alpha-Pinene' | allBOTH.filter$names == 'Tricyclene')
   ind2 = which(allBOTH.filter$USEME[ind] == 1)
   allBOTH.filter$USEME[ind[ind2]] =2
   # ------------  Make a total VOC emission factor -------------
@@ -1201,7 +1282,7 @@ for (i in 1:length(badCH4passes)){
   allBOTH.filter$FinalERtoCO[ind] = NaN
 }
 
-# Make a NOx as NO
+# ------- Make a NOx as NO -------
 ind = which(allBOTH.filter$formula == 'NO' & allBOTH.filter$USEME == 1)
 tmpNO = allBOTH.filter[ind,]
 
@@ -1210,7 +1291,7 @@ tmpNO2 = allBOTH.filter[ind,]
 
 for (i in 1:length(tmpNO$variable)){
   ind = which(tmpNO2$uniqueid == tmpNO$uniqueid[i])
-  tmpNO$FinalEF[i] = tmpNO$FinalEF[i] + tmpNO2$FinalEF[ind] * 30/46
+  tmpNO$FinalEF[i] = tmpNO$FinalEF[i] + tmpNO2$FinalEF[ind] * mWNO/mWNO2
   tmpNO$FinalERtoCO[i] = tmpNO$FinalERtoCO[i] + tmpNO2$FinalERtoCO[ind] 
   tmpNO$variable[i] = 'NOx (as NO)'
   tmpNO$names[i] = 'NOx (as NO)'
@@ -1218,6 +1299,25 @@ for (i in 1:length(tmpNO$variable)){
   
 }
 allBOTH.filter = rbind(allBOTH.filter,tmpNO)
+
+# ----- Make a pNO3 + HNO3 as HNO3 -------
+ind = which(allBOTH.filter$formula == 'NO3' & allBOTH.filter$USEME == 1)# & allBOTH.filter$fuel != 'forest')
+tmpNO3 = allBOTH.filter[ind,]
+
+ind = which(allBOTH.filter$formula == 'HNO3' & allBOTH.filter$USEME == 1)#& allBOTH.filter$fuel != 'forest')
+tmpHNO3 = allBOTH.filter[ind,]
+
+for (i in 1:length(tmpNO3$variable)){
+  ind = which(tmpHNO3$uniqueid == tmpNO3$uniqueid[i])
+  tmpNO3$FinalEF[i] = tmpHNO3$FinalEF[i] + tmpNO3$FinalEF[ind] * mWHNO3/mWNO3
+  tmpNO3$FinalERtoCO[i] = tmpHNO3$FinalERtoCO[i] + tmpNO3$FinalERtoCO[ind] 
+  tmpNO3$variable[i] = 'pN (as HNO3)'
+  tmpNO3$names[i] = 'pN (as HNO3)'
+  tmpNO3$formula[i] = 'pN (as HNO3)'
+  
+}
+allBOTH.filter = rbind(allBOTH.filter,tmpNO3)
+
 # ---- Total carbon with CO+CO2+CH4 vs. everything -----
 #plot(allBOTH.filter$TC2CO.1hz, allBOTH.filter$TC1CO.1hz, xlim=c(0,45), ylim=c(0,45))
 #abline(lm(allBOTH.filter$TC1CO.1hz~allBOTH.filter$TC2CO.1hz+0))
@@ -1315,8 +1415,11 @@ for (i in 1:length(passes)){
 # Do we still have negative EFs????
 ind = which(allBOTH.filter$FinalEF < 0 & allBOTH.filter$Category != 5 & is.finite(allBOTH.filter$Category))
 allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN; allBOTH.filter$MCE[ind] = NaN
-# --Remove aged blackwater
-ind = which(allBOTH.filter$fire == 'BlackwaterRiver' & allBOTH.filter$MAtoF.5hz > 0.2)
+# --Remove aged all plumes not just blackwater
+ind = which(allBOTH.filter$MAtoF_rq.5hz < 0.7 | is.nan(allBOTH.filter$MAtoF.5hz))
+allBOTH.filter$MAtoF.5hz[ind] = .2 # kludge to not get rid of poorly calculated MAtoF
+ind = which( allBOTH.filter$MAtoF.5hz > 0.2)
+write.csv(allBOTH.filter[ind,],file='removedforMAtoF.csv')
 allBOTH.filter$FinalEF[ind] = NaN; allBOTH.filter$FinalERtoCO[ind] = NaN; allBOTH.filter$MCE[ind] = NaN
 
 dokludge = 1
@@ -1383,363 +1486,369 @@ if (dokludge == 1){
 #ind = which(allBOTH.filter$variable == 'PM1' & allBOTH.filter$names == 'Organic Carbon')
 #allBOTH.filter <- allBOTH.filter[-c(ind), ]
 q1 = 0.25; q2=0.75
-
-# Just for ag + prescribed
-ind = which(allBOTH.filter$fuel == 'corn' | allBOTH.filter$fuel == 'soybean' |  allBOTH.filter$fuel == 'rice' |
-              allBOTH.filter$fuel == 'pile' | allBOTH.filter$fuel == 'slash' )
-quantile(allBOTH.filter$MCE[ind], na.rm=TRUE)
-allBOTH.filter.median = aggregate(allBOTH.filter[ind,], by=list(allBOTH.filter$variable[ind]), FUN='median', na.rm=TRUE)
-allBOTH.filter.25 = aggregate(allBOTH.filter$FinalEF[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q1),na.rm=TRUE)
-allBOTH.filter.75 = aggregate(allBOTH.filter$FinalEF[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q2),na.rm=TRUE)
-allBOTH.filter.25ER = aggregate(allBOTH.filter$FinalERtoCO[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q1),na.rm=TRUE)
-allBOTH.filter.75ER = aggregate(allBOTH.filter$FinalERtoCO[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q2),na.rm=TRUE)
-allBOTH.filter.median$FinalEF_25 = allBOTH.filter.25$x
-allBOTH.filter.median$FinalEF_75 = allBOTH.filter.75$x
-allBOTH.filter.median$FinalERtoCO_25 = allBOTH.filter.25ER$x
-allBOTH.filter.median$FinalERtoCO_75 = allBOTH.filter.75ER$x
-
-ind = which(allBOTH.filter$fuel == 'corn')
-allBOTH.filter.corn.median = aggregate(allBOTH.filter[ind,],
-    by=list(allBOTH.filter$variable[ind]), FUN='median', na.rm=TRUE)
-# PM1 breakdown
-ind = which(allBOTH.filter.median$Category == 4)
-tmp = allBOTH.filter.median[ind,]
-# Average by individual fuel and species
-# medians
-allBOTH.filter.median.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), FUN='median', na.rm=TRUE)
-allBOTH.filter.mean.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable),   FUN='mean', na.rm=TRUE)
-allBOTH.filter.sd.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), FUN='sd', na.rm=TRUE)
-
-allBOTH.filter.median.fuel$FinalEF_mean = allBOTH.filter.mean.fuel$FinalEF
-allBOTH.filter.median.fuel$FinalEF_sd = allBOTH.filter.sd.fuel$FinalEF
-
-allBOTH.filter.25.fuel = aggregate(allBOTH.filter$FinalEF, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q1),na.rm=TRUE)
-allBOTH.filter.75.fuel = aggregate(allBOTH.filter$FinalEF, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q2),na.rm=TRUE)
-allBOTH.filter.25.fuelER = aggregate(allBOTH.filter$FinalERtoCO, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q1),na.rm=TRUE)
-allBOTH.filter.75.fuelER = aggregate(allBOTH.filter$FinalERtoCO, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q2),na.rm=TRUE)
-
-allBOTH.filter.median.fuel$FinalEF_25 = allBOTH.filter.25.fuel$x
-allBOTH.filter.median.fuel$FinalEF_75 = allBOTH.filter.75.fuel$x
-allBOTH.filter.median.fuel$FinalERtoCO_25 = allBOTH.filter.25.fuelER$x
-allBOTH.filter.median.fuel$FinalERtoCO_75 = allBOTH.filter.75.fuelER$x
-
-# need to recover fire, kind, formula, and names
-allBOTH.filter.median.fuel$variable = allBOTH.filter.median.fuel$Group.2
-for (i in 1:length(allBOTH.filter.median.fuel$kind)){
-  ind = which(allBOTH.filter$variable == allBOTH.filter.median.fuel$Group.2[i])
-  allBOTH.filter.median.fuel$kind[i] = allBOTH.filter$kind[ind[1]]
-  allBOTH.filter.median.fuel$formula[i] = allBOTH.filter$formula[ind[1]]
-  allBOTH.filter.median.fuel$names[i] = allBOTH.filter$names[ind[1]]
-  allBOTH.filter.median.fuel$PI[i] = allBOTH.filter$PI[ind[1]]
- # print(c(allBOTH.filter$variable[ind[1]], allBOTH.filter.median.fuel$Group.2[i]))
-}
-for (i in 1:length(allBOTH.filter.median$kind)){
-  ind = which(allBOTH.filter$variable == allBOTH.filter.median$Group.1[i])
-  allBOTH.filter.median$kind[i] = allBOTH.filter$kind[ind[1]]
-  allBOTH.filter.median$formula[i] = allBOTH.filter$formula[ind[1]]
-  allBOTH.filter.median$names[i] = allBOTH.filter$names[ind[1]]
-  allBOTH.filter.median$PI[i] = allBOTH.filter$PI[ind[1]]
-  # print(c(allBOTH.filter$variable[ind[1]], allBOTH.filter.median.fuel$Group.2[i]))
-}
-for (i in 1:length(allBOTH.filter.mean.fuel$kind)){
-  ind = which(allBOTH.filter$variable == allBOTH.filter.mean.fuel$Group.2[i])
-  allBOTH.filter.mean.fuel$kind[i] = allBOTH.filter$kind[ind[1]]
-  allBOTH.filter.mean.fuel$formula[i] = allBOTH.filter$formula[ind[1]]
-  allBOTH.filter.mean.fuel$names[i] = allBOTH.filter$names[ind[1]]
-  allBOTH.filter.mean.fuel$PI[i] = allBOTH.filter$PI[ind[1]]
-}
-
-
-# --------- Get Plume Counts by FUEL ---------------------------------------------
-# REDO
-ff = unique(allBOTH.filter$uniqueid) # need to redo this
-allBOTH.filter$MCE = NaN
-for (i in 1:length(ff)){
-  ind = which(allBOTH.filter$uniqueid == ff[i] )
-  allBOTH.filter$MCE[ind] = max(as.numeric(allBOTH.filter$mce.5hz[ind]), na.rm=TRUE) # they should all be the same, just fill in
-}
-allBOTH.filter.median.fuel= getplumesANDmcebyfuel(allBOTH.filter.median.fuel, allBOTH.filter )
-
-# --------------------------- Speciate these NOAA PTRMS species based on TOGA -----------------------------------------
-# --------- Sum of m-xylene p-xylene o-xylene and ethyl benzene -------
-# -------- AcetonePropanal --------------
-# -------- MVK/MACR/2Butenals -------
-allBOTH.filter.median.fuel = speciateSpecies(allBOTH.filter.median.fuel)
-allBOTH.filter.median = speciateSpecies(allBOTH.filter.median)
- # C4Carbonyls_NOAAPTR_ppbv
-ind = which(allBOTH.filter.median.fuel$variable == 'C4Carbonyls_NOAAPTR_ppbv_WARNEKE')
-ind = which(allBOTH.filter.median.fuel$names == 'MEK')
-
-# Make larger fuel categories
-allBOTH.filter$fuelORIG = allBOTH.filter$fuel
-allBOTH.filter$fuel2 = allBOTH.filter$fuel
-ind = which(allBOTH.filter$fuel2 == 'corn' | allBOTH.filter$fuel2 == 'soybean' | allBOTH.filter$fuel2 == 'rice' |
-              allBOTH.filter$fuel2 == 'winter wheat')
-allBOTH.filter$fuel2[ind] = 'agriculture'
-ind = which(allBOTH.filter$fuel2 == 'pile' | allBOTH.filter$fuel2 == 'slash' | allBOTH.filter$fuel2 == 'shrub')
-allBOTH.filter$fuel2[ind] = 'prescribed'
-ind = which(allBOTH.filter$fire == 'BlackwaterRiver')
-allBOTH.filter$fuel2[ind] = 'Blackwater'
-
-# MCE hist
-ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN')
-tmpCO = allBOTH.filter[ind,]
-ind = which(tmpCO$fuel2 == 'Blackwater' & tmpCO$MAtoF.5hz > 0.2)
-tmpCO$FinalEF[ind] = NaN
-ind = which(tmpCO$fuel2 != 'forest' & tmpCO$fuel2 != 'coniferous/decidous' & is.finite(tmpCO$FinalEF))
-min(tmpCO$MCE[ind])
-# ------- names --------
-bnames=c('OCS_WAS_BLAKE', 'DMS_WAS_BLAKE', 'CFC12_WAS_BLAKE', 'CFC11_WAS_BLAKE', 'CFC113_WAS_BLAKE', 'CFC114_WAS_BLAKE', 
-         'HFC152a_WAS_BLAKE', 'HFC134a_WAS_BLAKE', 'HFC365mfc_WAS_BLAKE', 'HCFC22_WAS_BLAKE', 'HCFC142b_WAS_BLAKE', 'HCFC141b_WAS_BLAKE', 
-         'H1301_WAS_BLAKE', 'H2402_WAS_BLAKE', 'H1211_WAS_BLAKE', 'CH3CCl3_WAS_BLAKE', 'CCl4_WAS_BLAKE', 'CHCl3_WAS_BLAKE', 'CH2Cl2_WAS_BLAKE', 
-         'C2HCl3_WAS_BLAKE', 'C2Cl4_WAS_BLAKE', 'CH3Cl_WAS_BLAKE', 'CH3Br_WAS_BLAKE', 'CH3I_WAS_BLAKE', 'CH2Br2_WAS_BLAKE', 'CHBrCl2_WAS_BLAKE', 
-         'CHBr2Cl_WAS_BLAKE', 'CHBr3_WAS_BLAKE', 'CH2ClCH2Cl_WAS_BLAKE', 'C2H5Cl_WAS_BLAKE', 'MeONO2_WAS_BLAKE', 'EthONO2_WAS_BLAKE', 
-         'iPropONO2_WAS_BLAKE', 'nPropONO2_WAS_BLAKE', 'x2ButONO2_WAS_BLAKE', 'x3PentONO2_WAS_BLAKE', 'x2PentONO2_WAS_BLAKE', 
-         'x3Me2ButONO2_WAS_BLAKE', 'Ethane_WAS_BLAKE', 'Ethene_WAS_BLAKE', 'Ethyne_WAS_BLAKE', 'Propene_WAS_BLAKE', 'Propane_WAS_BLAKE', 
-         'Propadiene_WAS_BLAKE', 'Propyne_WAS_BLAKE', 'iButane_WAS_BLAKE', 'nButane_WAS_BLAKE', 'x1Butene_WAS_BLAKE', 'iButene_WAS_BLAKE', 
-         't2Butene_WAS_BLAKE', 'c2Butene_WAS_BLAKE', 'x13Butadiene_WAS_BLAKE', 'x12Butadiene_WAS_BLAKE', 'x1Buten3yne_WAS_BLAKE', 
-         'x13Butadyine_WAS_BLAKE', 'x1Butyne_WAS_BLAKE', 'x2Butyne_WAS_BLAKE', 'iPentane_WAS_BLAKE', 'nPentane_WAS_BLAKE', 
-         'Isoprene_WAS_BLAKE', 'x1Pentene_WAS_BLAKE', 't2Pentene_WAS_BLAKE', 'c2Pentene_WAS_BLAKE', 'X3Me1Butene_WAS_BLAKE', 
-         'X2Me1Butene_WAS_BLAKE', 'X2Me2Butene_WAS_BLAKE', 'x13Pentadienes_WAS_BLAKE', 'x3Me1PenteneAnd4Me1Pentene_WAS_BLAKE', 
-         'x1Hexene_WAS_BLAKE', 'x1Heptene_WAS_BLAKE', 'x1Octene_WAS_BLAKE', 'x1Nonene_WAS_BLAKE', 'x1Decene_WAS_BLAKE', 'nHexane_WAS_BLAKE', 
-         'nHeptane_WAS_BLAKE', 'nOctane_WAS_BLAKE', 'nNonane_WAS_BLAKE', 'nDecane_WAS_BLAKE', 'nUndecane_WAS_BLAKE', 'x22Dimebutane_WAS_BLAKE', 
-         'x23Dimebutane_WAS_BLAKE', 'x2MePentane_WAS_BLAKE', 'x3MePentane_WAS_BLAKE', 'x2MeHexane_WAS_BLAKE', 'x3MeHexane_WAS_BLAKE', 
-         'x23DimePentane_BLAKE', 'x224TrimePentane_WAS_BLAKE', 'x234TrimePentane_WAS_BLAKE', 'CycPentane_WAS_BLAKE', 
-         'MeCycPentane_WAS_BLAKE', 'CycHexane_WAS_BLAKE', 'MeCycHexane_WAS_BLAKE', 'CycPentene_WAS_BLAKE', 'Benzene_WAS_BLAKE', 
-         'Toluene_WAS_BLAKE', 'EthBenzene_WAS_BLAKE', 'mpXylene_WAS_BLAKE', 'oXylene_WAS_BLAKE', 'Styrene_WAS_BLAKE', 
-         'EthynylBenzene_WAS_BLAKE', 'iPropBenzene_WAS_BLAKE', 'nPropBenzene_WAS_BLAKE', 'x3EthToluene_WAS_BLAKE', 'x4EthToluene_WAS_BLAKE', 
-         'x2EthToluene_WAS_BLAKE', 'x135rimeBenzene_WAS_BLAKE', 'x124rimeBenzene_WAS_BLAKE', 'ClBenzene_WAS_BLAKE', 'aPinene_WAS_BLAKE', 
-         'bPinene_WAS_BLAKE', 'Tricyclene_WAS_BLAKE', 'Camphene_WAS_BLAKE', 'Myrcene_WAS_BLAKE', 'Limonene_WAS_BLAKE', 'Furan_WAS_BLAKE', 
-         'x2MeFuran_WAS_BLAKE', 'x3MeFuran_WAS_BLAKE', 'BenzFuran_WAS_BLAKE', 'iButanal_WAS_BLAKE', 'Butanal_WAS_BLAKE', 
-         'AcetonePropanal_WAS_BLAKE', 'MEK_WAS_BLAKE', 'MAC_WAS_BLAKE', 'MVK_WAS_BLAKE', 'Acrolein_WAS_BLAKE', 'iPropanol_WAS_BLAKE', 
-         'Nitromethane_WAS_BLAKE', 'Acrylonitrile_WAS_BLAKE', 'PropNitrile_WAS_BLAKE', 'MeAcetate_WAS_BLAKE')
-anames=c('HFC134a_ppt', 'HCFC141b_ppt', 'HCFC142b_ppt', 'HCFC22_ppt', 'CH2Cl2_ppt', 
-         'CHCl3_ppt', 'CH2ClCH2Cl_ppt', 'CH3CCl3_ppt', 'C2Cl4_ppt', 'ClBenzene_ppt',
-         'CHBrCl2_ppt', 'CHBr2Cl_ppt', 'CH3Br_ppt', 'CH2Br2_ppt', 'CHBr3_ppt',
-         'CH2ClI_ppt', 'CH3I_ppt', 'CS2_ppt', 'CH3SH_ppt', 'DMS_ppt', 'Propane_ppt',
-         'iButane_ppt', 'nButane_ppt', 'iPentane_ppt', 'nPentane_ppt', 'x2MePentane_ppt',
-         'x3MePentane_ppt', 'nHexane_ppt', 'x224TrimePentane_ppt', 'nHeptane_ppt',
-         'nOctane_ppt', 'Propene_ppt', 'iButene1Butene_ppt', 'Isoprene_ppt', 
-         'Tricyclene_ppt', 'aPinene_ppt', 'Camphene_ppt', 'bPineneMyrcene_ppt', 
-         'LimoneneD3Carene_ppt', 'Benzene_ppt', 'Toluene_ppt', 'EthBenzene_ppt', 
-         'mpXylene_ppt', 'oXylene_ppt', 'Styrene_ppt', 'EthynylBenzene_ppt', 'CH2O_ppt', 
-         'CH3CHO_ppt', 'Propanal_ppt', 'Butanal_ppt', 'iButanal_ppt', 'Acrolein_ppt', 
-         'x2Butenals_ppt', 'Acetone_ppt', 'MEK_ppt', 'CH3OH_ppt', 'C2H5OH_ppt', 
-         'iPropanol_ppt', 'MBO_ppt', 'MAC_ppt', 'MVK_ppt', 'MeFormate_ppt', 
-         'MeAcetate_ppt', 'Furan_ppt', 'x2MeFuran_ppt', 'x3MeFuran_ppt', 'Furfural_ppt', 
-         'HCN_ppt', 'CH3CN_ppt', 'PropNitrile_ppt', 'Acrylonitrile_ppt',
-         'MeAcrylonitrile_ppt', 'Pyrrole_ppt', 'Nitromethane_ppt', 'MeONO2_ppt', 
-         'EthONO2_ppt', 'iPropONO2_ppt', 'iButONO2and2ButONO2_ppt')
-gnames = c('C2Cl4_NOAAiWAS_GILMAN', 'CHCl3_NOAAiWAS_GILMAN', 'Ethane_NOAAiWAS_GILMAN', 'Propane_NOAAiWAS_GILMAN', 
-           'nButane_NOAAiWAS_GILMAN', 'iButane_NOAAiWAS_GILMAN', 'nPentane_NOAAiWAS_GILMAN', 'iPentane_NOAAiWAS_GILMAN',
-           'nHexane_NOAAiWAS_GILMAN', 'x2MePentane_NOAAiWAS_GILMAN', 'x3MePentane_NOAAiWAS_GILMAN',
-           'x22DiMeButane_NOAAiWAS_GILMAN', 'x24DiMePentane_NOAAiWAS_GILMAN', 'nOctane_NOAAiWAS_GILMAN',
-           'x224TriMePentane_NOAAiWAS_GILMAN', 'nNonane_NOAAiWAS_GILMAN', 'nDecane_NOAAiWAS_GILMAN', 
-           'MeCycPentane_NOAAiWAS_GILMAN', 'CycHexane_NOAAiWAS_GILMAN', 'MeCycHexane_NOAAiWAS_GILMAN', 
-           'Ethyne_NOAAiWAS_GILMAN', 'Ethene_NOAAiWAS_GILMAN', 'Propene_NOAAiWAS_GILMAN', 'x1Butene_NOAAiWAS_GILMAN',
-           'c2Butene_NOAAiWAS_GILMAN', 't2butene_NOAAiWAS_GILMAN', 'iButene_NOAAiWAS_GILMAN', 'x1Pentene_NOAAiWAS_GILMAN', 
-           'c2Pentene_NOAAiWAS_GILMAN', 't2Pentene_NOAAiWAS_GILMAN', 'x2Me1Butene_NOAAiWAS_GILMAN', 'x3Me1Butene_NOAAiWAS_GILMAN', 
-           't13Pentadiene_NOAAiWAS_GILMAN', 'Isoprene_NOAAiWAS_GILMAN', 'aPinene_NOAAiWAS_GILMAN', 'Benzene_NOAAiWAS_GILMAN', 
-           'Toluene_NOAAiWAS_GILMAN', 'EthBenzene_NOAAiWAS_GILMAN', 'oXylene_NOAAiWAS_GILMAN', 'mpXylene_NOAAiWAS_GILMAN', 
-           'Acetone_NOAAiWAS_GILMAN', 'MEK_NOAAiWAS_GILMAN', 'MeFormate_NOAAiWAS_GILMAN', 'Furan_NOAAiWAS_GILMAN', 
-           'CH3CN_NOAAiWAS_GILMAN', 'Acrylonitrile_NOAAiWAS_GILMAN')
-# --------- which TOGA species dont correlate with CO? ---------------
-cors.toga = c(); cors.toga.soybean = c(); pval.toga=c(); counts = c()
-cc = colnames(toga.all)
-for (i in 1:length(anames)){
-  ind = which(cc == anames[i])
-  yy=unlist(toga.all[,ind])
-  ind2 = which(toga.all$fuel == 'corn')
-  ind3 = which(toga.all$fuel == 'rice')
-  ind4 = which(toga.all$fuel == 'soybean')
-  ind5 = which(toga.all$fuel == 'grass')
-  ind6 = which(toga.all$fuel == 'pile')
-  ind7 = which(toga.all$fuel == 'slash')
+dothis=0
+if (dothis ==1){
+  # Just for ag + prescribed
+  ind = which(allBOTH.filter$fuel == 'corn' | allBOTH.filter$fuel == 'soybean' |  allBOTH.filter$fuel == 'rice' |
+                allBOTH.filter$fuel == 'pile' | allBOTH.filter$fuel == 'slash' )
+  quantile(allBOTH.filter$MCE[ind], na.rm=TRUE)
+  allBOTH.filter.median = aggregate(allBOTH.filter[ind,], by=list(allBOTH.filter$variable[ind]), FUN='median', na.rm=TRUE)
+  allBOTH.filter.25 = aggregate(allBOTH.filter$FinalEF[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q1),na.rm=TRUE)
+  allBOTH.filter.75 = aggregate(allBOTH.filter$FinalEF[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q2),na.rm=TRUE)
+  allBOTH.filter.25ER = aggregate(allBOTH.filter$FinalERtoCO[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q1),na.rm=TRUE)
+  allBOTH.filter.75ER = aggregate(allBOTH.filter$FinalERtoCO[ind], by=list(allBOTH.filter$variable[ind]), 'quantile',probs=c(q2),na.rm=TRUE)
+  allBOTH.filter.median$FinalEF_25 = allBOTH.filter.25$x
+  allBOTH.filter.median$FinalEF_75 = allBOTH.filter.75$x
+  allBOTH.filter.median$FinalERtoCO_25 = allBOTH.filter.25ER$x
+  allBOTH.filter.median$FinalERtoCO_75 = allBOTH.filter.75ER$x
   
-  xx = as.numeric(toga.all$CO_DACOM_DISKIN_BECKY)
-  xx = xx[ind2]; yyCORN = yy[ind2] # cut to just corn
-  yyRICE = yy[ind2] ;yySOYBEAN= yy[ind2] ;yyGRASS = yy[ind2] ;yyPILE = yy[ind2] ;yySLASH= yy[ind2] 
-  tt = which(is.finite(yyCORN)); tt2 = which(is.finite(yyRICE)); tt3 = which(is.finite(yySOYBEAN))
-  tt4 = which(is.finite(yyGRASS)); tt5 = which(is.finite(yyPILE)); tt6 = which(is.finite(yySLASH))
-  if (length(tt) > 2){
-    cors = cor.test(xx,yyCORN)
-    cors.toga = c(cors.toga, cors$estimate)
-    pval.toga = c(pval.toga, cors$p.value)
-    counts = c(counts, length(tt))
-  } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
-  if (length(tt2) > 2){
-    cors = cor.test(xx,yySOYBEAN)
-    cors.toga = c(cors.toga, cors$estimate)
-    pval.toga = c(pval.toga, cors$p.value)
-    counts = c(counts, length(tt))
-  } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
- 
-  if (length(tt3) > 2){
-    cors = cor.test(xx,yyCORN)
-    cors.toga = c(cors.toga, cors$estimate)
-    pval.toga = c(pval.toga, cors$p.value)
-    counts = c(counts, length(tt))
-  } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
- 
-  if (length(tt4) > 2){
-    cors = cor.test(xx,yyCORN)
-    cors.toga = c(cors.toga, cors$estimate)
-    pval.toga = c(pval.toga, cors$p.value)
-    counts = c(counts, length(tt))
-  } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
- 
-  if (length(tt5) > 2){
-    cors = cor.test(xx,yyCORN)
-    cors.toga = c(cors.toga, cors$estimate)
-    pval.toga = c(pval.toga, cors$p.value)
-    counts = c(counts, length(tt))
-  } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
- 
-  if (length(tt6) > 2){
-    cors = cor.test(xx,yyCORN)
-    cors.toga = c(cors.toga, cors$estimate)
-    pval.toga = c(pval.toga, cors$p.value)
-    counts = c(counts, length(tt))
-  } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
- 
-   if (length(tt) > 2){
-    par(mfrow=c(1,2))
-    plot(xx,yyCORN, pch=19, main=anames[i], xlab='CO, ppb')
-    text(550,max(yyCORN, na.rm=TRUE),paste("R=",round(cors$estimate,2)))
+  ind = which(allBOTH.filter$fuel == 'corn')
+  allBOTH.filter.corn.median = aggregate(allBOTH.filter[ind,],
+      by=list(allBOTH.filter$variable[ind]), FUN='median', na.rm=TRUE)
+  # PM1 breakdown
+  ind = which(allBOTH.filter.median$Category == 4)
+  tmp = allBOTH.filter.median[ind,]
+  # Average by individual fuel and species
+  # medians
+  
+  #ind = which(allBOTH.filter.median.fuel$fire == 'BlackwaterRiver') 
+  #allBOTH.filter.median.fuel$fuel[ind] = 'Blackwater'
+  allBOTH.filter.median.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), FUN='median', na.rm=TRUE)
+  
+  allBOTH.filter.mean.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable),   FUN='mean', na.rm=TRUE)
+  allBOTH.filter.sd.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), FUN='sd', na.rm=TRUE)
+  
+  allBOTH.filter.median.fuel$FinalEF_mean = allBOTH.filter.mean.fuel$FinalEF
+  allBOTH.filter.median.fuel$FinalEF_sd = allBOTH.filter.sd.fuel$FinalEF
+  allBOTH.filter.median.fuel$FinalERtoCO_sd = allBOTH.filter.sd.fuel$FinalERtoCO
+  
+  allBOTH.filter.25.fuel = aggregate(allBOTH.filter$FinalEF, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q1),na.rm=TRUE)
+  allBOTH.filter.75.fuel = aggregate(allBOTH.filter$FinalEF, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q2),na.rm=TRUE)
+  allBOTH.filter.25.fuelER = aggregate(allBOTH.filter$FinalERtoCO, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q1),na.rm=TRUE)
+  allBOTH.filter.75.fuelER = aggregate(allBOTH.filter$FinalERtoCO, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), 'quantile',probs=c(q2),na.rm=TRUE)
+  
+  allBOTH.filter.median.fuel$FinalEF_25 = allBOTH.filter.25.fuel$x
+  allBOTH.filter.median.fuel$FinalEF_75 = allBOTH.filter.75.fuel$x
+  allBOTH.filter.median.fuel$FinalERtoCO_25 = allBOTH.filter.25.fuelER$x
+  allBOTH.filter.median.fuel$FinalERtoCO_75 = allBOTH.filter.75.fuelER$x
+  
+  # need to recover fire, kind, formula, and names
+  allBOTH.filter.median.fuel$variable = allBOTH.filter.median.fuel$Group.2
+  for (i in 1:length(allBOTH.filter.median.fuel$kind)){
+    ind = which(allBOTH.filter$variable == allBOTH.filter.median.fuel$Group.2[i])
+    allBOTH.filter.median.fuel$kind[i] = allBOTH.filter$kind[ind[1]]
+    allBOTH.filter.median.fuel$formula[i] = allBOTH.filter$formula[ind[1]]
+    allBOTH.filter.median.fuel$names[i] = allBOTH.filter$names[ind[1]]
+    allBOTH.filter.median.fuel$PI[i] = allBOTH.filter$PI[ind[1]]
+   # print(c(allBOTH.filter$variable[ind[1]], allBOTH.filter.median.fuel$Group.2[i]))
   }
-}
-cors.toga = as.data.frame(cors.toga)
-cors.toga$name = anames
-cors.toga$pval = pval.toga
-cors.toga$counts = counts
-write.csv(cors.toga, 'cors.togaCORN.csv')
-# Don't report negative TOGA correlations
-ind = which(is.finite(cors.toga$cors.toga) & cors.toga$cors.toga < 0)
-
-# ----- which iWAS  species dont correlate with CO? ------
-dev.off()
-cors.iwas = c(); pval.iwas=c(); counts = c()
-cc = colnames(iwas.all)
-for (i in 1:length(gnames)){
-  ind = which(cc == gnames[i])
-  yy=unlist(iwas.all[,ind])
-  tt = which(is.finite(yy))
-  if (length(tt) > 0){
-    par(mfrow=c(1,2))
-    plot(as.numeric(iwas.all$CO_DACOM_DISKIN_GILMAN),yy, pch=19, main=gnames[i], xlab='CO, ppb')
-    cors = cor.test(as.numeric(iwas.all$CO_DACOM_DISKIN_GILMAN), unlist(iwas.all[,ind]))
-
-    cors.iwas = c(cors.iwas, cors$estimate)
-    pval.iwas = c(pval.iwas, cors$p.value)
-    counts = c(counts, length(tt))
-    text(550,max(yy, na.rm=TRUE),paste("R=",round(cors$estimate,2)))
-  } else{
-    cors.iwas = c(cors.iwas,NaN)
-    pval.iwas = c(pval.iwas, NaN)
-    counts = c(counts, length(tt))
+  for (i in 1:length(allBOTH.filter.median$kind)){
+    ind = which(allBOTH.filter$variable == allBOTH.filter.median$Group.1[i])
+    allBOTH.filter.median$kind[i] = allBOTH.filter$kind[ind[1]]
+    allBOTH.filter.median$formula[i] = allBOTH.filter$formula[ind[1]]
+    allBOTH.filter.median$names[i] = allBOTH.filter$names[ind[1]]
+    allBOTH.filter.median$PI[i] = allBOTH.filter$PI[ind[1]]
+    # print(c(allBOTH.filter$variable[ind[1]], allBOTH.filter.median.fuel$Group.2[i]))
   }
-}
-
-cors.iwas = as.data.frame(cors.iwas)
-cors.iwas$name = gnames
-cors.iwas$pval = pval.iwas
-cors.iwas$counts = counts
-
-# ----- which WAS  species dont correlate with CO? ------
-dev.off()
-cors.was.ag = c(); pval.was.ag=c(); counts.ag = c()
-cors.was.pb = c(); pval.was.pb=c(); counts.pb = c()
-cc = colnames(was.all)
-par(mfrow=c(2,2))
-for (i in 1:length(bnames)){
-  ind = which(cc == bnames[i])
-  yy=unlist(was.all[,ind])
-  ff = was.all$fuel
-  ind1 = which(ff == 'slash' | ff == 'pile' | ff == 'grass')
-  ff[ind1] = 'prescribed'
-  ind2 = which(ff == 'corn' | ff == 'rice' | ff == 'soybean'| ff == 'wheat')
-  ff[ind2] = 'agriculture'
-  tt = which(is.finite(yy) & ff == 'agriculture')
-  if (length(tt) > 2){
-    plot(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]),yy[tt], pch=19, main='Agriculture',ylab=bnames[i], xlab='CO, ppb')
-    cors = cor.test(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]), unlist(was.all[tt,ind]))
+  for (i in 1:length(allBOTH.filter.mean.fuel$kind)){
+    ind = which(allBOTH.filter$variable == allBOTH.filter.mean.fuel$Group.2[i])
+    allBOTH.filter.mean.fuel$kind[i] = allBOTH.filter$kind[ind[1]]
+    allBOTH.filter.mean.fuel$formula[i] = allBOTH.filter$formula[ind[1]]
+    allBOTH.filter.mean.fuel$names[i] = allBOTH.filter$names[ind[1]]
+    allBOTH.filter.mean.fuel$PI[i] = allBOTH.filter$PI[ind[1]]
+  }
     
-    cors.was.ag = c(cors.was.ag, cors$estimate)
-    pval.was.ag = c(pval.was.ag, cors$p.value)
-    counts.ag = c(counts.ag, length(tt))
-    text(550,max(yy[tt], na.rm=TRUE),paste("R=",round(cors$estimate,2)))
-  } else{
-    cors.was.ag = c(cors.was.ag,NaN)
-    pval.was.ag = c(pval.was.ag, NaN)
-    counts.ag = c(counts.ag, length(tt))
+  
+  # --------- Get Plume Counts by FUEL ---------------------------------------------
+  # REDO
+  ff = unique(allBOTH.filter$uniqueid) # need to redo this
+  allBOTH.filter$MCE = NaN
+  for (i in 1:length(ff)){
+    ind = which(allBOTH.filter$uniqueid == ff[i] )
+    allBOTH.filter$MCE[ind] = max(as.numeric(allBOTH.filter$mce.5hz[ind]), na.rm=TRUE) # they should all be the same, just fill in
   }
-  tt = which(is.finite(yy) & ff == 'prescribed')
-  if (length(tt) > 2){
-    plot(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]),yy[tt], pch=19,main='Prescribed', ylab=bnames[i], xlab='CO, ppb')
-    cors = cor.test(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]), unlist(was.all[tt,ind]))
+  #allBOTH.filter.median.fuel= getplumesANDmcebyfuel(allBOTH.filter.median.fuel, allBOTH.filter )
+  
+  # --------------------------- Speciate these NOAA PTRMS species based on TOGA -----------------------------------------
+  # --------- Sum of m-xylene p-xylene o-xylene and ethyl benzene -------
+  # -------- AcetonePropanal --------------
+  # -------- MVK/MACR/2Butenals -------
+  #allBOTH.filter.median.fuel = speciateSpecies(allBOTH.filter.median.fuel)
+  #allBOTH.filter.median = speciateSpecies(allBOTH.filter.median)
+  
+  # Make larger fuel categories
+  allBOTH.filter$fuelORIG = allBOTH.filter$fuel
+  allBOTH.filter$fuel2 = allBOTH.filter$fuel
+  ind = which(allBOTH.filter$fuel2 == 'corn' | allBOTH.filter$fuel2 == 'soybean' | allBOTH.filter$fuel2 == 'rice' |
+                allBOTH.filter$fuel2 == 'winter wheat')
+  allBOTH.filter$fuel2[ind] = 'agriculture'
+  ind = which(allBOTH.filter$fuel2 == 'pile' | allBOTH.filter$fuel2 == 'slash' | allBOTH.filter$fuel2 == 'shrub')
+  allBOTH.filter$fuel2[ind] = 'prescribed'
+  ind = which(allBOTH.filter$fire == 'BlackwaterRiver')
+  allBOTH.filter$fuel2[ind] = 'Blackwater'
+  
+  # MCE hist
+  ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN')
+  tmpCO = allBOTH.filter[ind,]
+  ind = which(tmpCO$fuel2 == 'Blackwater' & tmpCO$MAtoF.5hz > 0.2)
+  tmpCO$FinalEF[ind] = NaN
+  ind = which(tmpCO$fuel2 != 'forest' & tmpCO$fuel2 != 'coniferous/decidous' & is.finite(tmpCO$FinalEF))
+  min(tmpCO$MCE[ind])
+}
+dowastoga = 0
+if (dowastoga == 1){
+  # ------- names --------
+  bnames=c('OCS_WAS_BLAKE', 'DMS_WAS_BLAKE', 'CFC12_WAS_BLAKE', 'CFC11_WAS_BLAKE', 'CFC113_WAS_BLAKE', 'CFC114_WAS_BLAKE', 
+           'HFC152a_WAS_BLAKE', 'HFC134a_WAS_BLAKE', 'HFC365mfc_WAS_BLAKE', 'HCFC22_WAS_BLAKE', 'HCFC142b_WAS_BLAKE', 'HCFC141b_WAS_BLAKE', 
+           'H1301_WAS_BLAKE', 'H2402_WAS_BLAKE', 'H1211_WAS_BLAKE', 'CH3CCl3_WAS_BLAKE', 'CCl4_WAS_BLAKE', 'CHCl3_WAS_BLAKE', 'CH2Cl2_WAS_BLAKE', 
+           'C2HCl3_WAS_BLAKE', 'C2Cl4_WAS_BLAKE', 'CH3Cl_WAS_BLAKE', 'CH3Br_WAS_BLAKE', 'CH3I_WAS_BLAKE', 'CH2Br2_WAS_BLAKE', 'CHBrCl2_WAS_BLAKE', 
+           'CHBr2Cl_WAS_BLAKE', 'CHBr3_WAS_BLAKE', 'CH2ClCH2Cl_WAS_BLAKE', 'C2H5Cl_WAS_BLAKE', 'MeONO2_WAS_BLAKE', 'EthONO2_WAS_BLAKE', 
+           'iPropONO2_WAS_BLAKE', 'nPropONO2_WAS_BLAKE', 'x2ButONO2_WAS_BLAKE', 'x3PentONO2_WAS_BLAKE', 'x2PentONO2_WAS_BLAKE', 
+           'x3Me2ButONO2_WAS_BLAKE', 'Ethane_WAS_BLAKE', 'Ethene_WAS_BLAKE', 'Ethyne_WAS_BLAKE', 'Propene_WAS_BLAKE', 'Propane_WAS_BLAKE', 
+           'Propadiene_WAS_BLAKE', 'Propyne_WAS_BLAKE', 'iButane_WAS_BLAKE', 'nButane_WAS_BLAKE', 'x1Butene_WAS_BLAKE', 'iButene_WAS_BLAKE', 
+           't2Butene_WAS_BLAKE', 'c2Butene_WAS_BLAKE', 'x13Butadiene_WAS_BLAKE', 'x12Butadiene_WAS_BLAKE', 'x1Buten3yne_WAS_BLAKE', 
+           'x13Butadyine_WAS_BLAKE', 'x1Butyne_WAS_BLAKE', 'x2Butyne_WAS_BLAKE', 'iPentane_WAS_BLAKE', 'nPentane_WAS_BLAKE', 
+           'Isoprene_WAS_BLAKE', 'x1Pentene_WAS_BLAKE', 't2Pentene_WAS_BLAKE', 'c2Pentene_WAS_BLAKE', 'X3Me1Butene_WAS_BLAKE', 
+           'X2Me1Butene_WAS_BLAKE', 'X2Me2Butene_WAS_BLAKE', 'x13Pentadienes_WAS_BLAKE', 'x3Me1PenteneAnd4Me1Pentene_WAS_BLAKE', 
+           'x1Hexene_WAS_BLAKE', 'x1Heptene_WAS_BLAKE', 'x1Octene_WAS_BLAKE', 'x1Nonene_WAS_BLAKE', 'x1Decene_WAS_BLAKE', 'nHexane_WAS_BLAKE', 
+           'nHeptane_WAS_BLAKE', 'nOctane_WAS_BLAKE', 'nNonane_WAS_BLAKE', 'nDecane_WAS_BLAKE', 'nUndecane_WAS_BLAKE', 'x22Dimebutane_WAS_BLAKE', 
+           'x23Dimebutane_WAS_BLAKE', 'x2MePentane_WAS_BLAKE', 'x3MePentane_WAS_BLAKE', 'x2MeHexane_WAS_BLAKE', 'x3MeHexane_WAS_BLAKE', 
+           'x23DimePentane_BLAKE', 'x224TrimePentane_WAS_BLAKE', 'x234TrimePentane_WAS_BLAKE', 'CycPentane_WAS_BLAKE', 
+           'MeCycPentane_WAS_BLAKE', 'CycHexane_WAS_BLAKE', 'MeCycHexane_WAS_BLAKE', 'CycPentene_WAS_BLAKE', 'Benzene_WAS_BLAKE', 
+           'Toluene_WAS_BLAKE', 'EthBenzene_WAS_BLAKE', 'mpXylene_WAS_BLAKE', 'oXylene_WAS_BLAKE', 'Styrene_WAS_BLAKE', 
+           'EthynylBenzene_WAS_BLAKE', 'iPropBenzene_WAS_BLAKE', 'nPropBenzene_WAS_BLAKE', 'x3EthToluene_WAS_BLAKE', 'x4EthToluene_WAS_BLAKE', 
+           'x2EthToluene_WAS_BLAKE', 'x135rimeBenzene_WAS_BLAKE', 'x124rimeBenzene_WAS_BLAKE', 'ClBenzene_WAS_BLAKE', 'aPinene_WAS_BLAKE', 
+           'bPinene_WAS_BLAKE', 'Tricyclene_WAS_BLAKE', 'Camphene_WAS_BLAKE', 'Myrcene_WAS_BLAKE', 'Limonene_WAS_BLAKE', 'Furan_WAS_BLAKE', 
+           'x2MeFuran_WAS_BLAKE', 'x3MeFuran_WAS_BLAKE', 'BenzFuran_WAS_BLAKE', 'iButanal_WAS_BLAKE', 'Butanal_WAS_BLAKE', 
+           'AcetonePropanal_WAS_BLAKE', 'MEK_WAS_BLAKE', 'MAC_WAS_BLAKE', 'MVK_WAS_BLAKE', 'Acrolein_WAS_BLAKE', 'iPropanol_WAS_BLAKE', 
+           'Nitromethane_WAS_BLAKE', 'Acrylonitrile_WAS_BLAKE', 'PropNitrile_WAS_BLAKE', 'MeAcetate_WAS_BLAKE')
+  anames=c('HFC134a_ppt', 'HCFC141b_ppt', 'HCFC142b_ppt', 'HCFC22_ppt', 'CH2Cl2_ppt', 
+           'CHCl3_ppt', 'CH2ClCH2Cl_ppt', 'CH3CCl3_ppt', 'C2Cl4_ppt', 'ClBenzene_ppt',
+           'CHBrCl2_ppt', 'CHBr2Cl_ppt', 'CH3Br_ppt', 'CH2Br2_ppt', 'CHBr3_ppt',
+           'CH2ClI_ppt', 'CH3I_ppt', 'CS2_ppt', 'CH3SH_ppt', 'DMS_ppt', 'Propane_ppt',
+           'iButane_ppt', 'nButane_ppt', 'iPentane_ppt', 'nPentane_ppt', 'x2MePentane_ppt',
+           'x3MePentane_ppt', 'nHexane_ppt', 'x224TrimePentane_ppt', 'nHeptane_ppt',
+           'nOctane_ppt', 'Propene_ppt', 'iButene1Butene_ppt', 'Isoprene_ppt', 
+           'Tricyclene_ppt', 'aPinene_ppt', 'Camphene_ppt', 'bPineneMyrcene_ppt', 
+           'LimoneneD3Carene_ppt', 'Benzene_ppt', 'Toluene_ppt', 'EthBenzene_ppt', 
+           'mpXylene_ppt', 'oXylene_ppt', 'Styrene_ppt', 'EthynylBenzene_ppt', 'CH2O_ppt', 
+           'CH3CHO_ppt', 'Propanal_ppt', 'Butanal_ppt', 'iButanal_ppt', 'Acrolein_ppt', 
+           'x2Butenals_ppt', 'Acetone_ppt', 'MEK_ppt', 'CH3OH_ppt', 'C2H5OH_ppt', 
+           'iPropanol_ppt', 'MBO_ppt', 'MAC_ppt', 'MVK_ppt', 'MeFormate_ppt', 
+           'MeAcetate_ppt', 'Furan_ppt', 'x2MeFuran_ppt', 'x3MeFuran_ppt', 'Furfural_ppt', 
+           'HCN_ppt', 'CH3CN_ppt', 'PropNitrile_ppt', 'Acrylonitrile_ppt',
+           'MeAcrylonitrile_ppt', 'Pyrrole_ppt', 'Nitromethane_ppt', 'MeONO2_ppt', 
+           'EthONO2_ppt', 'iPropONO2_ppt', 'iButONO2and2ButONO2_ppt')
+  gnames = c('C2Cl4_NOAAiWAS_GILMAN', 'CHCl3_NOAAiWAS_GILMAN', 'Ethane_NOAAiWAS_GILMAN', 'Propane_NOAAiWAS_GILMAN', 
+             'nButane_NOAAiWAS_GILMAN', 'iButane_NOAAiWAS_GILMAN', 'nPentane_NOAAiWAS_GILMAN', 'iPentane_NOAAiWAS_GILMAN',
+             'nHexane_NOAAiWAS_GILMAN', 'x2MePentane_NOAAiWAS_GILMAN', 'x3MePentane_NOAAiWAS_GILMAN',
+             'x22DiMeButane_NOAAiWAS_GILMAN', 'x24DiMePentane_NOAAiWAS_GILMAN', 'nOctane_NOAAiWAS_GILMAN',
+             'x224TriMePentane_NOAAiWAS_GILMAN', 'nNonane_NOAAiWAS_GILMAN', 'nDecane_NOAAiWAS_GILMAN', 
+             'MeCycPentane_NOAAiWAS_GILMAN', 'CycHexane_NOAAiWAS_GILMAN', 'MeCycHexane_NOAAiWAS_GILMAN', 
+             'Ethyne_NOAAiWAS_GILMAN', 'Ethene_NOAAiWAS_GILMAN', 'Propene_NOAAiWAS_GILMAN', 'x1Butene_NOAAiWAS_GILMAN',
+             'c2Butene_NOAAiWAS_GILMAN', 't2butene_NOAAiWAS_GILMAN', 'iButene_NOAAiWAS_GILMAN', 'x1Pentene_NOAAiWAS_GILMAN', 
+             'c2Pentene_NOAAiWAS_GILMAN', 't2Pentene_NOAAiWAS_GILMAN', 'x2Me1Butene_NOAAiWAS_GILMAN', 'x3Me1Butene_NOAAiWAS_GILMAN', 
+             't13Pentadiene_NOAAiWAS_GILMAN', 'Isoprene_NOAAiWAS_GILMAN', 'aPinene_NOAAiWAS_GILMAN', 'Benzene_NOAAiWAS_GILMAN', 
+             'Toluene_NOAAiWAS_GILMAN', 'EthBenzene_NOAAiWAS_GILMAN', 'oXylene_NOAAiWAS_GILMAN', 'mpXylene_NOAAiWAS_GILMAN', 
+             'Acetone_NOAAiWAS_GILMAN', 'MEK_NOAAiWAS_GILMAN', 'MeFormate_NOAAiWAS_GILMAN', 'Furan_NOAAiWAS_GILMAN', 
+             'CH3CN_NOAAiWAS_GILMAN', 'Acrylonitrile_NOAAiWAS_GILMAN')
+  # --------- which TOGA species dont correlate with CO? ---------------
+  cors.toga = c(); cors.toga.soybean = c(); pval.toga=c(); counts = c()
+  cc = colnames(toga.all)
+  for (i in 1:length(anames)){
+    ind = which(cc == anames[i])
+    yy=unlist(toga.all[,ind])
+    ind2 = which(toga.all$fuel == 'corn')
+    ind3 = which(toga.all$fuel == 'rice')
+    ind4 = which(toga.all$fuel == 'soybean')
+    ind5 = which(toga.all$fuel == 'grass')
+    ind6 = which(toga.all$fuel == 'pile')
+    ind7 = which(toga.all$fuel == 'slash')
     
-    cors.was.pb = c(cors.was.pb, cors$estimate)
-    pval.was.pb = c(pval.was.pb, cors$p.value)
-    counts.pb = c(counts.pb, length(tt))
-    text(550,max(yy[tt], na.rm=TRUE),paste("R=",round(cors$estimate,2)))
-  } else{
-    cors.was.pb = c(cors.was.pb,NaN)
-    pval.was.pb = c(pval.was.pb, NaN)
-    counts.pb = c(counts.pb, length(tt))
+    xx = as.numeric(toga.all$CO_DACOM_DISKIN_BECKY)
+    xx = xx[ind2]; yyCORN = yy[ind2] # cut to just corn
+    yyRICE = yy[ind2] ;yySOYBEAN= yy[ind2] ;yyGRASS = yy[ind2] ;yyPILE = yy[ind2] ;yySLASH= yy[ind2] 
+    tt = which(is.finite(yyCORN)); tt2 = which(is.finite(yyRICE)); tt3 = which(is.finite(yySOYBEAN))
+    tt4 = which(is.finite(yyGRASS)); tt5 = which(is.finite(yyPILE)); tt6 = which(is.finite(yySLASH))
+    if (length(tt) > 2){
+      cors = cor.test(xx,yyCORN)
+      cors.toga = c(cors.toga, cors$estimate)
+      pval.toga = c(pval.toga, cors$p.value)
+      counts = c(counts, length(tt))
+    } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
+    if (length(tt2) > 2){
+      cors = cor.test(xx,yySOYBEAN)
+      cors.toga = c(cors.toga, cors$estimate)
+      pval.toga = c(pval.toga, cors$p.value)
+      counts = c(counts, length(tt))
+    } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
+   
+    if (length(tt3) > 2){
+      cors = cor.test(xx,yyCORN)
+      cors.toga = c(cors.toga, cors$estimate)
+      pval.toga = c(pval.toga, cors$p.value)
+      counts = c(counts, length(tt))
+    } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
+   
+    if (length(tt4) > 2){
+      cors = cor.test(xx,yyCORN)
+      cors.toga = c(cors.toga, cors$estimate)
+      pval.toga = c(pval.toga, cors$p.value)
+      counts = c(counts, length(tt))
+    } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
+   
+    if (length(tt5) > 2){
+      cors = cor.test(xx,yyCORN)
+      cors.toga = c(cors.toga, cors$estimate)
+      pval.toga = c(pval.toga, cors$p.value)
+      counts = c(counts, length(tt))
+    } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
+   
+    if (length(tt6) > 2){
+      cors = cor.test(xx,yyCORN)
+      cors.toga = c(cors.toga, cors$estimate)
+      pval.toga = c(pval.toga, cors$p.value)
+      counts = c(counts, length(tt))
+    } else{ cors.toga = c(cors.toga,NaN); pval.toga = c(pval.toga, NaN);    counts = c(counts, length(tt))}
+   
+     if (length(tt) > 2){
+      par(mfrow=c(1,2))
+      plot(xx,yyCORN, pch=19, main=anames[i], xlab='CO, ppb')
+      text(550,max(yyCORN, na.rm=TRUE),paste("R=",round(cors$estimate,2)))
+    }
+  }
+  cors.toga = as.data.frame(cors.toga)
+  cors.toga$name = anames
+  cors.toga$pval = pval.toga
+  cors.toga$counts = counts
+  write.csv(cors.toga, 'cors.togaCORN.csv')
+  # Don't report negative TOGA correlations
+  ind = which(is.finite(cors.toga$cors.toga) & cors.toga$cors.toga < 0)
+  
+  # ----- which iWAS  species dont correlate with CO? ------
+  dev.off()
+  cors.iwas = c(); pval.iwas=c(); counts = c()
+  cc = colnames(iwas.all)
+  for (i in 1:length(gnames)){
+    ind = which(cc == gnames[i])
+    yy=unlist(iwas.all[,ind])
+    tt = which(is.finite(yy))
+    if (length(tt) > 0){
+      par(mfrow=c(1,2))
+      plot(as.numeric(iwas.all$CO_DACOM_DISKIN_GILMAN),yy, pch=19, main=gnames[i], xlab='CO, ppb')
+      cors = cor.test(as.numeric(iwas.all$CO_DACOM_DISKIN_GILMAN), unlist(iwas.all[,ind]))
+  
+      cors.iwas = c(cors.iwas, cors$estimate)
+      pval.iwas = c(pval.iwas, cors$p.value)
+      counts = c(counts, length(tt))
+      text(550,max(yy, na.rm=TRUE),paste("R=",round(cors$estimate,2)))
+    } else{
+      cors.iwas = c(cors.iwas,NaN)
+      pval.iwas = c(pval.iwas, NaN)
+      counts = c(counts, length(tt))
+    }
   }
   
-}
-cors.was.ag = as.data.frame(cors.was.ag)
-cors.was.ag$name = bnames
-cors.was.ag$pval = pval.was.ag
-cors.was.ag$counts = counts.ag
-
-cors.was.pb = as.data.frame(cors.was.pb)
-cors.was.pb$name = bnames
-cors.was.pb$pval = pval.was.pb
-cors.was.pb$counts = counts.pb
-
-# ------- What is unique from Blake
-ind = which(allBOTH.filter.median.fuel$Group.1 == 'corn')
-blake = allBOTH.filter.median.fuel[ind,]
-blakenames = unique(blake$names)
-ind = which(allBOTH.filter.median.fuel$Group.1 == 'corn' & allBOTH.filter.median.fuel$PI != 'BLAKE')
-notblake = allBOTH.filter.median.fuel[ind,]
-notblakenames = unique(notblake$names)
-
-# --------- Get Andreae emission factors ------------
-allBOTH.filter.median.fuel$AndreaeEF = NaN
-allBOTH.filter.median.fuel$AndreaeEFsd = NaN
-allBOTH.filter.median.fuel$AndreaeName = NaN
-allBOTH.filter.median.fuel$AndreaeNN = NaN
-fix=c()
-for (i in 1:length(allBOTH.filter.median.fuel$AndreaeEF)){
-  tt = strsplit(allBOTH.filter.median.fuel$Group.2[i], '_')
-  ind = which(tt[[1]][1] == andreae$Katie)
-  ind2 = which(allBOTH.filter.median.fuel$names[i] == andreae$Katie)
-  if (length(ind) == 0 & length(ind2) == 0){fix=c(fix,allBOTH.filter.median.fuel$names[i])}
-  print(c(tt[[1]][1], andreae$Katie[ind]))
+  cors.iwas = as.data.frame(cors.iwas)
+  cors.iwas$name = gnames
+  cors.iwas$pval = pval.iwas
+  cors.iwas$counts = counts
   
-  if (length(ind2) ==1){
-    allBOTH.filter.median.fuel$AndreaeEF[i] = andreae$average[ind2]
-    allBOTH.filter.median.fuel$AndreaeEFsd[i] = andreae$std.dev.[ind2]
-    allBOTH.filter.median.fuel$AndreaeName[i] = andreae$Species[ind2]
-    allBOTH.filter.median.fuel$AndreaeNN[i] = andreae$N[ind2]
-  } else if (length(ind) ==1){
-    allBOTH.filter.median.fuel$AndreaeEF[i] = andreae$average[ind]
-    allBOTH.filter.median.fuel$AndreaeEFsd[i] = andreae$std.dev.[ind]
-    allBOTH.filter.median.fuel$AndreaeName[i] = andreae$Species[ind]
-    allBOTH.filter.median.fuel$AndreaeNN[i] = andreae$N[ind]
-  } else if (length(ind) ==2){
-    allBOTH.filter.median.fuel$AndreaeEF[i] = sum(andreae$average[ind])
-    allBOTH.filter.median.fuel$AndreaeEFsd[i] = mean(andreae$std.dev.[ind], na.rm=TRUE)
-    allBOTH.filter.median.fuel$AndreaeName[i] = paste(andreae$Species[ind[1]],andreae$Species[ind[2]])
-    allBOTH.filter.median.fuel$AndreaeNN[i] = sum(andreae$N[ind])
+  # ----- which WAS  species dont correlate with CO? ------
+  dev.off()
+  cors.was.ag = c(); pval.was.ag=c(); counts.ag = c()
+  cors.was.pb = c(); pval.was.pb=c(); counts.pb = c()
+  cc = colnames(was.all)
+  par(mfrow=c(2,2))
+  for (i in 1:length(bnames)){
+    ind = which(cc == bnames[i])
+    yy=unlist(was.all[,ind])
+    ff = was.all$fuel
+    ind1 = which(ff == 'slash' | ff == 'pile' | ff == 'grass')
+    ff[ind1] = 'prescribed'
+    ind2 = which(ff == 'corn' | ff == 'rice' | ff == 'soybean'| ff == 'wheat')
+    ff[ind2] = 'agriculture'
+    tt = which(is.finite(yy) & ff == 'agriculture')
+    if (length(tt) > 2){
+      plot(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]),yy[tt], pch=19, main='Agriculture',ylab=bnames[i], xlab='CO, ppb')
+      cors = cor.test(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]), unlist(was.all[tt,ind]))
+      
+      cors.was.ag = c(cors.was.ag, cors$estimate)
+      pval.was.ag = c(pval.was.ag, cors$p.value)
+      counts.ag = c(counts.ag, length(tt))
+      text(550,max(yy[tt], na.rm=TRUE),paste("R=",round(cors$estimate,2)))
+    } else{
+      cors.was.ag = c(cors.was.ag,NaN)
+      pval.was.ag = c(pval.was.ag, NaN)
+      counts.ag = c(counts.ag, length(tt))
+    }
+    tt = which(is.finite(yy) & ff == 'prescribed')
+    if (length(tt) > 2){
+      plot(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]),yy[tt], pch=19,main='Prescribed', ylab=bnames[i], xlab='CO, ppb')
+      cors = cor.test(as.numeric(was.all$CO_DACOM_DISKIN_BLAKE[tt]), unlist(was.all[tt,ind]))
+      
+      cors.was.pb = c(cors.was.pb, cors$estimate)
+      pval.was.pb = c(pval.was.pb, cors$p.value)
+      counts.pb = c(counts.pb, length(tt))
+      text(550,max(yy[tt], na.rm=TRUE),paste("R=",round(cors$estimate,2)))
+    } else{
+      cors.was.pb = c(cors.was.pb,NaN)
+      pval.was.pb = c(pval.was.pb, NaN)
+      counts.pb = c(counts.pb, length(tt))
+    }
+    
   }
-  if (length(ind) >2){print(">2")}
-}
-print(c("Done Andreae"))
-# ---- ---
+  cors.was.ag = as.data.frame(cors.was.ag)
+  cors.was.ag$name = bnames
+  cors.was.ag$pval = pval.was.ag
+  cors.was.ag$counts = counts.ag
+  
+  cors.was.pb = as.data.frame(cors.was.pb)
+  cors.was.pb$name = bnames
+  cors.was.pb$pval = pval.was.pb
+  cors.was.pb$counts = counts.pb
+  
+  # ------- What is unique from Blake
+  ind = which(allBOTH.filter.median.fuel$Group.1 == 'corn')
+  blake = allBOTH.filter.median.fuel[ind,]
+  blakenames = unique(blake$names)
+  ind = which(allBOTH.filter.median.fuel$Group.1 == 'corn' & allBOTH.filter.median.fuel$PI != 'BLAKE')
+  notblake = allBOTH.filter.median.fuel[ind,]
+  notblakenames = unique(notblake$names)
+  }
+# # --------- Get Andreae emission factors ------------
+# allBOTH.filter.median.fuel$AndreaeEF = NaN
+# allBOTH.filter.median.fuel$AndreaeEFsd = NaN
+# allBOTH.filter.median.fuel$AndreaeName = NaN
+# allBOTH.filter.median.fuel$AndreaeNN = NaN
+# fix=c()
+# for (i in 1:length(allBOTH.filter.median.fuel$AndreaeEF)){
+#   tt = strsplit(allBOTH.filter.median.fuel$Group.2[i], '_')
+#   ind = which(tt[[1]][1] == andreae$Katie)
+#   ind2 = which(allBOTH.filter.median.fuel$names[i] == andreae$Katie)
+#   if (length(ind) == 0 & length(ind2) == 0){fix=c(fix,allBOTH.filter.median.fuel$names[i])}
+#   print(c(tt[[1]][1], andreae$Katie[ind]))
+#   
+#   if (length(ind2) ==1){
+#     allBOTH.filter.median.fuel$AndreaeEF[i] = andreae$average[ind2]
+#     allBOTH.filter.median.fuel$AndreaeEFsd[i] = andreae$std.dev.[ind2]
+#     allBOTH.filter.median.fuel$AndreaeName[i] = andreae$Species[ind2]
+#     allBOTH.filter.median.fuel$AndreaeNN[i] = andreae$N[ind2]
+#   } else if (length(ind) ==1){
+#     allBOTH.filter.median.fuel$AndreaeEF[i] = andreae$average[ind]
+#     allBOTH.filter.median.fuel$AndreaeEFsd[i] = andreae$std.dev.[ind]
+#     allBOTH.filter.median.fuel$AndreaeName[i] = andreae$Species[ind]
+#     allBOTH.filter.median.fuel$AndreaeNN[i] = andreae$N[ind]
+#   } else if (length(ind) ==2){
+#     allBOTH.filter.median.fuel$AndreaeEF[i] = sum(andreae$average[ind])
+#     allBOTH.filter.median.fuel$AndreaeEFsd[i] = mean(andreae$std.dev.[ind], na.rm=TRUE)
+#     allBOTH.filter.median.fuel$AndreaeName[i] = paste(andreae$Species[ind[1]],andreae$Species[ind[2]])
+#     allBOTH.filter.median.fuel$AndreaeNN[i] = sum(andreae$N[ind])
+#   }
+#   if (length(ind) >2){print(">2")}
+# }
+# print(c("Done Andreae"))
+# # ---- ---
 # # --------- Get Akagi emission factors ------------
 # allBOTH.filter.median.fuel$AkagiEF = NaN
 # allBOTH.filter.median.fuel$AkagiEFsd = NaN
@@ -1827,7 +1936,7 @@ if (dothis == 1){
     allBOTH.filter.avg$EF1.5hz.sd = allBOTH.filter.sd$EF1.5hz
     allBOTH.filter.avg$EF1.1hz.sd = allBOTH.filter.sd$EF1.1hz
     
-    # to compare with Xiaoxi's table
+    # to comftpare with Xiaoxi's table
     #ind = which(allBOTH.filter.avg.fuel$Group.1 == 'corn' |
     #              allBOTH.filter.avg.fuel$Group.1 == 'rice' |
     #              allBOTH.filter.avg.fuel$Group.1 == 'soybean'  )
