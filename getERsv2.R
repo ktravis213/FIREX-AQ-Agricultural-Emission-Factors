@@ -1,9 +1,8 @@
-# ------- molecular weights -------
-# --------- MWs -------
 require(OrgMassSpecR)
 TEMP = 298
 source("SpeciesProperties.R")
-# --------FUNCTIONS ----    
+# ------- ============ FUNCTIONS ================= ----    
+# -- Main EF/ER calculation function ----
 ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake, blakeBG, 
                          doBlake,gilman, gilmanBG, doGilman,becky, beckyBG, doBecky){
   debugKT = TRUE
@@ -248,8 +247,8 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
     isNMVOC = c(isNMVOC,4)
     kind = c(kind,'aerosol')
     names1=c(names1,"BC_SCHWARZ")
-    formulas = c(formulas,"EC")
-    usenames = c(usenames,"Black Carbon")
+    formulas = c(formulas,"BC")
+    usenames = c(usenames,"Black carbon")
     mWs = c(mWs, mWOC)
     nCs  = c(nCs,   1)
     # ------------------------------------------ FRIED ------------------------------------------ 
@@ -1149,9 +1148,9 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
     '2,2,4-Trimethylpentane', '2,3,4-Trimethylpentane', 'Cyclopentane', 'Methylcyclopentane', 'Cyclohexane', 
     'Methylcyclohexane', 'Cyclopentene', 'Benzene', 'Toluene', 'Ethylbenzene', 'm,p-Xylene', 'o-Xylene', 'Styrene', 
     'Ethynylbenzene', 'i-Propylbenzene', 'n-Propylbenzene', '3-Ethyltoluene', '4-Ethyltoluene', '2-Ethyltoluene', 
-    '1,3,5-trimethylbenzene', '1,2,4-Trimethylbenzene', 'Chlorobenzene', '⍺-Pinene', 'β-Pinene', 'Tricyclene',
+    '1,3,5-Trimethylbenzene', '1,2,4-Trimethylbenzene', 'Chlorobenzene', '⍺-Pinene', 'β-Pinene', 'Tricyclene',
     'Camphene', 'Myrcene', 'Limonene', 'Furan', '2-Methylfuran', '3-Methylfuran', 'Benzofuran', 'Isobutanal', 'Butanal',
-    'Acetone/Propanal', 'Methyl Ethyl Ketone', 'Methacrolein', 'Methyl vinyl ketone', 'Acrolein', 'Isopropanol', 
+    'Acetone/Propanal', 'Methyl ethyl ketone', 'Methacrolein', 'Methyl vinyl ketone', 'Acrolein', 'Isopropanol', 
     'Nitromethane', 'Acrylonitrile', 'Propionitrile','Methyl acetate')
     mWs = c(mWs, bMW) 
     nCs = c(nCs, bNC) 
@@ -1581,7 +1580,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
                'n-Hexane', '2,2,4-Trimethylpentane', 'n-Heptane', 'n-Octane', 'Propene', 'i-Butene/1Butene', 'Isoprene', 'Tricyclene', 
                '⍺-Pinene', 'Camphene', 'β-Pinene/Myrcene', 'Limonene/D3Carene', 'Benzene', 'Toluene', 'Ethylbenzene', 'm,p-Xylene', 
                'o-Xylene', 'Styrene', 'Ethynylbenzene', 'Formaldehyde', 'Acetaldehyde', 'Propanal', 'Butanal', 'Isobutanal', 'Acrolein', 
-               '2-Butenals', 'Acetone/Propanal', 'Methyl Ethyl Ketone', 'Methanol', 'Ethanol', 'Isopropanol', '2-methyl-3-butene-2-ol',
+               '2-Butenals', 'Acetone/Propanal', 'Methyl ethyl ketone', 'Methanol', 'Ethanol', 'Isopropanol', '2-methyl-3-butene-2-ol',
                'Methacrolein', 'Methyl vinyl ketone', 'Methyl formate', 'Methyl acetate', 'Furan', '2-Methylfuran', '3-Methylfuran', 
                'Furfural', 'Hydrogen cyanide', 'Acetonitrile', 'Propionitrile', 'Acrylonitrile', 'Methacrylonitrile', 'Pyrrole',
                'Nitromethane', 'Methyl nitrate', 'Ethyl nitrate', 'i-propyl nitrate','2/i-Butyl nitrate')
@@ -1624,7 +1623,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
                'Methylcyclohexane', 'Ethyne', 'Ethene', 'Propene', '1-Butene', 'cis-2-Butene', 'trans-2-Butene', 
                'i-Butene', '1-Pentene', 'cis-2-Pentene', 'trans-2-Pentene', '2-Methyl-1-butene', '3-Methyl-1-butene',
                'trans-1,3-Pentadiene', 'Isoprene', '⍺-Pinene', 'Benzene', 'Toluene', 'Ethylbenzene', 'o-Xylene', 'm,p-Xylene',
-               'Acetone', 'Methyl Ethyl Ketone', 'Methyl formate', 'Furan', 'Acetonitrile',	'Acrylonitrile')
+               'Acetone', 'Methyl ethyl ketone', 'Methyl formate', 'Furan', 'Acetonitrile',	'Acrylonitrile')
     kind = c(kind,'halogen', 'halogen', 'alkane', 'alkane', 
                'alkane', 'alkane', 'alkane', 'alkane',
                'alkane', 'alkane', 'alkane',
@@ -1967,7 +1966,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
     names1=c(names1,"OC_JIMENEZ","Sulfate_JIMENEZ","Nitrate_JIMENEZ","HNO3_NO3", "Ammonium_JIMENEZ","NR_Chloride_JIMENEZ",
              "Seasalt_JIMENEZ", "MSA_JIMENEZ","ClO4_JIMENEZ","Bromine_JIMENEZ", "Iodine_JIMENEZ","Potassium_JIMENEZ")
     formulas = c(formulas,"OC","SO4","NO3","NO3","NH4","Cl","Na","MSA","ClO4","Br","I","K")
-    usenames = c(usenames,"Organic Carbon","Sulfate","Nitrate","HNO3_NO3","Ammonium","Chloride","Seasalt","Methanesulfonic acid",
+    usenames = c(usenames,"Organic carbon","Sulfate","Nitrate","HNO3_NO3","Ammonium","Chloride","Seasalt","Methanesulfonic acid",
                  "Perchlorate","Bromine","Iodine","Potassium")
     mWs = c(mWs, mWOC, mWSO4, mWNO3,mWNO3, mWNH4, mWCl, mWSSA, mWMSA, mWClO4, mWBr, mWI, mWK)
     nCs  = c(nCs,  1,     0,     0,   0,  0,     0,     0,   1,       0,     0,   0,  0)
@@ -3376,7 +3375,345 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   #---- return ----
   return(datareturn)
 }
+smallfun = function(pass,background,xKT,sKT, xKTE, sKTE, SLOW){
+  require(imputeTS)
+  
+  pass = as.data.frame(pass) ; background = as.data.frame(background)
+  ccc = colnames(pass); cccB = colnames(background)
+  tmpX = which(ccc == xKT); tmpS = which(ccc == sKT)
+  tmpXB = which(cccB == xKT) ;tmpSB = which(cccB == sKT)
+  indKTX = which(is.finite(pass[,tmpX])) # finite X
+  indKTS = which(is.finite(pass[,tmpS])) # finite S
+  indKTSX = which(is.finite(pass[,tmpS]) & is.finite(pass[,tmpX])) # finite both
+  uval = length(unique(pass[,tmpS])) # seems like we need at least 4 unique points > NaN
+  pctVAL = round(length(indKTS)/length(indKTX), digits=1) # number of finite points greater than zero
+  # kludge for CO2
+  if (pctVAL > 0.4 & sKT == 'CO2_ppb'){ pctVAL = 0.61}
+  if (length(indKTSX) > 3 ){
+    testcor = (cor(pass[,tmpS],pass[,tmpX], use='pairwise.complete.obs'))
+    testcor = testcor^2
+  } else{ testcor =0}
+  if (is.na(testcor)){ testcor = 0}
+  # need to have at least 4? points that are different (non zero standard deviation)
+  # must have at least 50% of data points of CO?
+  # do I probably need to fill in the missing data?
+  # don't bother if R^2 is less than 0.75?
+  # lets filter for R2 after
+  
+  useerror = 1 # consider observational uncertainty?
+  ttS = pass[,tmpS] ; ttX = pass[,tmpX] ; 
+  useYork = 0 # only for CO vs. CO2
+  if (sKT == 'CO_DACOM_DISKIN'){ useYork == 1}
+  # print(c('SMALLFUN',sKT, pctVAL,uval, testcor))
+  if (SLOW == 0){
+    if (pctVAL > 0.6 & sd(pass[,tmpS], na.rm=TRUE) != 0 & uval >= 4 & length(indKTSX) >= 4){ # 4 unique points, 4 points total, 60% of CO2 data 
+      if (useerror == 1){
+        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
+        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
+      } else{ 
+        pass$xKTE = 0
+        pass$sKTE = 0
+        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
+        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
+        
+      }
+      # y-species
+      
+      # ---- Get background  -----
+      pKT$BGS = mean(background[,tmpSB], na.rm=TRUE)
+      pKT$BGX = mean(background[,tmpXB], na.rm=TRUE)
+      if (is.nan(pKT$BGS) | is.na(pKT$BGS)){
+        if (useYork == 1){
+          if (pKT$intercept < 0){ pKT$intercept = 0}
+          pKT$BGS = pKT$intercept
+          
+        }
+        if (useYork == 0){
+          if (pKT$coefficients[1] < 0){ pKT$coefficients[1] = 0}
+          pKT$BGS = pKT$coefficients[1]
+          pKT$intercept = pKT$coefficients[2]
+          pKT$uncertainty_slope = NaN
+          
+        }
+        # should I set to zero?
+      }
+      pKT$ExcessS = sum(ttS - pKT$BGS, na.rm=TRUE)
+      pKT$ExcessX = sum(ttX - pKT$BGX, na.rm=TRUE)
+      if (pKT$ExcessS < 0){pKT$ExcessS = NaN}
+      
+      pKT$ERint = pKT$ExcessS/pKT$ExcessX
+      # see what happens if I datafill
+      ind = which(is.nan(pass[,tmpS])) ; ind2 = which(is.nan(pass[,tmpX]))
+      
+      #if (length(ind) > 0){print(c("Datafilling", sKT))}
+      #if (length(ind2) > 0){print(c("Datafilling", xKT))}
+      ttS = na_interpolation(ttS) # fill NaNs
+      ttX = na_interpolation(ttX) # fill NaNs
+      
+      pKT$ExcessSfill = sum(ttS - pKT$BGS, na.rm=TRUE)
+      pKT$ExcessXfill = sum(ttX - pKT$BGX, na.rm=TRUE)
+      pKT$ERintfill = pKT$ExcessSfill/pKT$ExcessXfill
+      pKT$r_sq = (cor(pass[,tmpS],pass[,tmpX], use='pairwise.complete.obs'))^2
+      # can't have a negative ER!
+      if (useYork == 1){
+        if (pKT$slope < 0){ pKT$slope = NaN}
+      }
+      if (useYork == 0){
+        pKT$uncertainty_slope = NaN
+        pKT$slope = pKT$coefficients[2]
+        pKT$intercept = pKT$coefficients[1]
+        if (pKT$slope < 0){ pKT$slope = NaN}
+      }
+    } else{
+      pKT = data.frame('slope'=NaN,'intercept'=NaN,'uncertainty_slope'=NaN,'r_sq'=NaN,
+                       'ERint' = NaN, 'ERintfill'=NaN,'ExcessS' = NaN, 'ExcessX'=NaN, 
+                       'BGX' = NaN, 'BGS' = NaN) 
+    }
+  }
+  if (SLOW == 1){
+    if (sd(pass[,tmpS], na.rm=TRUE) != 0 & uval > 4 ){ 
+      if (useerror == 1){
+        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
+        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
+      } else{ 
+        pass$xKTE = 0
+        pass$sKTE = 0
+        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
+        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
+        
+      }
+      # y-species
+      
+      # ---- Get background from first 5 points -----
+      # old method
+      #pKT$BGS = quantile(background[,tmpSB],probs=c(0.1,0.2,0.3,0.4,0.5,0.75,1), type = 8, na.rm=TRUE)[1] # 10% percentile
+      #pKT$BGX = quantile(background[,tmpXB],probs=c(0.1,0.2,0.3,0.4,0.5,0.75,1),type = 8, na.rm=TRUE)[1]
+      # new method
+      pKT$BGS = mean(background[,tmpSB], na.rm=TRUE)
+      pKT$BGX =mean(background[,tmpXB], na.rm=TRUE)
+      
+      pKT$ExcessS = sum(ttS - pKT$BGS, na.rm=TRUE)
+      pKT$ExcessX = sum(ttX - pKT$BGX, na.rm=TRUE)
+      pKT$ERint = pKT$ExcessS/pKT$ExcessX
+      # see what happens if I datafill
+      ind = which(is.nan(pass[,tmpS])) ; ind2 = which(is.nan(pass[,tmpX]))
+      if (length(ind) > 0){print(c("Datafilling", sKT))}
+      if (length(ind2) > 0){print(c("Datafilling", xKT))}
+      ttS = na_interpolation(ttS) # fill NaNs
+      ttX = na_interpolation(ttX) # fill NaNs
+      
+      pKT$ExcessSfill = sum(ttS - pKT$BGS, na.rm=TRUE)
+      pKT$ExcessXfill = sum(ttX - pKT$BGX, na.rm=TRUE)
+      pKT$ERintfill = pKT$ExcessSfill/pKT$ExcessXfill
+      
+      if (useYork == 1){
+        if (pKT$slope < 0){ pKT$slope = NaN}
+      }
+      if (useYork == 0){
+        pKT$slope = pKT$coefficients[2]
+        pKT$intercept = pKT$coefficients[1]
+        pKT$uncertainty_slope = NaN
+        
+        if (pKT$slope < 0){ pKT$slope = NaN}
+      }
+    } else{
+      pKT = data.frame('slope'=NaN,'uncertainty_slope'=NaN,'r_sq'=NaN,
+                       'ERint' = NaN, 'ERintfill'=NaN,'ExcessS' = NaN, 'ExcessX'=NaN, 
+                       'BGX' = NaN, 'BGS' = NaN) 
+    }
+  }
+  return(pKT)
+}
+# ----- ********* Functions for averaging instruments -----
+mergelines = function(alldata, variable1, variable2){
+  ind = which(alldata$variable == variable1)
+  t1= alldata[ind,]
+  ind = which(alldata$variable== variable2)
+  t2=alldata[ind,]
+  for (i in 1:length(t1$variable)){
+    newline1 = t1[i,]
+    newline2 = t2[i,]
+    # Going to replace the relevant variables in newline1 with the avg of newline1 and newline2
+    newline1$variable = paste0(t1$names[1],'_',t1$PI[1], '_',t2$PI[1])
+    newline1$PI = paste(t1$PI[1],'+',t2$PI[1],sep='')
+    
+    # 1hz
+    newline1$EF1.1hz = mean(c(newline1$EF1.1hz, newline2$EF1.1hz), na.rm=TRUE)
+    newline1$EF1CO.1hz = mean(c(newline1$EF1CO.1hz, newline2$EF1CO.1hz), na.rm=TRUE)
+    
+    newline1$EF2.1hz = mean(c(newline1$EF2.1hz, newline2$EF2.1hz), na.rm=TRUE)
+    newline1$EF2CO.1hz = mean(c(newline1$EF2CO.1hz, newline2$EF2CO.1hz), na.rm=TRUE)
+    
+    newline1$ERtoCO.1hz = mean(c(newline1$ERtoCO.1hz, newline2$ERtoCO.1hz), na.rm=TRUE)
+    newline1$ERtoX.1hz = mean(c(newline1$ERtoX.1hz, newline2$ERtoX.1hz), na.rm=TRUE)
+    
+    newline1$ERtoCOintfill.1hz= mean(c(newline1$ERtoCOintfill.1hz, newline2$ERtoCOintfill.1hz), na.rm=TRUE)
+    newline1$ERtoXintfill.1hz = mean(c(newline1$ERtoXintfill.1hz, newline2$ERtoXintfill.1hz), na.rm=TRUE)
+    
+    # 5hz
+    newline1$EF1.5hz = mean(c(newline1$EF1.5hz, newline2$EF1.5hz), na.rm=TRUE)
+    newline1$EF1CO.5hz = mean(c(newline1$EF1CO.5hz, newline2$EF1CO.5hz), na.rm=TRUE)
+    
+    newline1$EF2.5hz = mean(c(newline1$EF2.5hz, newline2$EF2.5hz), na.rm=TRUE)
+    newline1$EF2CO.5hz = mean(c(newline1$EF2CO.5hz, newline2$EF2CO.5hz), na.rm=TRUE)
+    
+    newline1$ERtoCO.5hz = mean(c(newline1$ERtoCO.5hz, newline2$ERtoCO.5hz), na.rm=TRUE)
+    newline1$ERtoX.5hz = mean(c(newline1$ERtoX.5hz, newline2$ERtoX.5hz), na.rm=TRUE)
+    
+    newline1$ERtoCOintfill.5hz= mean(c(newline1$ERtoCOintfill.5hz, newline2$ERtoCOintfill.5hz), na.rm=TRUE)
+    newline1$ERtoXintfill.5hz = mean(c(newline1$ERtoXintfill.5hz, newline2$ERtoXintfill.5hz), na.rm=TRUE)
+    
+    # Final
+    newline1$FinalEF= mean(c(newline1$FinalEF, newline2$FinalEF), na.rm=TRUE)
+    newline1$FinalR2 = mean(c(newline1$FinalR2, newline2$FinalR2), na.rm=TRUE)
+    newline1$FinalERtoCO = mean(c(newline1$FinalERtoCO, newline2$FinalERtoCO), na.rm=TRUE)
+    
+    alldata = rbind(alldata, newline1)
+  }
+  
+  # set USEME for the indivudal species to 0
+  # ---------------- Determine which EFs are averaged, used, or not used -------
+  # ------- Taking the average of >1 measurement
+  # Now using averaged HCHO, not using TOGA
+  ind = which(alldata$variable == variable1 | alldata$variable == variable2)
+  alldata$USEME[ind] = 0
+  
+  return(alldata)
+}
+mergelines3 = function(alldata, variable1, variable2,variable3){
+  ind = which(alldata$variable == variable1)
+  t1= alldata[ind,]
+  ind = which(alldata$variable== variable2)
+  t2=alldata[ind,]
+  ind = which(alldata$variable== variable3)
+  t3=alldata[ind,]
+  for (i in 1:length(t1$variable)){
+    newline1 = t1[i,]
+    newline2 = t2[i,]
+    newline3 = t3[i,]
+    
+    # Going to replace the relevant variables in newline1 with the avg of newline1 and newline2
+    newline1$variable = paste0(t1$names[1],'_',t1$PI[1], '_',t2$PI[1],'_',t3$P1[1])
+    
+    newline1$PI = paste(t1$PI[1],'+',t2$PI[1],'+',t3$PI[1],sep='')
+    
+    # 1hz
+    newline1$EF1.1hz = mean(c(newline1$EF1.1hz, newline2$EF1.1hz, newline3$EF1.1hz), na.rm=TRUE)
+    newline1$EF1CO.1hz = mean(c(newline1$EF1CO.1hz, newline2$EF1CO.1hz, newline3$EF1CO.1hz), na.rm=TRUE)
+    
+    newline1$EF2.1hz = mean(c(newline1$EF2.1hz, newline2$EF2.1hz, newline3$EF2.1hz), na.rm=TRUE)
+    newline1$EF2CO.1hz = mean(c(newline1$EF2CO.1hz, newline2$EF2CO.1hz, newline3$EF2CO.1hz), na.rm=TRUE)
+    
+    newline1$ERtoCO.1hz = mean(c(newline1$ERtoCO.1hz, newline2$ERtoCO.1hz, newline3$ERtoCO.1hz), na.rm=TRUE)
+    newline1$ERtoX.1hz = mean(c(newline1$ERtoX.1hz, newline2$ERtoX.1hz, newline3$ERtoX.1hz), na.rm=TRUE)
+    
+    newline1$ERtoCOintfill.1hz= mean(c(newline1$ERtoCOintfill.1hz, newline2$ERtoCOintfill.1hz, newline3$ERtoCOintfill.1hz), na.rm=TRUE)
+    newline1$ERtoXintfill.1hz = mean(c(newline1$ERtoXintfill.1hz, newline2$ERtoXintfill.1hz, newline3$ERtoXintfill.1hz), na.rm=TRUE)
+    
+    # 5hz
+    newline1$EF1.5hz = mean(c(newline1$EF1.5hz, newline2$EF1.5hz, newline3$EF1.5hz), na.rm=TRUE)
+    newline1$EF1CO.5hz = mean(c(newline1$EF1CO.5hz, newline2$EF1CO.5hz, newline3$EF1CO.5hz), na.rm=TRUE)
+    
+    newline1$EF2.5hz = mean(c(newline1$EF2.5hz, newline2$EF2.5hz, newline3$EF2.5hz), na.rm=TRUE)
+    newline1$EF2CO.5hz = mean(c(newline1$EF2CO.5hz, newline2$EF2CO.5hz, newline3$EF2CO.5hz), na.rm=TRUE)
+    
+    newline1$ERtoCO.5hz = mean(c(newline1$ERtoCO.5hz, newline2$ERtoCO.5hz, newline3$ERtoCO.5hz), na.rm=TRUE)
+    newline1$ERtoX.5hz = mean(c(newline1$ERtoX.5hz, newline2$ERtoX.5hz, newline3$ERtoX.5hz), na.rm=TRUE)
+    
+    newline1$ERtoCOintfill.5hz= mean(c(newline1$ERtoCOintfill.5hz, newline2$ERtoCOintfill.5hz, newline3$ERtoCOintfill.5hz), na.rm=TRUE)
+    newline1$ERtoXintfill.5hz = mean(c(newline1$ERtoXintfill.5hz, newline2$ERtoXintfill.5hz,newline3$ERtoXintfill.5hz), na.rm=TRUE)
+    # Chosen
+    #newline1$ChosenEF.5hz= mean(c(newline1$ChosenEF.5hz, newline2$ChosenEF.5hz, newline3$ChosenEF.5hz), na.rm=TRUE)
+    #newline1$ChosenEF.1hz= mean(c(newline1$ChosenEF.1hz, newline2$ChosenEF.1hz, newline3$ChosenEF.1hz), na.rm=TRUE)
+    #newline1$ChosenEF.R2.5hz = mean(c(newline1$ChosenEF.R2.5hz, newline2$ChosenEF.R2.5hz, newline3$ChosenEF.R2.5hz), na.rm=TRUE)
+    #newline1$ChosenEF.R2.1hz = mean(c(newline1$ChosenEF.R2.1hz, newline2$ChosenEF.R2.1hz, newline3$ChosenEF.R2.1hz), na.rm=TRUE)
+    # Final
+    newline1$FinalEF= mean(c(newline1$FinalEF, newline2$FinalEF,newline3$FinalEF), na.rm=TRUE)
+    newline1$FinalR2 = mean(c(newline1$FinalR2, newline2$FinalR2, newline3$FinalR2), na.rm=TRUE)
+    newline1$FinalERtoCO = mean(c(newline1$FinalERtoCO, newline2$FinalERtoCO,newline3$FinalERtoCO), na.rm=TRUE)
+    
+    alldata = rbind(alldata, newline1)
+  }
+  
+  # set USEME for the indivudal species to 0
+  # ---------------- Determine which EFs are averaged, used, or not used -------
+  # ------- Taking the average of >1 measurement
+  # Now using averaged HCHO, not using TOGA
+  ind = which(alldata$variable == variable1 | alldata$variable == variable2 | alldata$variable == variable3)
+  alldata$USEME[ind] = 0
+  
+  return(alldata)
+}
+mergelines4 = function(alldata, variable1, variable2,variable3, variable4){
+  ind = which(alldata$variable == variable1)
+  t1= alldata[ind,]
+  ind = which(alldata$variable== variable2)
+  t2=alldata[ind,]
+  ind = which(alldata$variable== variable3)
+  t3=alldata[ind,]
+  ind = which(alldata$variable== variable4)
+  t4=alldata[ind,]
+  for (i in 1:length(t1$variable)){
+    newline1 = t1[i,]
+    newline2 = t2[i,]
+    newline3 = t3[i,]
+    newline4 = t4[i,]
+    
+    newline1$USEME = 1
+    # Going to replace the relevant variables in newline1 with the avg of newline1 and newline2
+    newline1$variable = paste0(t1$names[1],'_',t1$PI[1], '_',t2$PI[1],'_',t3$P1[1],'_',t4$P1[1])
+    
+    newline1$PI = paste(t1$PI[1],'+',t2$PI[1],'+',t3$PI[1],'+',t4$PI[1],sep='')
+    
+    # 1hz
+    newline1$EF1.1hz = mean(c(newline1$EF1.1hz, newline2$EF1.1hz, newline3$EF1.1hz, newline4$EF1.1hz), na.rm=TRUE)
+    newline1$EF1CO.1hz = mean(c(newline1$EF1CO.1hz, newline2$EF1CO.1hz, newline3$EF1CO.1hz, newline4$EF1CO.1hz), na.rm=TRUE)
+    
+    newline1$EF2.1hz = mean(c(newline1$EF2.1hz, newline2$EF2.1hz, newline3$EF2.1hz, newline4$EF2.1hz), na.rm=TRUE)
+    newline1$EF2CO.1hz = mean(c(newline1$EF2CO.1hz, newline2$EF2CO.1hz, newline3$EF2CO.1hz, newline4$EF2CO.1hz), na.rm=TRUE)
+    # fix commented lines eventually
+    #newline1$ERtoCO.1hz = mean(c(newline1$ERtoCO.1hz, newline2$ERtoCO.1hz, newline3$ERtoCO.1hz), na.rm=TRUE)
+    #newline1$ERtoX.1hz = mean(c(newline1$ERtoX.1hz, newline2$ERtoX.1hz, newline3$ERtoX.1hz), na.rm=TRUE)
+    
+    #newline1$ERtoCOintfill.1hz= mean(c(newline1$ERtoCOintfill.1hz, newline2$ERtoCOintfill.1hz, newline3$ERtoCOintfill.1hz), na.rm=TRUE)
+    #newline1$ERtoXintfill.1hz = mean(c(newline1$ERtoXintfill.1hz, newline2$ERtoXintfill.1hz, newline3$ERtoXintfill.1hz), na.rm=TRUE)
+    
+    # 5hz
+    #newline1$EF1.5hz = mean(c(newline1$EF1.5hz, newline2$EF1.5hz, newline3$EF1.5hz), na.rm=TRUE)
+    #newline1$EF1CO.5hz = mean(c(newline1$EF1CO.5hz, newline2$EF1CO.5hz, newline3$EF1CO.5hz), na.rm=TRUE)
+    
+    #newline1$EF2.5hz = mean(c(newline1$EF2.5hz, newline2$EF2.5hz, newline3$EF2.5hz), na.rm=TRUE)
+    #newline1$EF2CO.5hz = mean(c(newline1$EF2CO.5hz, newline2$EF2CO.5hz, newline3$EF2CO.5hz), na.rm=TRUE)
+    
+    #newline1$ERtoCO.5hz = mean(c(newline1$ERtoCO.5hz, newline2$ERtoCO.5hz, newline3$ERtoCO.5hz), na.rm=TRUE)
+    #newline1$ERtoX.5hz = mean(c(newline1$ERtoX.5hz, newline2$ERtoX.5hz, newline3$ERtoX.5hz), na.rm=TRUE)
+    
+    #newline1$ERtoCOintfill.5hz= mean(c(newline1$ERtoCOintfill.5hz, newline2$ERtoCOintfill.5hz, newline3$ERtoCOintfill.5hz), na.rm=TRUE)
+    #newline1$ERtoXintfill.5hz = mean(c(newline1$ERtoXintfill.5hz, newline2$ERtoXintfill.5hz,newline3$ERtoXintfill.5hz), na.rm=TRUE)
+    # Chosen
+    #newline1$ChosenEF.5hz= mean(c(newline1$ChosenEF.5hz, newline2$ChosenEF.5hz, newline3$ChosenEF.5hz, newline4$ChosenEF.5hz), na.rm=TRUE)
+    #newline1$ChosenEF.1hz= mean(c(newline1$ChosenEF.1hz, newline2$ChosenEF.1hz, newline3$ChosenEF.1hz, newline4$ChosenEF.1hz), na.rm=TRUE)
+    #newline1$ChosenEF.R2.5hz = mean(c(newline1$ChosenEF.R2.5hz, newline2$ChosenEF.R2.5hz, newline3$ChosenEF.R2.5hz, newline4$ChosenEF.R2.5hz), na.rm=TRUE)
+    #newline1$ChosenEF.R2.1hz = mean(c(newline1$ChosenEF.R2.1hz, newline2$ChosenEF.R2.1hz, newline3$ChosenEF.R2.1hz, newline4$ChosenEF.R2.1hz), na.rm=TRUE)
+    # Final
+    newline1$FinalEF= mean(c(newline1$FinalEF, newline2$FinalEF,newline3$FinalEF,newline4$FinalEF), na.rm=TRUE)
+    newline1$FinalR2 = mean(c(newline1$FinalR2, newline2$FinalR2, newline3$FinalR2, newline4$FinalR2), na.rm=TRUE)
+    newline1$FinalERtoCO = mean(c(newline1$FinalERtoCO, newline2$FinalERtoCO,newline3$FinalERtoCO,newline4$FinalERtoCO), na.rm=TRUE)
+    
+    alldata = rbind(alldata, newline1)
+  }
+  
+  # set USEME for the indivudal species to 0
+  # ---------------- Determine which EFs are averaged, used, or not used -------
+  # ------- Taking the average of >1 measurement
+  # Now using averaged HCHO, not using TOGA
+  ind = which(alldata$variable == variable1 | alldata$variable == variable2 | alldata$variable == variable3 | alldata$variable == variable4)
+  alldata$USEME[ind] = 0
+  
+  return(alldata)
+}
 
+# -------*********  Plotting functions --------
 plotpassSPECIES = function(pass,species, shortname){
   cc = colnames(pass)
   par(mfrow=c(1,2))
@@ -3480,7 +3817,7 @@ plotpass5hz = function(pass){
   } else{  
     ccCH2O_E = NaN
     print(c("r^2, CO vs. CH2O",NaN))
-    }
+  }
   ind = which(is.finite(pass$NO_LIF_ROLLINS))
   if (length(ind) > 3){
     ccNO = cor.test(pass$CO_DACOM_DISKIN, pass$NO_LIF_ROLLINS)
@@ -3548,7 +3885,7 @@ plotpass5hz = function(pass){
     mtext("CH3OH, ppb", side = 4, line = 2, cex=cz)
     legend("topright", c("CO", "CH3OH"), col = c("black", "red"), bty='n',lty = c(1, 2))
     yy=max(pass$CO_DACOM_DISKIN, na.rm=TRUE)
-  
+    
     plot(pass$Time_Start, pass$CO_DACOM_DISKIN,ylab = "CO, ppb",type='o', lwd=tt,
          main = "", xlab = "Time", ylim=c(min(pass$CO_DACOM_DISKIN, na.rm=TRUE), yy))
     abline(h=co_bg)
@@ -3562,7 +3899,7 @@ plotpass5hz = function(pass){
     
     mtext("HCOOH, ppb", side = 4, line = 2, cex=cz)
     legend("topright", c("CO", "HCOOH"), col = c("black", "red"), bty='n',lty = c(1, 2))
-}
+  }
   # -----
   yy=max(pass$CO_DACOM_DISKIN, na.rm=TRUE)
   plot(pass$Time_Start, pass$CO_DACOM_DISKIN, ylab = "CO, ppb",type='o', lwd=tt,
@@ -3889,337 +4226,6 @@ plotpass5hzB = function(pass){
   text(max(pass$Time_Start)-2,yyz*0.991,paste("r2=",round(ccPAN_E, digits = 2) ))
   
 }
-
-mergelines = function(alldata, variable1, variable2){
-  ind = which(alldata$variable == variable1)
-  t1= alldata[ind,]
-  ind = which(alldata$variable== variable2)
-  t2=alldata[ind,]
-  for (i in 1:length(t1$variable)){
-    newline1 = t1[i,]
-    newline2 = t2[i,]
-    # Going to replace the relevant variables in newline1 with the avg of newline1 and newline2
-    newline1$variable = paste0(t1$names[1],'_',t1$PI[1], '_',t2$PI[1])
-    newline1$PI = paste(t1$PI[1],'+',t2$PI[1],sep='')
-   
-    # 1hz
-    newline1$EF1.1hz = mean(c(newline1$EF1.1hz, newline2$EF1.1hz), na.rm=TRUE)
-    newline1$EF1CO.1hz = mean(c(newline1$EF1CO.1hz, newline2$EF1CO.1hz), na.rm=TRUE)
-    
-    newline1$EF2.1hz = mean(c(newline1$EF2.1hz, newline2$EF2.1hz), na.rm=TRUE)
-    newline1$EF2CO.1hz = mean(c(newline1$EF2CO.1hz, newline2$EF2CO.1hz), na.rm=TRUE)
-    
-    newline1$ERtoCO.1hz = mean(c(newline1$ERtoCO.1hz, newline2$ERtoCO.1hz), na.rm=TRUE)
-    newline1$ERtoX.1hz = mean(c(newline1$ERtoX.1hz, newline2$ERtoX.1hz), na.rm=TRUE)
-    
-    newline1$ERtoCOintfill.1hz= mean(c(newline1$ERtoCOintfill.1hz, newline2$ERtoCOintfill.1hz), na.rm=TRUE)
-    newline1$ERtoXintfill.1hz = mean(c(newline1$ERtoXintfill.1hz, newline2$ERtoXintfill.1hz), na.rm=TRUE)
-    
-    # 5hz
-    newline1$EF1.5hz = mean(c(newline1$EF1.5hz, newline2$EF1.5hz), na.rm=TRUE)
-    newline1$EF1CO.5hz = mean(c(newline1$EF1CO.5hz, newline2$EF1CO.5hz), na.rm=TRUE)
-    
-    newline1$EF2.5hz = mean(c(newline1$EF2.5hz, newline2$EF2.5hz), na.rm=TRUE)
-    newline1$EF2CO.5hz = mean(c(newline1$EF2CO.5hz, newline2$EF2CO.5hz), na.rm=TRUE)
-    
-    newline1$ERtoCO.5hz = mean(c(newline1$ERtoCO.5hz, newline2$ERtoCO.5hz), na.rm=TRUE)
-    newline1$ERtoX.5hz = mean(c(newline1$ERtoX.5hz, newline2$ERtoX.5hz), na.rm=TRUE)
-    
-    newline1$ERtoCOintfill.5hz= mean(c(newline1$ERtoCOintfill.5hz, newline2$ERtoCOintfill.5hz), na.rm=TRUE)
-    newline1$ERtoXintfill.5hz = mean(c(newline1$ERtoXintfill.5hz, newline2$ERtoXintfill.5hz), na.rm=TRUE)
-    
-    # Final
-    newline1$FinalEF= mean(c(newline1$FinalEF, newline2$FinalEF), na.rm=TRUE)
-    newline1$FinalR2 = mean(c(newline1$FinalR2, newline2$FinalR2), na.rm=TRUE)
-    newline1$FinalERtoCO = mean(c(newline1$FinalERtoCO, newline2$FinalERtoCO), na.rm=TRUE)
-
-    alldata = rbind(alldata, newline1)
-  }
-  
-  # set USEME for the indivudal species to 0
-  # ---------------- Determine which EFs are averaged, used, or not used -------
-  # ------- Taking the average of >1 measurement
-  # Now using averaged HCHO, not using TOGA
-  ind = which(alldata$variable == variable1 | alldata$variable == variable2)
-  alldata$USEME[ind] = 0
-  
-  return(alldata)
-}
-mergelines3 = function(alldata, variable1, variable2,variable3){
-  ind = which(alldata$variable == variable1)
-  t1= alldata[ind,]
-  ind = which(alldata$variable== variable2)
-  t2=alldata[ind,]
-  ind = which(alldata$variable== variable3)
-  t3=alldata[ind,]
-  for (i in 1:length(t1$variable)){
-    newline1 = t1[i,]
-    newline2 = t2[i,]
-    newline3 = t3[i,]
-    
-    # Going to replace the relevant variables in newline1 with the avg of newline1 and newline2
-    newline1$variable = paste0(t1$names[1],'_',t1$PI[1], '_',t2$PI[1],'_',t3$P1[1])
-    
-    newline1$PI = paste(t1$PI[1],'+',t2$PI[1],'+',t3$PI[1],sep='')
-    
-    # 1hz
-    newline1$EF1.1hz = mean(c(newline1$EF1.1hz, newline2$EF1.1hz, newline3$EF1.1hz), na.rm=TRUE)
-    newline1$EF1CO.1hz = mean(c(newline1$EF1CO.1hz, newline2$EF1CO.1hz, newline3$EF1CO.1hz), na.rm=TRUE)
-    
-    newline1$EF2.1hz = mean(c(newline1$EF2.1hz, newline2$EF2.1hz, newline3$EF2.1hz), na.rm=TRUE)
-    newline1$EF2CO.1hz = mean(c(newline1$EF2CO.1hz, newline2$EF2CO.1hz, newline3$EF2CO.1hz), na.rm=TRUE)
-    
-    newline1$ERtoCO.1hz = mean(c(newline1$ERtoCO.1hz, newline2$ERtoCO.1hz, newline3$ERtoCO.1hz), na.rm=TRUE)
-    newline1$ERtoX.1hz = mean(c(newline1$ERtoX.1hz, newline2$ERtoX.1hz, newline3$ERtoX.1hz), na.rm=TRUE)
-    
-    newline1$ERtoCOintfill.1hz= mean(c(newline1$ERtoCOintfill.1hz, newline2$ERtoCOintfill.1hz, newline3$ERtoCOintfill.1hz), na.rm=TRUE)
-    newline1$ERtoXintfill.1hz = mean(c(newline1$ERtoXintfill.1hz, newline2$ERtoXintfill.1hz, newline3$ERtoXintfill.1hz), na.rm=TRUE)
-    
-    # 5hz
-    newline1$EF1.5hz = mean(c(newline1$EF1.5hz, newline2$EF1.5hz, newline3$EF1.5hz), na.rm=TRUE)
-    newline1$EF1CO.5hz = mean(c(newline1$EF1CO.5hz, newline2$EF1CO.5hz, newline3$EF1CO.5hz), na.rm=TRUE)
-    
-    newline1$EF2.5hz = mean(c(newline1$EF2.5hz, newline2$EF2.5hz, newline3$EF2.5hz), na.rm=TRUE)
-    newline1$EF2CO.5hz = mean(c(newline1$EF2CO.5hz, newline2$EF2CO.5hz, newline3$EF2CO.5hz), na.rm=TRUE)
-    
-    newline1$ERtoCO.5hz = mean(c(newline1$ERtoCO.5hz, newline2$ERtoCO.5hz, newline3$ERtoCO.5hz), na.rm=TRUE)
-    newline1$ERtoX.5hz = mean(c(newline1$ERtoX.5hz, newline2$ERtoX.5hz, newline3$ERtoX.5hz), na.rm=TRUE)
-    
-    newline1$ERtoCOintfill.5hz= mean(c(newline1$ERtoCOintfill.5hz, newline2$ERtoCOintfill.5hz, newline3$ERtoCOintfill.5hz), na.rm=TRUE)
-    newline1$ERtoXintfill.5hz = mean(c(newline1$ERtoXintfill.5hz, newline2$ERtoXintfill.5hz,newline3$ERtoXintfill.5hz), na.rm=TRUE)
-    # Chosen
-    #newline1$ChosenEF.5hz= mean(c(newline1$ChosenEF.5hz, newline2$ChosenEF.5hz, newline3$ChosenEF.5hz), na.rm=TRUE)
-    #newline1$ChosenEF.1hz= mean(c(newline1$ChosenEF.1hz, newline2$ChosenEF.1hz, newline3$ChosenEF.1hz), na.rm=TRUE)
-    #newline1$ChosenEF.R2.5hz = mean(c(newline1$ChosenEF.R2.5hz, newline2$ChosenEF.R2.5hz, newline3$ChosenEF.R2.5hz), na.rm=TRUE)
-    #newline1$ChosenEF.R2.1hz = mean(c(newline1$ChosenEF.R2.1hz, newline2$ChosenEF.R2.1hz, newline3$ChosenEF.R2.1hz), na.rm=TRUE)
-    # Final
-    newline1$FinalEF= mean(c(newline1$FinalEF, newline2$FinalEF,newline3$FinalEF), na.rm=TRUE)
-    newline1$FinalR2 = mean(c(newline1$FinalR2, newline2$FinalR2, newline3$FinalR2), na.rm=TRUE)
-    newline1$FinalERtoCO = mean(c(newline1$FinalERtoCO, newline2$FinalERtoCO,newline3$FinalERtoCO), na.rm=TRUE)
-    
-    alldata = rbind(alldata, newline1)
-  }
-  
-  # set USEME for the indivudal species to 0
-  # ---------------- Determine which EFs are averaged, used, or not used -------
-  # ------- Taking the average of >1 measurement
-  # Now using averaged HCHO, not using TOGA
-  ind = which(alldata$variable == variable1 | alldata$variable == variable2 | alldata$variable == variable3)
-  alldata$USEME[ind] = 0
-  
-  return(alldata)
-}
-mergelines4 = function(alldata, variable1, variable2,variable3, variable4){
-  ind = which(alldata$variable == variable1)
-  t1= alldata[ind,]
-  ind = which(alldata$variable== variable2)
-  t2=alldata[ind,]
-  ind = which(alldata$variable== variable3)
-  t3=alldata[ind,]
-  ind = which(alldata$variable== variable4)
-  t4=alldata[ind,]
-  for (i in 1:length(t1$variable)){
-    newline1 = t1[i,]
-    newline2 = t2[i,]
-    newline3 = t3[i,]
-    newline4 = t4[i,]
-    
-    newline1$USEME = 1
-    # Going to replace the relevant variables in newline1 with the avg of newline1 and newline2
-    newline1$variable = paste0(t1$names[1],'_',t1$PI[1], '_',t2$PI[1],'_',t3$P1[1],'_',t4$P1[1])
-    
-    newline1$PI = paste(t1$PI[1],'+',t2$PI[1],'+',t3$PI[1],'+',t4$PI[1],sep='')
-    
-    # 1hz
-    newline1$EF1.1hz = mean(c(newline1$EF1.1hz, newline2$EF1.1hz, newline3$EF1.1hz, newline4$EF1.1hz), na.rm=TRUE)
-    newline1$EF1CO.1hz = mean(c(newline1$EF1CO.1hz, newline2$EF1CO.1hz, newline3$EF1CO.1hz, newline4$EF1CO.1hz), na.rm=TRUE)
-    
-    newline1$EF2.1hz = mean(c(newline1$EF2.1hz, newline2$EF2.1hz, newline3$EF2.1hz, newline4$EF2.1hz), na.rm=TRUE)
-    newline1$EF2CO.1hz = mean(c(newline1$EF2CO.1hz, newline2$EF2CO.1hz, newline3$EF2CO.1hz, newline4$EF2CO.1hz), na.rm=TRUE)
-    # fix commented lines eventually
-    #newline1$ERtoCO.1hz = mean(c(newline1$ERtoCO.1hz, newline2$ERtoCO.1hz, newline3$ERtoCO.1hz), na.rm=TRUE)
-    #newline1$ERtoX.1hz = mean(c(newline1$ERtoX.1hz, newline2$ERtoX.1hz, newline3$ERtoX.1hz), na.rm=TRUE)
-    
-    #newline1$ERtoCOintfill.1hz= mean(c(newline1$ERtoCOintfill.1hz, newline2$ERtoCOintfill.1hz, newline3$ERtoCOintfill.1hz), na.rm=TRUE)
-    #newline1$ERtoXintfill.1hz = mean(c(newline1$ERtoXintfill.1hz, newline2$ERtoXintfill.1hz, newline3$ERtoXintfill.1hz), na.rm=TRUE)
-    
-    # 5hz
-    #newline1$EF1.5hz = mean(c(newline1$EF1.5hz, newline2$EF1.5hz, newline3$EF1.5hz), na.rm=TRUE)
-    #newline1$EF1CO.5hz = mean(c(newline1$EF1CO.5hz, newline2$EF1CO.5hz, newline3$EF1CO.5hz), na.rm=TRUE)
-    
-    #newline1$EF2.5hz = mean(c(newline1$EF2.5hz, newline2$EF2.5hz, newline3$EF2.5hz), na.rm=TRUE)
-    #newline1$EF2CO.5hz = mean(c(newline1$EF2CO.5hz, newline2$EF2CO.5hz, newline3$EF2CO.5hz), na.rm=TRUE)
-    
-    #newline1$ERtoCO.5hz = mean(c(newline1$ERtoCO.5hz, newline2$ERtoCO.5hz, newline3$ERtoCO.5hz), na.rm=TRUE)
-    #newline1$ERtoX.5hz = mean(c(newline1$ERtoX.5hz, newline2$ERtoX.5hz, newline3$ERtoX.5hz), na.rm=TRUE)
-    
-    #newline1$ERtoCOintfill.5hz= mean(c(newline1$ERtoCOintfill.5hz, newline2$ERtoCOintfill.5hz, newline3$ERtoCOintfill.5hz), na.rm=TRUE)
-    #newline1$ERtoXintfill.5hz = mean(c(newline1$ERtoXintfill.5hz, newline2$ERtoXintfill.5hz,newline3$ERtoXintfill.5hz), na.rm=TRUE)
-    # Chosen
-    #newline1$ChosenEF.5hz= mean(c(newline1$ChosenEF.5hz, newline2$ChosenEF.5hz, newline3$ChosenEF.5hz, newline4$ChosenEF.5hz), na.rm=TRUE)
-    #newline1$ChosenEF.1hz= mean(c(newline1$ChosenEF.1hz, newline2$ChosenEF.1hz, newline3$ChosenEF.1hz, newline4$ChosenEF.1hz), na.rm=TRUE)
-    #newline1$ChosenEF.R2.5hz = mean(c(newline1$ChosenEF.R2.5hz, newline2$ChosenEF.R2.5hz, newline3$ChosenEF.R2.5hz, newline4$ChosenEF.R2.5hz), na.rm=TRUE)
-    #newline1$ChosenEF.R2.1hz = mean(c(newline1$ChosenEF.R2.1hz, newline2$ChosenEF.R2.1hz, newline3$ChosenEF.R2.1hz, newline4$ChosenEF.R2.1hz), na.rm=TRUE)
-    # Final
-    newline1$FinalEF= mean(c(newline1$FinalEF, newline2$FinalEF,newline3$FinalEF,newline4$FinalEF), na.rm=TRUE)
-    newline1$FinalR2 = mean(c(newline1$FinalR2, newline2$FinalR2, newline3$FinalR2, newline4$FinalR2), na.rm=TRUE)
-    newline1$FinalERtoCO = mean(c(newline1$FinalERtoCO, newline2$FinalERtoCO,newline3$FinalERtoCO,newline4$FinalERtoCO), na.rm=TRUE)
-    
-    alldata = rbind(alldata, newline1)
-  }
-  
-  # set USEME for the indivudal species to 0
-  # ---------------- Determine which EFs are averaged, used, or not used -------
-  # ------- Taking the average of >1 measurement
-  # Now using averaged HCHO, not using TOGA
-  ind = which(alldata$variable == variable1 | alldata$variable == variable2 | alldata$variable == variable3 | alldata$variable == variable4)
-  alldata$USEME[ind] = 0
-  
-  return(alldata)
-}
-getBLAKE = function(all1hz,varIN, MWspec, nCspec, OHrate){ 
-  # get ratio of BLAKE species to ethane and apply to CAMS C2H6 EF
-  ind = which(all1hz$variable == 'Ethane_WAS_BLAKE') # BLAKE ethane
-  ind2 = which(all1hz$variable == varIN)  # BLAKE species
-  nCat = all1hz$Category[ind2]
-
-  BLAKE_PROPANE_RATIO = all1hz$maxval[ind2]/all1hz$maxval[ind]
-  ind3 = which(all1hz$variable == 'C2H6_CAMS_pptv_FRIED') # CAMS ethane
-  CAMS_ETHANE_EF = all1hz$EF1[ind3] # g C2H6/kg fuel
-  BLAKE_PROPANE_EF = BLAKE_PROPANE_RATIO*CAMS_ETHANE_EF * MWspec/mWC2H6
-  fullline = all1hz[ind3,]
-  fullline$variable = paste(varIN,"_fromCAMSC2H6",sep='')
-  fullline$EF1 = BLAKE_PROPANE_EF
-  cc = colnames(fullline)
-  ind = which(cc == "ERtoX" | cc == "ERtoCO" | cc == "ERtoXint" | cc == "ERtoXintfill" | cc == "ERtoCOint" | cc == "ERtoCOintfill"| cc =="ERsigma" |
-                cc == "R2toX"  | cc =="R2toCO"| cc == "maxval"| cc == "OHrate"| cc == "BGX"| cc ==    "BGSpecies"  | cc == "ExcessX"   |             
-              cc== "ExcessS" | cc == "intercept"  | cc == "COintercept"  | cc == "TC1"| cc ==    "TC2"| cc == "PCTCarbon"   | 
-                cc ==    "EF2"| cc ==    "TC1CO"| cc ==  "TC2CO"| cc == "EF1CO"| cc ==  "EF2CO"| cc ==  "TC1E" | cc== "EF1sigmaMAX" | cc== "EF1sigmaMIN" |
-                cc == "TC1int"| cc == "TC2int"| cc == "EF1int"| cc == "EF2int" | cc == "TC1intfill" | cc =="TC2intfill" | cc == "EF1intfill"  | 
-                cc == "EF2intfill" | cc =="TC1COint"| cc == "TC2COint"| cc == "EF1COint"| cc == "EF2COint" | cc =="TC1COintfill" | cc == "TC2COintfill" | 
-                cc == "EF1COintfill" | cc =="EF2COintfill" ) 
-  fullline[,ind] = NaN
-  fullline$mWs = MWspec
-  fullline$nCs = nCspec
-  fullline$Category = nCat
-  fullline$OHrate = OHrate
-  fullline$maxval = all1hz$maxval[ind2]
-  all1hz = rbind(all1hz, fullline)
-  return(all1hz)
-}
-
-getBLAKE2 = function(all1hz,blake, blakeBG,varIN, MWspec, nCspec, OHrate, doBlake){ 
-  # get ratio of BLAKE species to ethane and apply to CAMS C2H6 EF
-  cc = colnames(blake); cc2 = colnames(blakeBG)
-  ind = which(cc == 'Ethane_WAS_BLAKE') # BLAKE ethane
-  # subtract off background
-  ind3 = which(cc2== 'Ethane_WAS_BLAKE') # BLAKE ethane
-
-  ind2 = which(cc == varIN)  # BLAKE species
-  # subtract off background
-  ind4 = which(cc2 == varIN)  # BLAKE species
-  ind5 = which(all1hz$variable == varIN)
-  nCat = all1hz$Category[ind5]
-  
-  # old
-  BLAKE_PROPANE_RATIO = all1hz$maxval[ind2]/all1hz$maxval[ind]
-  # now background subtracted
-  BLAKE_PROPANE_RATIO = (blake[,ind2] - blakeBG[,ind4])/(blake[,ind] - blakeBG[,ind3])
-  
-  ind6 = which(all1hz$variable == 'C2H6_CAMS_pptv_FRIED') # CAMS ethane
-  CAMS_ETHANE_EF = all1hz$EF1[ind6] # g C2H6/kg fuel
-  # Take average of available samples from Blake?
-  BLAKE_PROPANE_RATIO = mean(BLAKE_PROPANE_RATIO)
-  BLAKE_PROPANE_EF = BLAKE_PROPANE_RATIO*CAMS_ETHANE_EF * MWspec/mWC2H6
-  fullline = all1hz[ind6,]
-  fullline$variable = paste(varIN,"_fromCAMSC2H6",sep='')
-  fullline$EF1 = BLAKE_PROPANE_EF
-  cc = colnames(fullline)
-  ind = which(cc == "ERtoX" | cc == "ERtoCO" | cc == "ERtoXint" | cc == "ERtoXintfill" | cc == "ERtoCOint" | cc == "ERtoCOintfill"| cc =="ERsigma" |
-                cc == "R2toX"  | cc =="R2toCO"| cc == "maxval"| cc == "OHrate"| cc == "BGX"| cc ==    "BGSpecies"  | cc == "ExcessX"   |             
-                cc== "ExcessS" | cc == "intercept"  | cc == "COintercept"  | cc == "TC1"| cc ==    "TC2"| cc == "PCTCarbon"   | 
-                cc ==    "EF2"| cc ==    "TC1CO"| cc ==  "TC2CO"| cc == "EF1CO"| cc ==  "EF2CO"| cc ==  "TC1E" | cc== "EF1sigmaMAX" | cc== "EF1sigmaMIN" |
-                cc == "TC1int"| cc == "TC2int"| cc == "EF1int"| cc == "EF2int" | cc == "TC1intfill" | cc =="TC2intfill" | cc == "EF1intfill"  | 
-                cc == "EF2intfill" | cc =="TC1COint"| cc == "TC2COint"| cc == "EF1COint"| cc == "EF2COint" | cc =="TC1COintfill" | cc == "TC2COintfill" | 
-                cc == "EF1COintfill" | cc =="EF2COintfill" ) 
-  fullline[,ind] = NaN
-  fullline$mWs = MWspec
-  fullline$nCs = nCspec
-  fullline$Category = nCat
-  fullline$OHrate = OHrate
-  fullline$maxval = NaN#all1hz$maxval[ind2]
-  if (doBlake == 0){
-    fullline[,ind] = NaN
-  }
-  all1hz = rbind(all1hz, fullline)
-  
-  return(all1hz)
-}
-
-getGILMAN = function(all1hz,varIN, MWspec, nCspec, OHrate){ 
-  # get ratio of GILMAN species to ethane and apply to CAMS C2H6 EF
-  ind = which(all1hz$variable == 'Ethane_NOAAiWAS_GILMAN') # Gilman ethane
-  ind2 = which(all1hz$variable == varIN)  # GILMAN species
-  nCat = all1hz$Category[ind2]
-  GILMAN_PROPANE_RATIO = all1hz$maxval[ind2]/all1hz$maxval[ind]
-  ind3 = which(all1hz$variable == 'C2H6_CAMS_pptv_FRIED') # CAMS ethane
-  CAMS_ETHANE_EF = all1hz$EF1[ind3] # g C2H6/kg fuel
-  GILMAN_PROPANE_EF = GILMAN_PROPANE_RATIO*CAMS_ETHANE_EF * MWspec/mWC2H6
-  fullline = all1hz[ind3,]
-  fullline$variable = paste(varIN,"_fromCAMSC2H6",sep='')
-  fullline$EF1 = GILMAN_PROPANE_EF
-  cc = colnames(fullline)
-  ind = which(cc == "ERtoX" | cc == "ERtoCO" | cc == "ERtoXint" | cc == "ERtoXintfill" | cc == "ERtoCOint" | cc == "ERtoCOintfill"| cc =="ERsigma" |
-                cc == "R2toX"  | cc =="R2toCO"| cc == "maxval"| cc == "OHrate"| cc == "BGX"| cc ==    "BGSpecies"  | cc == "ExcessX"   |             
-                cc== "ExcessS" | cc == "intercept"  | cc == "COintercept"  | cc == "TC1"| cc ==    "TC2"| cc == "PCTCarbon"   | 
-                cc ==    "EF2"| cc ==    "TC1CO"| cc ==  "TC2CO"| cc == "EF1CO"| cc ==  "EF2CO"| cc ==  "TC1E" | cc== "EF1sigmaMAX" | cc== "EF1sigmaMIN" |
-                cc == "TC1int"| cc == "TC2int"| cc == "EF1int"| cc == "EF2int" | cc == "TC1intfill" | cc =="TC2intfill" | cc == "EF1intfill"  | 
-                cc == "EF2intfill" | cc =="TC1COint"| cc == "TC2COint"| cc == "EF1COint"| cc == "EF2COint" | cc =="TC1COintfill" | cc == "TC2COintfill" | 
-                cc == "EF1COintfill" | cc =="EF2COintfill" ) 
-  fullline[,c(ind)] = NaN
-  fullline$mWs = MWspec
-  fullline$nCs = nCspec
-  fullline$Category = nCat
-  fullline$OHrate = OHrate
-  fullline$maxval = all1hz$maxval[ind2]
-  
-  all1hz = rbind(all1hz, fullline)
-  return(all1hz)
-}
-
-getAPEL= function(all1hz,varIN, MWspec, nCspec, OHrate){ 
-  # get ratio of APEL species to benzene and apply to WARNEKE Benzene EF
-  ind = which(all1hz$variable == 'Benzene_TOGA_APEL') # Apel benzene
-  ind2 = which(all1hz$variable == varIN)  # Apel species
-  nCat = all1hz$Category[ind2]
- 
-  APEL_PROPANE_RATIO = all1hz$maxval[ind2]/all1hz$maxval[ind]
-  ind3 = which(all1hz$variable == 'Benzene_NOAAPTR_ppbv_WARNEKE') # Warneke benzene
-  CAMS_ETHANE_EF = all1hz$EF1[ind3] # g benzene/kg fuel
-  
-  APEL_PROPANE_EF = APEL_PROPANE_RATIO*CAMS_ETHANE_EF * MWspec/mWBenzene
-  fullline = all1hz[ind3,]
-  fullline$variable = paste(varIN,"_fromWARNEKEBenzene",sep='')
-  fullline$EF1 = APEL_PROPANE_EF
-  cc = colnames(fullline)
-  ind = which(cc == "ERtoX" | cc == "ERtoCO" | cc == "ERtoXint" | cc == "ERtoXintfill" | cc == "ERtoCOint" | cc == "ERtoCOintfill"| cc =="ERsigma" |
-                cc == "R2toX"  | cc =="R2toCO"| cc == "maxval"| cc == "OHrate"| cc == "BGX"| cc ==    "BGSpecies"  | cc == "ExcessX"   |             
-                cc== "ExcessS" | cc == "intercept"  | cc == "COintercept"  | cc == "TC1"| cc ==    "TC2"| cc == "PCTCarbon"   | 
-                cc ==    "EF2"| cc ==    "TC1CO"| cc ==  "TC2CO"| cc == "EF1CO"| cc ==  "EF2CO"| cc ==  "TC1E" | cc== "EF1sigmaMAX" | cc== "EF1sigmaMIN" |
-                cc == "TC1int"| cc == "TC2int"| cc == "EF1int"| cc == "EF2int" | cc == "TC1intfill" | cc =="TC2intfill" | cc == "EF1intfill"  | 
-                cc == "EF2intfill" | cc =="TC1COint"| cc == "TC2COint"| cc == "EF1COint"| cc == "EF2COint" | cc =="TC1COintfill" | cc == "TC2COintfill" | 
-                cc == "EF1COintfill" | cc =="EF2COintfill" ) 
-  fullline[,c(ind)] = NaN
-  fullline$mWs = MWspec
-  fullline$nCs = nCspec
-  fullline$Category = nCat
-  fullline$OHrate = OHrate
-  fullline$maxval = all1hz$maxval[ind2]
-  
-  all1hz = rbind(all1hz, fullline)
-  return(all1hz)
-}
-
 plotslowstuff = function(pass,startO, stopO, fire,passI, blake, blakeBG, GILMAN, GILMANBG, BECKY, BECKYBG){
   par(mfrow=c(2,1))
   ind = which(pass$Time_Start >= startO & pass$Time_Start <= stopO)
@@ -4885,6 +4891,90 @@ corSLOW = function(pass){
   print(c('APEL CH3CHO', cor(pass$CH3CHO_TOGA_APEL, pass$CO_DACOM_DISKIN)))
   print(c('GILMAN FURAN', cor(pass$Furan_NOAAiWAS_GILMAN, pass$CO_DACOM_DISKIN)))
 }
+# ----- ********* Get number of plumes and correlation with MCE -------
+getplumesANDmce = function(firedata, origdata){
+  # what is the variability across a fire?
+  firedata$COUNT_EFFINAL = NaN
+  firedata$corMCE_FINAL = NaN
+  firedata$corMCE_ERCO = NaN
+  
+  for (i in 1:length(firedata$Group.1)){
+    
+    ind = which(origdata$variable == firedata$Group.1[i] & is.finite(origdata$FinalERtoCO) &
+                  is.finite(origdata$FinalEF) & origdata$USEME != 0)
+    # remove the impact of outliers
+    tmpDat = origdata[ind,]
+    tmpMEAN = mean(tmpDat$FinalEF, na.rm=TRUE); tmpSD = sd(tmpDat$FinalEF, na.rm=TRUE)
+    ind = which(tmpDat$FinalEF < (tmpMEAN+tmpSD*2)) 
+    tmpDat = tmpDat[ind,]
+    
+    #firedata$COUNT_EF5hz[i] = length(ind)
+    if (length(tmpDat$FinalEF) > 3){
+      #tt = cor.test(tmpDat$FinalERtoCO, tmpDat$MCE)
+      #if (tt$p.value < 0.05){ firedata$corMCE_ERCO[i] = tt$estimate }
+      tt = cor.test(tmpDat$FinalEF, tmpDat$MCE)
+      if (tt$p.value < 0.05){ firedata$corMCE_FINAL[i] = tt$estimate }
+      firedata$COUNT_EFFINAL[i] = length(tmpDat$FinalEF)
+    }
+  }
+  return(firedata)
+}
+getplumesANDmcebyfuel = function(firedatafuel, origdata){
+  # what is the variability across a fire?
+  firedatafuel$COUNT_EFFINAL = NaN
+  firedatafuel$corMCE_FINAL = NaN
+  firedatafuel$corMCE_ERCO = NaN
+  firedatafuel$slopeMCE = NaN; firedatafuel$interceptMCE = NaN ; firedatafuel$slopeError = NaN
+  for (i in 1:length(firedatafuel$Group.1)){
+    ind = which(origdata$variable == firedatafuel$Group.2[i] &
+                  origdata$fuelORIG == firedatafuel$Group.1[i] & is.finite(origdata$FinalEF) &
+                  origdata$FinalEF != 0 & is.finite(origdata$FinalERtoCO))
+    firedatafuel$COUNT_EFFINAL[i] = length(ind)
+    if (length(ind) > 2){
+      tt = cor.test(origdata$FinalEF[ind], origdata$MCE[ind])
+      if (!is.na(tt$p.value) & !is.nan(tt$p.value)){ 
+        if (tt$p.value < 0.05){
+          firedatafuel$corMCE_FINAL[i] = tt$estimate
+          tS = lm(origdata$FinalEF[ind] ~ origdata$MCE[ind])
+          tSS = summary(tS)
+          firedatafuel$slopeMCE[i] = tS$coefficients[1]; firedatafuel$interceptMCE[i] = tS$coefficients[2]
+          firedatafuel$slopeError[i] = tSS$coefficients[2,2]
+          
+        }
+      }
+      
+      tt = cor.test(origdata$FinalERtoCO[ind], origdata$MCE[ind])
+      if (!is.na(tt$p.value) & !is.nan(tt$p.value)){ 
+        if (tt$p.value < 0.05){ firedatafuel$corMCE_ERCO[i] = tt$estimate }
+      }
+    }
+    
+  }
+  return(firedatafuel)
+}
+getplumesANDmcebyfuel1VAR = function(firedatafuel, origdata){
+  # what is the variability across a fire?
+  firedatafuel$COUNT_EFFINAL = NaN
+  firedatafuel$corMCE_FINAL = NaN
+  firedatafuel$corMCE_ERCO = NaN
+  for (i in 1:length(firedatafuel$Group.1)){
+    ind = which(origdata$fuelORIG == firedatafuel$Group.1[i] & is.finite(origdata$FinalEF) &
+                  origdata$FinalEF != 0 & is.finite(origdata$FinalERtoCO))
+    firedatafuel$COUNT_EFFINAL[i] = length(ind)
+    if (length(ind) > 2){
+      tt = cor.test(origdata$FinalEF[ind], origdata$MCE[ind])
+      if (tt$p.value < 0.05){ firedatafuel$corMCE_FINAL[i] = tt$estimate }
+      tt = cor.test(origdata$FinalERtoCO[ind], origdata$MCE[ind])
+      if (is.na(tt$p.value) | is.nan(tt$p.value)){tt$p.value = 0}
+      if (tt$p.value < 0.05){ firedatafuel$corMCE_ERCO[i] = tt$estimate }
+      
+    }
+    
+  }
+  return(firedatafuel)
+}
+
+# ------- *********** Time alignment functions--------
 time_alignBW = function(co2.5hz, shift, co.ch4.5hz, shift2,
                       warneke.5hz, shift3, isaf.5hz, shift4,  
                       rollins.5hz, shift5,rollinsS.5hz, shift6,
@@ -6163,155 +6253,6 @@ plotpass = function(pass){
   print(round((tmp$estimate)^2, digits=2))
   text(390,415, paste("r2 = ",round((tmp$estimate)^2, digits=2)))
 }
-smallfun = function(pass,background,xKT,sKT, xKTE, sKTE, SLOW){
-  require(imputeTS)
-  
-  pass = as.data.frame(pass) ; background = as.data.frame(background)
-  ccc = colnames(pass); cccB = colnames(background)
-  tmpX = which(ccc == xKT); tmpS = which(ccc == sKT)
-  tmpXB = which(cccB == xKT) ;tmpSB = which(cccB == sKT)
-  indKTX = which(is.finite(pass[,tmpX])) # finite X
-  indKTS = which(is.finite(pass[,tmpS])) # finite S
-  indKTSX = which(is.finite(pass[,tmpS]) & is.finite(pass[,tmpX])) # finite both
-  uval = length(unique(pass[,tmpS])) # seems like we need at least 4 unique points > NaN
-  pctVAL = round(length(indKTS)/length(indKTX), digits=1) # number of finite points greater than zero
-  # kludge for CO2
-  if (pctVAL > 0.4 & sKT == 'CO2_ppb'){ pctVAL = 0.61}
-  if (length(indKTSX) > 3 ){
-    testcor = (cor(pass[,tmpS],pass[,tmpX], use='pairwise.complete.obs'))
-    testcor = testcor^2
-  } else{ testcor =0}
-  if (is.na(testcor)){ testcor = 0}
-    # need to have at least 4? points that are different (non zero standard deviation)
-    # must have at least 50% of data points of CO?
-    # do I probably need to fill in the missing data?
-    # don't bother if R^2 is less than 0.75?
-    # lets filter for R2 after
-
-  useerror = 1 # consider observational uncertainty?
-  ttS = pass[,tmpS] ; ttX = pass[,tmpX] ; 
-  useYork = 0 # only for CO vs. CO2
-  if (sKT == 'CO_DACOM_DISKIN'){ useYork == 1}
- # print(c('SMALLFUN',sKT, pctVAL,uval, testcor))
-  if (SLOW == 0){
-    if (pctVAL > 0.6 & sd(pass[,tmpS], na.rm=TRUE) != 0 & uval >= 4 & length(indKTSX) >= 4){ # 4 unique points, 4 points total, 60% of CO2 data 
-      if (useerror == 1){
-        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
-        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
-      } else{ 
-        pass$xKTE = 0
-        pass$sKTE = 0
-        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
-        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
-        
-      }
-      # y-species
-     
-      # ---- Get background  -----
-      pKT$BGS = mean(background[,tmpSB], na.rm=TRUE)
-      pKT$BGX = mean(background[,tmpXB], na.rm=TRUE)
-      if (is.nan(pKT$BGS) | is.na(pKT$BGS)){
-        if (useYork == 1){
-          if (pKT$intercept < 0){ pKT$intercept = 0}
-          pKT$BGS = pKT$intercept
-          
-        }
-        if (useYork == 0){
-          if (pKT$coefficients[1] < 0){ pKT$coefficients[1] = 0}
-          pKT$BGS = pKT$coefficients[1]
-          pKT$intercept = pKT$coefficients[2]
-          pKT$uncertainty_slope = NaN
-          
-        }
-        # should I set to zero?
-      }
-      pKT$ExcessS = sum(ttS - pKT$BGS, na.rm=TRUE)
-      pKT$ExcessX = sum(ttX - pKT$BGX, na.rm=TRUE)
-      if (pKT$ExcessS < 0){pKT$ExcessS = NaN}
-      
-      pKT$ERint = pKT$ExcessS/pKT$ExcessX
-      # see what happens if I datafill
-      ind = which(is.nan(pass[,tmpS])) ; ind2 = which(is.nan(pass[,tmpX]))
-     
-      #if (length(ind) > 0){print(c("Datafilling", sKT))}
-      #if (length(ind2) > 0){print(c("Datafilling", xKT))}
-      ttS = na_interpolation(ttS) # fill NaNs
-      ttX = na_interpolation(ttX) # fill NaNs
-  
-      pKT$ExcessSfill = sum(ttS - pKT$BGS, na.rm=TRUE)
-      pKT$ExcessXfill = sum(ttX - pKT$BGX, na.rm=TRUE)
-      pKT$ERintfill = pKT$ExcessSfill/pKT$ExcessXfill
-      pKT$r_sq = (cor(pass[,tmpS],pass[,tmpX], use='pairwise.complete.obs'))^2
-      # can't have a negative ER!
-      if (useYork == 1){
-        if (pKT$slope < 0){ pKT$slope = NaN}
-      }
-      if (useYork == 0){
-        pKT$uncertainty_slope = NaN
-        pKT$slope = pKT$coefficients[2]
-        pKT$intercept = pKT$coefficients[1]
-        if (pKT$slope < 0){ pKT$slope = NaN}
-      }
-    } else{
-      pKT = data.frame('slope'=NaN,'intercept'=NaN,'uncertainty_slope'=NaN,'r_sq'=NaN,
-                             'ERint' = NaN, 'ERintfill'=NaN,'ExcessS' = NaN, 'ExcessX'=NaN, 
-                             'BGX' = NaN, 'BGS' = NaN) 
-    }
-  }
-  if (SLOW == 1){
-    if (sd(pass[,tmpS], na.rm=TRUE) != 0 & uval > 4 ){ 
-      if (useerror == 1){
-        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
-        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
-      } else{ 
-        pass$xKTE = 0
-        pass$sKTE = 0
-        if (useYork == 1){pKT = york_regression(pass, x=xKT,y=sKT, variance_x = xKTE, variance_y = sKTE )}
-        if (useYork == 0){pKT = lm(pass[,tmpS]~pass[,tmpX])}
-        
-      }
-      # y-species
-      
-      # ---- Get background from first 5 points -----
-      # old method
-      #pKT$BGS = quantile(background[,tmpSB],probs=c(0.1,0.2,0.3,0.4,0.5,0.75,1), type = 8, na.rm=TRUE)[1] # 10% percentile
-      #pKT$BGX = quantile(background[,tmpXB],probs=c(0.1,0.2,0.3,0.4,0.5,0.75,1),type = 8, na.rm=TRUE)[1]
-      # new method
-      pKT$BGS = mean(background[,tmpSB], na.rm=TRUE)
-      pKT$BGX =mean(background[,tmpXB], na.rm=TRUE)
-      
-      pKT$ExcessS = sum(ttS - pKT$BGS, na.rm=TRUE)
-      pKT$ExcessX = sum(ttX - pKT$BGX, na.rm=TRUE)
-      pKT$ERint = pKT$ExcessS/pKT$ExcessX
-      # see what happens if I datafill
-      ind = which(is.nan(pass[,tmpS])) ; ind2 = which(is.nan(pass[,tmpX]))
-      if (length(ind) > 0){print(c("Datafilling", sKT))}
-      if (length(ind2) > 0){print(c("Datafilling", xKT))}
-      ttS = na_interpolation(ttS) # fill NaNs
-      ttX = na_interpolation(ttX) # fill NaNs
-      
-      pKT$ExcessSfill = sum(ttS - pKT$BGS, na.rm=TRUE)
-      pKT$ExcessXfill = sum(ttX - pKT$BGX, na.rm=TRUE)
-      pKT$ERintfill = pKT$ExcessSfill/pKT$ExcessXfill
-      
-      if (useYork == 1){
-        if (pKT$slope < 0){ pKT$slope = NaN}
-      }
-      if (useYork == 0){
-        pKT$slope = pKT$coefficients[2]
-        pKT$intercept = pKT$coefficients[1]
-        pKT$uncertainty_slope = NaN
-        
-        if (pKT$slope < 0){ pKT$slope = NaN}
-      }
-    } else{
-      pKT = data.frame('slope'=NaN,'uncertainty_slope'=NaN,'r_sq'=NaN,
-                       'ERint' = NaN, 'ERintfill'=NaN,'ExcessS' = NaN, 'ExcessX'=NaN, 
-                       'BGX' = NaN, 'BGS' = NaN) 
-    }
-  }
-  return(pKT)
-}
 maxfun = function(pass,sKT){
   ccc = colnames(pass)
   tmp = which(ccc == sKT)
@@ -6701,45 +6642,6 @@ getEFs = function(fire.ERstoCO2){
   #fire.ERstoCO2[2,365:453] = NaN
   return(fire.ERstoCO2)
 }
-getEFTable1 = function(tablevals, varget, wHZ){
-  if (varget == 'mce.5hz'){
-    ind1 = which(tablevals$Group.1 == 'corn' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind2 = which(tablevals$Group.1 == 'rice' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind3 = which(tablevals$Group.1 == 'soybean'& tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind4 = which(tablevals$Group.1 == 'winter wheat' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind5 = which(tablevals$Group.1 == 'grass' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind6 = which(tablevals$Group.1 == 'slash' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind7 = which(tablevals$Group.1 == 'pile' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    ind8 = which(tablevals$Group.1 == 'shrub' & tablevals$Group.2 == 'CO_DACOM_DISKIN')
-    tableline= c(tablevals$mce.5hz[ind1],tablevals$mce.5hz[ind2],tablevals$mce.5hz[ind3],tablevals$mce.5hz[ind4],
-                 tablevals$mce.5hz[ind5],tablevals$mce.5hz[ind6],tablevals$mce.5hz[ind7])#,tablevals$mce.5hz[ind8])
-    
-  } else{
-    ind1 = which(tablevals$Group.1 == 'corn' & tablevals$Group.2 == varget)
-    ind2 = which(tablevals$Group.1 == 'rice' & tablevals$Group.2 == varget)
-    ind3 = which(tablevals$Group.1 == 'soybean' & tablevals$Group.2   == varget)
-    ind4 = which(tablevals$Group.1 == 'winter wheat' & tablevals$Group.2 == varget)
-    ind5 = which(tablevals$Group.1 == 'grass' & tablevals$Group.2 == varget)
-    ind6 = which(tablevals$Group.1 == 'slash' & tablevals$Group.2 == varget)
-    ind7 = which(tablevals$Group.1 == 'pile' & tablevals$Group.2  == varget)
-    ind8 = which(tablevals$Group.1 == 'shrub' & tablevals$Group.2 == varget)
-    tableline= c(tablevals$ChosenEF.5hz[ind1],tablevals$ChosenEF.5hz[ind2],tablevals$ChosenEF.5hz[ind3],tablevals$ChosenEF.5hz[ind4],
-                 tablevals$ChosenEF.5hz[ind5],tablevals$ChosenEF.5hz[ind6],tablevals$ChosenEF.5hz[ind7])#,tablevals$ChosenEF.5hz[ind8])
-  }  
-  if (wHZ == 1){
-    ind1 = which(tablevals$Group.1 == 'corn' & tablevals$Group.2 == varget)
-    ind2 = which(tablevals$Group.1 == 'rice' & tablevals$Group.2 == varget)
-    ind3 = which(tablevals$Group.1 == 'soybean' & tablevals$Group.2   == varget)
-    ind4 = which(tablevals$Group.1 == 'winter wheat' & tablevals$Group.2 == varget)
-    ind5 = which(tablevals$Group.1 == 'grass' & tablevals$Group.2 == varget)
-    ind6 = which(tablevals$Group.1 == 'slash' & tablevals$Group.2 == varget)
-    ind7 = which(tablevals$Group.1 == 'pile' & tablevals$Group.2  == varget)
-    #ind8 = which(tablevals$Group.1 == 'shrub' & tablevals$Group.2 == varget)
-    tableline= c(tablevals$ChosenEF.1hz[ind1],tablevals$ChosenEF.1hz[ind2],tablevals$ChosenEF.1hz[ind3],tablevals$ChosenEF.1hz[ind4],
-                 tablevals$ChosenEF.1hz[ind5],tablevals$ChosenEF.1hz[ind6],tablevals$ChosenEF.1hz[ind7])#,tablevals$ChosenEF.1hz[ind8])
-  }
-  return(tableline)
-}
 
 fuelvsfuel = function(allBOTH,fuel,variable){
   ind = which(allBOTH$fuel == fuel & allBOTH$variable == variable)
@@ -6760,207 +6662,6 @@ fuelvsfuel = function(allBOTH,fuel,variable){
   colnames(cornvsfuel) = fuel
   rownames(cornvsfuel) = c("rice","soy","grass","slash","pile","corn")
   return(cornvsfuel)
-}
-
-getEFbyfuel = function(allBOTH.filter, variable,res){
-  if (res == 5){
-    ind = which(allBOTH.filter$fuel == 'corn' & allBOTH.filter$variable == variable)
-    cornplumes = allBOTH.filter$mce.5hz[ind]
-    cornfires = allBOTH.filter$ChosenEF.5hz[ind]
-    ind = which(allBOTH.filter$fuel == 'soybean' & allBOTH.filter$variable == variable)
-    soyplumes = allBOTH.filter$mce.5hz[ind]
-    soyfires =  allBOTH.filter$ChosenEF.5hz[ind]
-    ind = which(allBOTH.filter$fuel == 'rice' & allBOTH.filter$variable == variable)
-    riceplumes = allBOTH.filter$mce.5hz[ind]
-    ricefires =  allBOTH.filter$ChosenEF.5hz[ind]
-    ind = which(allBOTH.filter$fuel == 'winter wheat' & allBOTH.filter$variable == variable)
-    wheatplumes = allBOTH.filter$mce.5hz[ind]
-    wheatfires =  allBOTH.filter$ChosenEF.5hz[ind]
-    ind = which(allBOTH.filter$fuel == 'grass' & allBOTH.filter$variable == variable)
-    grassplumes = allBOTH.filter$mce.5hz[ind]
-    grassfires =  allBOTH.filter$ChosenEF.5hz[ind]
-    ind = which(allBOTH.filter$fuel == 'slash' & allBOTH.filter$variable == variable)
-    slashplumes = allBOTH.filter$mce.5hz[ind]
-    slashfires = allBOTH.filter$ChosenEF.5hz[ind]
-    ind = which(allBOTH.filter$fuel == 'pile' & allBOTH.filter$variable == variable)
-    pileplumes =  allBOTH.filter$mce.5hz[ind]
-    pilefires =  allBOTH.filter$ChosenEF.5hz[ind]
-  }
-  if (res == 1){
-    ind = which(allBOTH.filter$fuel == 'corn' & allBOTH.filter$variable == variable)
-    cornplumes = allBOTH.filter$mce.1hz[ind]
-    cornfires = allBOTH.filter$ChosenEF.1hz[ind]
-    ind = which(allBOTH.filter$fuel == 'soybean' & allBOTH.filter$variable == variable)
-    soyplumes = allBOTH.filter$mce.1hz[ind]
-    soyfires =  allBOTH.filter$ChosenEF.1hz[ind]
-    ind = which(allBOTH.filter$fuel == 'rice' & allBOTH.filter$variable == variable)
-    riceplumes = allBOTH.filter$mce.1hz[ind]
-    ricefires =  allBOTH.filter$ChosenEF.1hz[ind]
-    ind = which(allBOTH.filter$fuel == 'winter wheat' & allBOTH.filter$variable == variable)
-    wheatplumes = allBOTH.filter$mce.1hz[ind]
-    wheatfires =  allBOTH.filter$ChosenEF.1hz[ind]
-    ind = which(allBOTH.filter$fuel == 'grass' & allBOTH.filter$variable == variable)
-    grassplumes = allBOTH.filter$mce.1hz[ind]
-    grassfires =  allBOTH.filter$ChosenEF.1hz[ind]
-    ind = which(allBOTH.filter$fuel == 'slash' & allBOTH.filter$variable == variable)
-    slashplumes = allBOTH.filter$mce.1hz[ind]
-    slashfires = allBOTH.filter$ChosenEF.1hz[ind]
-    ind = which(allBOTH.filter$fuel == 'pile' & allBOTH.filter$variable == variable)
-    pileplumes =  allBOTH.filter$mce.1hz[ind]
-    pilefires =  allBOTH.filter$ChosenEF.1hz[ind]
-  }
-  fires = c(cornfires,ricefires,soyfires, wheatfires, grassfires, slashfires, pilefires)#, shrubfires  )
-  plumes = c(cornplumes,riceplumes, soyplumes, wheatplumes, grassplumes, slashplumes, pileplumes)#, shrubplumes  )
-
-}
-
-# function to get number of plumes and correlation with MCE
-getplumesANDmce = function(firedata, origdata){
-  # what is the variability across a fire?
-  firedata$COUNT_EFFINAL = NaN
-  firedata$corMCE_FINAL = NaN
-  firedata$corMCE_ERCO = NaN
-  
-  for (i in 1:length(firedata$Group.1)){
-    
-    ind = which(origdata$variable == firedata$Group.1[i] & is.finite(origdata$FinalERtoCO) &
-                  is.finite(origdata$FinalEF) & origdata$USEME != 0)
-    # remove the impact of outliers
-    tmpDat = origdata[ind,]
-    tmpMEAN = mean(tmpDat$FinalEF, na.rm=TRUE); tmpSD = sd(tmpDat$FinalEF, na.rm=TRUE)
-    ind = which(tmpDat$FinalEF < (tmpMEAN+tmpSD*2)) 
-    tmpDat = tmpDat[ind,]
-    
-    #firedata$COUNT_EF5hz[i] = length(ind)
-    if (length(tmpDat$FinalEF) > 3){
-      #tt = cor.test(tmpDat$FinalERtoCO, tmpDat$MCE)
-      #if (tt$p.value < 0.05){ firedata$corMCE_ERCO[i] = tt$estimate }
-      tt = cor.test(tmpDat$FinalEF, tmpDat$MCE)
-      if (tt$p.value < 0.05){ firedata$corMCE_FINAL[i] = tt$estimate }
-      firedata$COUNT_EFFINAL[i] = length(tmpDat$FinalEF)
-    }
-  }
-  return(firedata)
-}
-getplumesANDmcebyfuel = function(firedatafuel, origdata){
-  # what is the variability across a fire?
-  firedatafuel$COUNT_EFFINAL = NaN
-  firedatafuel$corMCE_FINAL = NaN
-  firedatafuel$corMCE_ERCO = NaN
-  firedatafuel$slopeMCE = NaN; firedatafuel$interceptMCE = NaN ; firedatafuel$slopeError = NaN
-  for (i in 1:length(firedatafuel$Group.1)){
-    ind = which(origdata$variable == firedatafuel$Group.2[i] &
-                  origdata$fuelORIG == firedatafuel$Group.1[i] & is.finite(origdata$FinalEF) &
-                  origdata$FinalEF != 0 & is.finite(origdata$FinalERtoCO))
-    firedatafuel$COUNT_EFFINAL[i] = length(ind)
-    if (length(ind) > 2){
-      tt = cor.test(origdata$FinalEF[ind], origdata$MCE[ind])
-      if (!is.na(tt$p.value) & !is.nan(tt$p.value)){ 
-        if (tt$p.value < 0.05){
-          firedatafuel$corMCE_FINAL[i] = tt$estimate
-          tS = lm(origdata$FinalEF[ind] ~ origdata$MCE[ind])
-          tSS = summary(tS)
-          firedatafuel$slopeMCE[i] = tS$coefficients[1]; firedatafuel$interceptMCE[i] = tS$coefficients[2]
-          firedatafuel$slopeError[i] = tSS$coefficients[2,2]
-          
-        }
-      }
-      
-      tt = cor.test(origdata$FinalERtoCO[ind], origdata$MCE[ind])
-      if (!is.na(tt$p.value) & !is.nan(tt$p.value)){ 
-        if (tt$p.value < 0.05){ firedatafuel$corMCE_ERCO[i] = tt$estimate }
-      }
-    }
-    
-  }
-  return(firedatafuel)
-}
-getplumesANDmcebyfuel1VAR = function(firedatafuel, origdata){
-  # what is the variability across a fire?
-  firedatafuel$COUNT_EFFINAL = NaN
-  firedatafuel$corMCE_FINAL = NaN
-  firedatafuel$corMCE_ERCO = NaN
-  for (i in 1:length(firedatafuel$Group.1)){
-    ind = which(origdata$fuelORIG == firedatafuel$Group.1[i] & is.finite(origdata$FinalEF) &
-                  origdata$FinalEF != 0 & is.finite(origdata$FinalERtoCO))
-    firedatafuel$COUNT_EFFINAL[i] = length(ind)
-    if (length(ind) > 2){
-      tt = cor.test(origdata$FinalEF[ind], origdata$MCE[ind])
-      if (tt$p.value < 0.05){ firedatafuel$corMCE_FINAL[i] = tt$estimate }
-      tt = cor.test(origdata$FinalERtoCO[ind], origdata$MCE[ind])
-      if (is.na(tt$p.value) | is.nan(tt$p.value)){tt$p.value = 0}
-      if (tt$p.value < 0.05){ firedatafuel$corMCE_ERCO[i] = tt$estimate }
-      
-    }
-    
-  }
-  return(firedatafuel)
-}
-
-getAverageTable = function(averagetable, averagetable.sd){
-  tt = cbind(averagetable$EF1.1hz, averagetable$EF1.5hz)
-  averagetable$maxEF = rowMeans(tt, na.rm=TRUE)
-  print('HERE')
-  # add count, and sort
-  AvgTable <- tibble(
-    Species = paste0(averagetable$Group.1," "),
-    #EF5Hz = round(averagetable$EF1.5hz, digits=2),
-    EF = averagetable$FinalEF,
-    SD = paste0("(",round(averagetable$FinalEF.sd, digits=2), ") "),
-    n=  paste0(round(averagetable$COUNT_EFFINAL, digits=2), " "),
-    rMCE=  paste0(round(averagetable$corMCE_FINAL, digits=2), " "),
-    ERtoCO=averagetable$FinalERtoCO,
-    ERtoCOsd=averagetable$FinalERtoCO.sd,
-    
-    #EF1Hz = round(averagetable$EF1.1hz, digits=2),
-    #EF1Hz = round(averagetable$ChosenEF.1hz, digits=2),
-    #SD = paste0("(",round(averagetable.sd$ChosenEF.1hz, digits=2), ") "),
-    #n=  paste0(round(averagetable$COUNT_EF1hz, digits=2), " "),
-    #rMCE1hz=  paste0(round(averagetable$corMCE_1hz, digits=2), " "),
-   # OHrate = paste0(averagetable$OHrate, " "),
-    Lifetime = paste0(averagetable$lifetime_5hz_hr, " "),
-    Lifetime1hz = paste0(averagetable$lifetime_1hz_hr, " "),
-    LifetimeCat = averagetable$LifetimeCat,
-    Category = rowMeans(cbind(averagetable$Category.1hz,averagetable$Category.5hz), na.rm=TRUE),
-    kind = averagetable$kind,
-    #maxEF = averagetable$maxEF,
-    #maxVal.1hz = averagetable$maxval.1hz,
-    #maxVal.5hz = averagetable$maxval.5hz,
-    #ERtoCO.5Hz = averagetable$ERtoCO.5hz,
-    #ERtoCO.51z = averagetable$ERtoCO.1hz,
-    #distinctCorn1 = averagetable$CornvsFuel1hz,
-    #distinctCorn5 = averagetable$CornvsFuel5hz,
-    mw = averagetable$mWs,
-    nC = averagetable$nCs)
-  
-  AvgTable$SpeciesShort = ""
-  for (i in 1:length(AvgTable$SpeciesShort)){
-    tt = strsplit(AvgTable$Species[i], "_")
-    tt = tt[[1]][1]
-    AvgTable$SpeciesShort[i]= tt
-  }
-  AvgTable = arrange(AvgTable, (Category), desc(LifetimeCat), (SpeciesShort),desc(EF))
-  return(AvgTable)
-}
-
-# if there is a hit on a blake species for a plume, get the background
-getBlakePlume = function(indBLAKE, blake.merge){
-  if (length(indBLAKE) > 0){
-    doBlake = 1
-    indBLAKEBACKGROUND = indBLAKE[1] - 1
-    blake = blake.merge[indBLAKE,]
-    blakeBG = blake.merge[indBLAKEBACKGROUND,]
-    # go backwards till we get a background where CO < 200 if necessary
-    while (blakeBG$CO_DACOM_DISKIN_BLAKE[1] > 200 ){
-      indBLAKEBACKGROUND = indBLAKEBACKGROUND - 1
-      blakeBG = blake.merge[indBLAKEBACKGROUND,]
-    }
-  } else{
-    doBlake = 0
-    # just dummy variables so things dont break
-    blake = blake.merge[1,]
-    blakeBG = blake.merge[1,]
-  }
 }
 
 makeEREFplot = function(alldata,var,specA,specAD){

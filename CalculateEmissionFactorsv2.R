@@ -1,6 +1,6 @@
 ## ---------------------------
 ##
-## Script name: CalculateEmissionFactors.R 
+## Script name: CalculateEmissionFactorsv2.R 
 ##
 ## Purpose of script: Process FIREX-AQ DC8 planeflight files and calculate emission factors
 ##
@@ -27,7 +27,7 @@
 ##
 ## ---------------------------
 # Location of FIREX Working directory
-setwd('/Users/ktravis1/OneDrive - NASA/FIREX/')
+setwd('/Users/ktravis1/OneDrive - NASA/ForGITHUB/')
 # ------------------------------------------------
 # Required Packages ---------------------------------
 require(ggmap) ; require(OrgMassSpecR); library(readxl) ;require(plyr) ; require(dplyr); require(ggpubr); require(ncdf4)
@@ -35,11 +35,11 @@ doclear=1
 if (doclear == 1){ rm(list=ls()) } # clear all analysis
 doFM =  0 # attempt to look at fuel moisture
 
-source('~/OneDrive - NASA/UsefulScripts/getICARTTdata.R')
-source('~/OneDrive - NASA/UsefulScripts/york_regression_function.R')
-source('~/OneDrive - NASA/FIREX/getERsv2.R')
-source('~/OneDrive - NASA/UsefulScripts/getGEO.R')
-source('~/OneDrive - NASA/FIREX/SpeciesProperties.R')
+source('getICARTTdata.R')
+source('york_regression_function.R')
+source('getGEO.R')
+source('SpeciesProperties.R')
+source('getERsv2.R')
 
 doread =0; doplot = 0 # read in data or load Rdata?  Plot? 
 # Species to calculate emission ratios to in addition to CO
@@ -50,111 +50,111 @@ SLOW = 0 # don't relax R2 criteria, using fast data
 
 # ------ Start stop times for the  Adapted from the original file, and modified to break apart
 # ------- plumes as described in Travis et al.
-file = 'FIREXAQ-FIREFLAG-TABULARDATA_Analysis_20190724_R9_thru20190905.xlsx'
+file = 'InputFiles/FIREXAQ-FIREFLAG-TABULARDATA_Analysis_20190724_R9_thru20190905.xlsx'
 flags  <- read_excel(file,  skip = 153)
 #
 if (doread == 1){
   # ----- [[[[[[[[[[[[[[[[[[[[ Aug 21st ]]]]]]]]]]]]]]]]]]]]] -------
   # --------#######--------- Get 1 Hz Data individual 8/21------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190821_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190821_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190821_R1.ict')
+  met.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190821_R1.ict')
   met.821.1hz = merge(met.821.1hz, tags, by='Time_Start')
   # CO2
-  co2.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190821_R2.ict')
+  co2.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190821_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190821_R1.ict')
+  co.ch4.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190821_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190821_R3.ict')
+  warneke.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190821_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190821_R0.ict')
+  isaf.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190821_R0.ict')
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190821_R1.ict')
+  rollinsno.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190821_R1.ict')
   rollinsno.821.1hz$Time_Start = rollinsno.821.1hz$time_mid
-  rollinsso2.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190821_R1.ict')
+  rollinsso2.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190821_R1.ict')
   rollinsso2.821.1hz$Time_Start = rollinsso2.821.1hz$time_mid
   #  ----- WENNBERG - CIT VOCs - 
-  cit.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190821_R0_CIT.ict')
+  cit.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190821_R0_CIT.ict')
    # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190821_R0_Huey.ict')
+  gtcims.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190821_R0_Huey.ict')
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190821_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190821_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190821_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190821_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190821_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190821_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190821_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190821_R1.ict')
   ryerson.821.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) ; ryerson.821.1hz$Time_Start = ryerson.821.1hz$Time_start
   # ----- JIMENEZ ---
-  jimenez.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190821_R1.ict')
+  jimenez.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190821_R1.ict')
   # ----- SCHWARZ ---
-  schwarz.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190821_R2.ict')
+  schwarz.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190821_R2.ict')
   # ----- FREID ---
-  freid.c2h6.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190821_R3.ict')
-  freid.ch2o.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190821_R3.ict')
+  freid.c2h6.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190821_R3.ict')
+  freid.ch2o.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190821_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190821_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190821_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190821_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190821_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190821_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190821_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190821_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190821_R1.ict')
   womack.821.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190821_R0.ict')
+  stclair.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190821_R0.ict')
   stclair.821.1hz$Time_Start = stclair.821.1hz$Time_start
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190821_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190821_R1.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190821_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190821_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190821_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190821_R0.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190821_R0.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190821_R0.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190821_R0.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190821_R0.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190821_R0.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190821_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190821_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190821_R1.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190821_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190821_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190821_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190821_R0.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190821_R0.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190821_R0.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190821_R0.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190821_R0.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190821_R0.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190821_R0.ict')
   veres.821.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-PTRMS-NH3-1Hz_DC8_20190821_R1.ict')
+  #wisthaler.821.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-PTRMS-NH3-1Hz_DC8_20190821_R1.ict')
 
   # ---- BLAKE
-  blake.821.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190821_R1.ict')
+  blake.821.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190821_R1.ict')
   cc = colnames(blake.821.1hz)
   blake.821.merge = blake.821.1hz[,c(1,2,96:225)]
   blake.821.merge$CO_DACOM_DISKIN_BLAKE = blake.821.1hz$CO_DACOM_DISKIN
   blake.821.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.821.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.821.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190821_R1.ict')
+  apel.821.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190821_R1.ict')
   cc = colnames(apel.821.1hz)
   apel.821.merge = apel.821.1hz[,c(1,2,226:315)]
   apel.821.merge$CO_DACOM_DISKIN_APEL = apel.821.1hz$CO_DACOM_DISKIN
   apel.821.merge$CO2_7000_ppm_DISKIN_APEL =apel.821.1hz$CO2_7000_ppm_DISKIN
   
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0821.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0821.xlsx'
   newTOGA.821 = readxl::read_xlsx(file); newTOGA.821[newTOGA.821==-999] = NaN; newTOGA.821[newTOGA.821==-888] = NaN
   newTOGA.821$CO_DACOM_DISKIN_BECKY = newTOGA.821$CO_DACOM_DISKIN
   newTOGA.821$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.821$Time_Start=newTOGA.821$Time_Start...4
   # ----GILMAN
-  gilman.821.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190821_R1.ict')
+  gilman.821.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190821_R1.ict')
   cc = colnames(gilman.821.1hz)
   gilman.821.merge = gilman.821.1hz[,c(1,2,316:361)]
   gilman.821.merge$CO_DACOM_DISKIN_GILMAN = gilman.821.1hz$CO_DACOM_DISKIN
   gilman.821.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.821.1hz$CO2_7000_ppm_DISKIN
-  #gilman.821.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAA-iWAS-VOCs_DC8_20190821_R0.ict')
+  #gilman.821.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAA-iWAS-VOCs_DC8_20190821_R0.ict')
   
   # ------ Moore 
-  moore.821fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190821_R0_MOORE.ict')
+  moore.821fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190821_R0_MOORE.ict')
   
-  moore.821p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190821_R0.ict')
-  moore.821p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190821_R0.ict')
-  moore.821p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190821_R0.ict')
-  moore.821p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190821_R0.ict')
-  moore.821p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190821_R0.ict')
-  moore.821p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190821_R0.ict')
+  moore.821p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190821_R0.ict')
+  moore.821p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190821_R0.ict')
+  moore.821p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190821_R0.ict')
+  moore.821p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190821_R0.ict')
+  moore.821p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190821_R0.ict')
+  moore.821p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190821_R0.ict')
   moore.821 =merge(moore.821p1, moore.821p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.821 =merge(moore.821, moore.821p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.821 =merge(moore.821, moore.821p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -225,26 +225,26 @@ if (doread == 1){
   
   # --------#######--------- Get 5 or 10 Hz Data 8/21------#######---------
        # MET DATA - BUI + YANG + DLH
-  met.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190821_R0_met.ict')
+  met.821.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190821_R0_met.ict')
   
        # CO2
-  co2.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190821_R1.ict')
+  co2.821.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190821_R1.ict')
        #CO, CH4
-  co.ch4.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-DACOM-5Hz_DC8_20190821_R1.ict')
+  co.ch4.821.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM-5Hz_DC8_20190821_R1.ict')
        # WARNEKE VOCs
-  warneke.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190821_R3.ict')
+  warneke.821.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190821_R3.ict')
       # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190821_R0_ISAF.ict')
+  isaf.821.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190821_R0_ISAF.ict')
      # ROLLINS SO2 and NO
-  rollinsno.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190821_R0.ict')
-  rollinsso2.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190821_R1.ict')
+  rollinsno.821.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190821_R0.ict')
+  rollinsso2.821.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190821_R1.ict')
     # CIT VOCs - 
-  cit.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190821_R0_CIT.ict')
+  cit.821.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190821_R0_CIT.ict')
     # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190821_R0_huey.ict')
+  gtcims.821.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190821_R0_huey.ict')
   
   # ----- Jimenez ---
-  jimenez.821.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190821_R0_20230314T134024.ict')
+  jimenez.821.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190821_R0_20230314T134024.ict')
   jimenez.821.5hz$OC_PM1_AMS_JIMENEZ = jimenez.821.5hz$OA_PM1_AMS_JIMENEZ/jimenez.821.5hz$OAtoOC_PM1_AMS
   
   # ------- append PI to colnames ----------
@@ -2482,120 +2482,116 @@ if (doread == 1){
     if (length(ind14B)> 0){ points(PoBoy.5hz.EF$EF1int[ind14B],PoBoy.5hz.EF$mce_int[ind14B], col='red', pch=12)}
   }    
   # ----- [[[[[[[[[[[[[[[[[[[[ Aug 23rd ]]]]]]]]]]]]]]]]]]]]] -------
-  # ------------- Get 1 Hz Data -------------
-  #f1 = 'Aircraft/1s_MERGES/KTMERGE/firexaq-mrg1_dc8_20190823_KT.ict'
-  #aug23rd.fire = getICARTTdataALL(f1)
-  #aug23rd.fire = aug23rd.fire[order(aug23rd.fire$Time_Start),]
   # --------#######--------- Get 1 Hz Data individual 8/23------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190823_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190823_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190823_R1.ict')
+  met.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190823_R1.ict')
   met.823.1hz = merge(met.823.1hz, tags, by='Time_Start')
   # CO2
-  co2.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190823_R2.ict')
+  co2.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190823_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190823_R1.ict')
+  co.ch4.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190823_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190823_R3.ict')
+  warneke.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190823_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190823_R0.ict')
+  isaf.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190823_R0.ict')
   
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190823_R1.ict')
+  rollinsno.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190823_R1.ict')
   rollinsno.823.1hz$Time_Start = rollinsno.823.1hz$time_mid
-  rollinsso2.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190823_R1.ict')
+  rollinsso2.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190823_R1.ict')
   rollinsso2.823.1hz$Time_Start = rollinsso2.823.1hz$time_mid
   
   #  ----- WENNBERG - CIT VOCs - 
-  cit.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190823_R0_CIT.ict')
+  cit.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190823_R0_CIT.ict')
   # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190823_R0_Huey.ict')
+  gtcims.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190823_R0_Huey.ict')
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190823_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190823_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190823_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190823_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190823_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190823_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190823_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190823_R1.ict')
   ryerson.823.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) 
   ryerson.823.1hz$Time_Start = ryerson.823.1hz$Time_start
   # ----- JIMENEZ ---  # ----- JIMENEZ ---
-  jimenez.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190823_R1.ict')
+  jimenez.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190823_R1.ict')
   
   # ----- SCHWARZ ---
-  schwarz.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190823_R2.ict')
-#  schwarz.823.5hz = read.table('Aircraft/FinalFast/SP2_5Hz_FIREXAQ_20190823_QL.txt', header=TRUE, sep=',')
+  schwarz.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190823_R2.ict')
+#  schwarz.823.5hz = read.table('InputFiles/SP2_5Hz_FIREXAQ_20190823_QL.txt', header=TRUE, sep=',')
 #  schwarz.823.5hz$Time_Start = schwarz.823.5hz$bin_Htimes
   # ----- FREID ---
-  freid.c2h6.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190823_R3.ict')
-  freid.ch2o.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190823_R3.ict')
+  freid.c2h6.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190823_R3.ict')
+  freid.ch2o.823.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190823_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190823_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190823_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190823_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190823_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190823_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190823_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190823_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190823_R1.ict')
   womack.823.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190823_R0.ict')
+  stclair.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190823_R0.ict')
   stclair.823.1hz$Time_Start = stclair.823.1hz$Time_start
   # data is all missing, kludge for now
   stclair.823.1hz = womack.823.1hz
   stclair.823.1hz$NO2_CANOE = womack.823.1hz$CH3COCHO_ACES*NaN
   stclair.823.1hz=stclair.823.1hz[,c(1,9)]
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190823_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190823_R1.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190823_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190823_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190823_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190823_R0.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190823_R0.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190823_R0.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190823_R0.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190823_R0.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190823_R0.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190823_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190823_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190823_R1.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190823_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190823_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190823_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190823_R0.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190823_R0.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190823_R0.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190823_R0.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190823_R0.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190823_R0.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190823_R0.ict')
   veres.823.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.823.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190823_R0_Wisthaler.ict')
+  #wisthaler.823.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190823_R0_Wisthaler.ict')
   
   # ---- BLAKE
-  blake.823.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190823_R1.ict')
+  blake.823.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190823_R1.ict')
   cc = colnames(blake.823.1hz)
   blake.823.merge = blake.823.1hz[,c(1,2,96:225)]
   blake.823.merge$CO_DACOM_DISKIN_BLAKE = blake.823.1hz$CO_DACOM_DISKIN
   blake.823.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.823.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.823.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190823_R1.ict')
+  apel.823.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190823_R1.ict')
   cc = colnames(apel.823.1hz)
   apel.823.merge = apel.823.1hz[,c(1,2,226:315)]
   apel.823.merge$CO_DACOM_DISKIN_APEL = apel.823.1hz$CO_DACOM_DISKIN
   apel.823.merge$CO2_7000_ppm_DISKIN_APEL =apel.823.1hz$CO2_7000_ppm_DISKIN
   
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0823.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0823.xlsx'
   newTOGA.823 = readxl::read_xlsx(file); newTOGA.823[newTOGA.823==-999] = NaN; newTOGA.823[newTOGA.823==-888] = NaN
   newTOGA.823$CO_DACOM_DISKIN_BECKY = newTOGA.823$CO_DACOM_DISKIN
   newTOGA.823$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.823$Time_Start=newTOGA.823$Time_Start...4
 
   # ----GILMAN
-  gilman.823.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190823_R1.ict')
+  gilman.823.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190823_R1.ict')
   cc = colnames(gilman.823.1hz)
   gilman.823.merge = gilman.823.1hz[,c(1,2,316:361)]
   gilman.823.merge$CO_DACOM_DISKIN_GILMAN = gilman.823.1hz$CO_DACOM_DISKIN
   gilman.823.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.823.1hz$CO2_7000_ppm_DISKIN
 
   # ------ Moore 
-  moore.823fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190823_R0_MOORE.ict')
+  moore.823fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190823_R0_MOORE.ict')
   
-  moore.823p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190823_R0.ict')
-  moore.823p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190823_R0.ict')
-  moore.823p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190823_R0.ict')
-  moore.823p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190823_R0.ict')
-  moore.823p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190823_R0.ict')
-  moore.823p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190823_R0.ict')
+  moore.823p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190823_R0.ict')
+  moore.823p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190823_R0.ict')
+  moore.823p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190823_R0.ict')
+  moore.823p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190823_R0.ict')
+  moore.823p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190823_R0.ict')
+  moore.823p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190823_R0.ict')
   moore.823 =merge(moore.823p1, moore.823p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.823 =merge(moore.823, moore.823p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.823 =merge(moore.823, moore.823p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -2664,26 +2660,26 @@ if (doread == 1){
   cc[2:8] = paste(cc[2:8], '_JIMENEZ',sep='')
   colnames(jimenez.823.1hz) = cc
   # --------#######--------- Get 5 or 10 Hz Data 8/23 ------#######---------
-  met.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190823_R0_met.ict')
+  met.823.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190823_R0_met.ict')
   
   # CO2
-  co2.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190823_R1.ict')
+  co2.823.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190823_R1.ict')
   #CO, CH4
-  co.ch4.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-DACOM-5Hz_DC8_20190823_R1.ict')
+  co.ch4.823.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM-5Hz_DC8_20190823_R1.ict')
   # WARNEKE VOCs
-  warneke.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190823_R3.ict')
+  warneke.823.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190823_R3.ict')
   # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190823_R0_ISAF.ict')
+  isaf.823.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190823_R0_ISAF.ict')
   # ROLLINS SO2 and NO
-  rollinsno.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190823_R0.ict')
-  rollinsso2.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190823_R1.ict')
+  rollinsno.823.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190823_R0.ict')
+  rollinsso2.823.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190823_R1.ict')
   # CIT VOCs - 
-  cit.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190823_R0_CIT.ict')
+  cit.823.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190823_R0_CIT.ict')
   # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190823_R0_huey.ict')
+  gtcims.823.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190823_R0_huey.ict')
   
   # ----- Jimenez ---
-  jimenez.823.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190823_R0_20230314T134036.ict')
+  jimenez.823.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190823_R0_20230314T134036.ict')
   
   jimenez.823.5hz$OC_PM1_AMS_JIMENEZ = jimenez.823.5hz$OA_PM1_AMS_JIMENEZ/jimenez.823.5hz$OAtoOC_PM1_AMS
   
@@ -4777,118 +4773,114 @@ if (doread == 1){
   Mustard.5hz.EF$transect_source_fire_ID = indA[1]
   
   # ----- [[[[[[[[[[[[[[[[[[[[ Aug 26th ]]]]]]]]]]]]]]]]]]]]] -------
-  # ------------- Get 1 Hz Data -------------
-#  f1 = 'Aircraft/1s_MERGES/KTMERGE/firexaq-mrg1_dc8_20190826_KT.ict'
-#  aug26th.fire = getICARTTdataALL(f1)
- # aug26th.fire = aug26th.fire[order(aug26th.fire$Time_Start),]
   # --------#######--------- Get 1 Hz Data individual 8/26------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190826_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190826_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190826_R1.ict')
+  met.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190826_R1.ict')
   met.826.1hz = merge(met.826.1hz, tags, by='Time_Start')
   # CO2
-  co2.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190826_R2.ict')
+  co2.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190826_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190826_R1.ict')
+  co.ch4.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190826_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190826_R3.ict')
+  warneke.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190826_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190826_R0.ict')
+  isaf.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190826_R0.ict')
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190826_R1.ict')
+  rollinsno.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190826_R1.ict')
   rollinsno.826.1hz$Time_Start = rollinsno.826.1hz$time_mid
-  rollinsso2.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190826_R1.ict')
+  rollinsso2.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190826_R1.ict')
   rollinsso2.826.1hz$Time_Start = rollinsso2.826.1hz$time_mid
   
   #  ----- WENNBERG - CIT VOCs - 
-  cit.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190826_R0_CIT.ict')
+  cit.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190826_R0_CIT.ict')
   # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190826_R0_Huey.ict')
+  gtcims.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190826_R0_Huey.ict')
   
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190826_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190826_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190826_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190826_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190826_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190826_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190826_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190826_R1.ict')
   ryerson.826.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) 
   ryerson.826.1hz$Time_Start = ryerson.826.1hz$Time_start
   # ----- JIMENEZ ---
-  jimenez.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190826_R1.ict')
+  jimenez.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190826_R1.ict')
   
   # ----- SCHWARZ ---
-  schwarz.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190826_R2.ict')
+  schwarz.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190826_R2.ict')
   # ----- FREID ---
-  freid.c2h6.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190826_R3.ict')
-  freid.ch2o.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190826_R3.ict')
+  freid.c2h6.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190826_R3.ict')
+  freid.ch2o.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190826_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190826_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190826_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190826_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190826_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190826_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190826_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190826_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190826_R1.ict')
   womack.826.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190826_R0.ict')
+  stclair.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190826_R0.ict')
   stclair.826.1hz$Time_Start = stclair.826.1hz$Time_start
   # data is all missing, kludge for now
   stclair.826.1hz = womack.826.1hz
   stclair.826.1hz$NO2_CANOE = womack.826.1hz$CH3COCHO_ACES*NaN
   stclair.826.1hz=stclair.826.1hz[,c(1,9)]
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190826_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190826_R1.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190826_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190826_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190826_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190826_R0.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190826_R0.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190826_R0.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190826_R0.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190826_R0.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190826_R0.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190826_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190826_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190826_R1.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190826_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190826_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190826_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190826_R0.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190826_R0.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190826_R0.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190826_R0.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190826_R0.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190826_R0.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190826_R0.ict')
   veres.826.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190826_R0_Wisthaler.ict')
+  #wisthaler.826.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190826_R0_Wisthaler.ict')
   
   # ---- BLAKE
-  blake.826.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190826_R1.ict')
+  blake.826.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190826_R1.ict')
   cc = colnames(blake.826.1hz)
   blake.826.merge = blake.826.1hz[,c(1,2,96:225)]
   blake.826.merge$CO_DACOM_DISKIN_BLAKE = blake.826.1hz$CO_DACOM_DISKIN
   blake.826.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.826.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.826.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190826_R1.ict')
+  apel.826.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190826_R1.ict')
   cc = colnames(apel.826.1hz)
   apel.826.merge = apel.826.1hz[,c(1,2,226:315)]
   apel.826.merge$CO_DACOM_DISKIN_APEL = apel.826.1hz$CO_DACOM_DISKIN
   apel.826.merge$CO2_7000_ppm_DISKIN_APEL =apel.826.1hz$CO2_7000_ppm_DISKIN
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0826.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0826.xlsx'
   newTOGA.826 = readxl::read_xlsx(file); newTOGA.826[newTOGA.826==-999] = NaN; newTOGA.826[newTOGA.826==-888] = NaN
   newTOGA.826$CO_DACOM_DISKIN_BECKY = newTOGA.826$CO_DACOM_DISKIN
   newTOGA.826$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.826$Time_Start=newTOGA.826$Time_Start...4
   
   # ----GILMAN
-  gilman.826.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190826_R1.ict')
+  gilman.826.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190826_R1.ict')
   cc = colnames(gilman.826.1hz)
   gilman.826.merge = gilman.826.1hz[,c(1,2,316:361)]
   gilman.826.merge$CO_DACOM_DISKIN_GILMAN = gilman.826.1hz$CO_DACOM_DISKIN
   gilman.826.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.826.1hz$CO2_7000_ppm_DISKIN
-  #gilman.826.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAA-iWAS-VOCs_DC8_20190826_R0.ict')
+  #gilman.826.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAA-iWAS-VOCs_DC8_20190826_R0.ict')
   
   # ------ Moore 
-  moore.826fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190826_R0_MOORE.ict')
+  moore.826fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190826_R0_MOORE.ict')
   
-  moore.826p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190826_R0.ict')
-  moore.826p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190826_R0.ict')
-  moore.826p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190826_R0.ict')
-  moore.826p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190826_R0.ict')
-  moore.826p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190826_R0.ict')
-  moore.826p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190826_R0.ict')
+  moore.826p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190826_R0.ict')
+  moore.826p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190826_R0.ict')
+  moore.826p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190826_R0.ict')
+  moore.826p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190826_R0.ict')
+  moore.826p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190826_R0.ict')
+  moore.826p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190826_R0.ict')
   moore.826 =merge(moore.826p1, moore.826p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.826 =merge(moore.826, moore.826p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.826 =merge(moore.826, moore.826p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -4956,24 +4948,24 @@ if (doread == 1){
   colnames(jimenez.826.1hz) = cc
   # --------#######--------- Get 5 or 10 Hz Data 8/26 ------#######---------
   # MET DATA - BUI + YANG + DLH
-  met.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190826_R0_met.ict')
+  met.826.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190826_R0_met.ict')
   #CO, CH4
-  co.ch4.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-DACOM-5Hz_DC8_20190826_R1.ict')
+  co.ch4.826.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM-5Hz_DC8_20190826_R1.ict')
   # CO2
-  co2.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190826_R1.ict')
+  co2.826.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190826_R1.ict')
    # WARNEKE VOCs
-  warneke.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190826_R3.ict')
+  warneke.826.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190826_R3.ict')
   # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190826_R0_ISAF.ict')
+  isaf.826.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190826_R0_ISAF.ict')
   # ROLLINS SO2 and NO
-  rollinsno.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190826_R0.ict')
-  rollinsso2.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190826_R1.ict')
+  rollinsno.826.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190826_R0.ict')
+  rollinsso2.826.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190826_R1.ict')
   # CIT VOCs - 
-  cit.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190826_R0_CIT.ict')
+  cit.826.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190826_R0_CIT.ict')
   # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190826_R0_huey.ict')
+  gtcims.826.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190826_R0_huey.ict')
   # ----- Jimenez ---
-  jimenez.826.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190826_R0_20230314T134049.ict')
+  jimenez.826.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190826_R0_20230314T134049.ict')
   jimenez.826.5hz$OC_PM1_AMS_JIMENEZ = jimenez.826.5hz$OA_PM1_AMS_JIMENEZ/jimenez.826.5hz$OAtoOC_PM1_AMS
   
   # ------- append PI to colnames ----------
@@ -6560,113 +6552,110 @@ if (doread == 1){
   
   # ----- [[[[[[[[[[[[[[[[[[[[ Aug 29th ]]]]]]]]]]]]]]]]]]]]] -------
   # ------------- Get 1 Hz Data -------------
- # f1 = 'Aircraft/1s_MERGES/KTMERGE/firexaq-mrg1_dc8_20190829_KT.ict'
-#  aug29th.fire = getICARTTdataALL(f1)
-#  aug29th.fire = aug29th.fire[order(aug29th.fire$Time_Start),]
   # --------#######--------- Get 1 Hz Data individual 8/29------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190829_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190829_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190829_R1.ict')
+  met.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190829_R1.ict')
   met.829.1hz = merge(met.829.1hz, tags, by='Time_Start')
   # CO2
-  co2.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190829_R2.ict')
+  co2.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190829_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190829_R1.ict')
+  co.ch4.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190829_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190829_R3.ict')
+  warneke.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190829_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190829_R0.ict')
+  isaf.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190829_R0.ict')
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190829_R1.ict')
+  rollinsno.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190829_R1.ict')
   rollinsno.829.1hz$Time_Start = rollinsno.829.1hz$time_mid
-  rollinsso2.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190829_R1.ict')
+  rollinsso2.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190829_R1.ict')
   rollinsso2.829.1hz$Time_Start = rollinsso2.829.1hz$time_mid
   
   #  ----- WENNBERG - CIT VOCs - 
-  cit.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190829_R0_CIT.ict')
+  cit.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190829_R0_CIT.ict')
   # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190829_R0_Huey.ict')
+  gtcims.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190829_R0_Huey.ict')
   
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190829_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190829_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190829_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190829_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190829_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190829_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190829_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190829_R1.ict')
   ryerson.829.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) 
   ryerson.829.1hz$Time_Start = ryerson.829.1hz$Time_start
   # ----- JIMENEZ ---
-  jimenez.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190829_R1.ict')
+  jimenez.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190829_R1.ict')
   
   # ----- SCHWARZ ---
-  schwarz.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190829_R2.ict')
+  schwarz.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190829_R2.ict')
   # ----- FREID ---
-  freid.c2h6.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190829_R3.ict')
-  freid.ch2o.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190829_R3.ict')
+  freid.c2h6.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190829_R3.ict')
+  freid.ch2o.829.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190829_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190829_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190829_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190829_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190829_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190829_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190829_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190829_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190829_R1.ict')
   womack.829.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190829_R0.ict')
+  stclair.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190829_R0.ict')
   stclair.829.1hz$Time_Start = stclair.829.1hz$Time_start
 
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190829_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190829_R2.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190829_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190829_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190829_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190829_R1.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190829_R1.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190829_R1.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190829_R1.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190829_R1.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190829_R1.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190829_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190829_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190829_R2.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190829_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190829_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190829_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190829_R1.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190829_R1.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190829_R1.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190829_R1.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190829_R1.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190829_R1.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190829_R0.ict')
   veres.829.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.829.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190829_R0_Wisthaler.ict')
+  #wisthaler.829.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190829_R0_Wisthaler.ict')
 
   # ---- BLAKE
-  blake.829.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190829_R1.ict')
+  blake.829.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190829_R1.ict')
   cc = colnames(blake.829.1hz)
   blake.829.merge = blake.829.1hz[,c(1,2,96:225)]
   blake.829.merge$CO_DACOM_DISKIN_BLAKE = blake.829.1hz$CO_DACOM_DISKIN
   blake.829.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.829.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.829.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190829_R1.ict')
+  apel.829.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190829_R1.ict')
   cc = colnames(apel.829.1hz)
   apel.829.merge = apel.829.1hz[,c(1,2,226:315)]
   apel.829.merge$CO_DACOM_DISKIN_APEL = apel.829.1hz$CO_DACOM_DISKIN
   apel.829.merge$CO2_7000_ppm_DISKIN_APEL =apel.829.1hz$CO2_7000_ppm_DISKIN
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0829.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0829.xlsx'
   newTOGA.829 = readxl::read_xlsx(file); newTOGA.829[newTOGA.829==-999] = NaN; newTOGA.829[newTOGA.829==-888] = NaN
   newTOGA.829$CO_DACOM_DISKIN_BECKY = newTOGA.829$CO_DACOM_DISKIN
   newTOGA.829$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.829$Time_Start=newTOGA.829$Time_Start...4
   
   # ----GILMAN
-  gilman.829.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190829_R1.ict')
+  gilman.829.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190829_R1.ict')
   cc = colnames(gilman.829.1hz)
   gilman.829.merge = gilman.829.1hz[,c(1,2,316:361)]
   gilman.829.merge$CO_DACOM_DISKIN_GILMAN = gilman.829.1hz$CO_DACOM_DISKIN
   gilman.829.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.829.1hz$CO2_7000_ppm_DISKIN
 
   # ------ Moore 
-  moore.829fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190829_R0_MOORE.ict')
+  moore.829fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190829_R0_MOORE.ict')
   
-  moore.829p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190829_R0.ict')
-  moore.829p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190829_R0.ict')
-  moore.829p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190829_R0.ict')
-  moore.829p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190829_R0.ict')
-  moore.829p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190829_R0.ict')
-  moore.829p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190829_R0.ict')
+  moore.829p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190829_R0.ict')
+  moore.829p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190829_R0.ict')
+  moore.829p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190829_R0.ict')
+  moore.829p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190829_R0.ict')
+  moore.829p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190829_R0.ict')
+  moore.829p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190829_R0.ict')
   moore.829 =merge(moore.829p1, moore.829p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.829 =merge(moore.829, moore.829p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.829 =merge(moore.829, moore.829p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -6735,33 +6724,33 @@ if (doread == 1){
   colnames(jimenez.829.1hz) = cc
   # --------#######--------- Get 5 or 10 Hz Data 8/29 ------#######---------
   # MET DATA - BUI + YANG + DLH
-  met.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190829_R0_met.ict')
+  met.829.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190829_R0_met.ict')
   #CO, CH4
-  co.ch4.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-DACOM-5Hz_DC8_20190829_R1.ict')
+  co.ch4.829.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM-5Hz_DC8_20190829_R1.ict')
   ind = which(co.ch4.829.5hz$CO_DACOM == max(co.ch4.829.5hz$CO_DACOM , na.rm=TRUE))
   maxco = (co.ch4.829.5hz$Time_Start[ind])
   # CO2
-  co2.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190829_R1.ict')
+  co2.829.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190829_R1.ict')
   ind = which(co2.829.5hz$CO2_7000_ppm == max(co2.829.5hz$CO2_7000_ppm , na.rm=TRUE))
   print(co2.829.5hz$Time_Start[ind] - maxco)
   # WARNEKE VOCs
-  warneke.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190829_R3.ict')
+  warneke.829.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190829_R3.ict')
   ind = which(warneke.829.5hz$Furan_NOAAPTR_ppbv== max(warneke.829.5hz$Furan_NOAAPTR_ppbv, na.rm=TRUE))
   print(warneke.829.5hz$Time_Start[ind] - maxco)
   # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190829_R0_ISAF.ict')
+  isaf.829.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190829_R0_ISAF.ict')
   # ROLLINS SO2 and NO
-  rollinsno.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190829_R0.ict')
+  rollinsno.829.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190829_R0.ict')
   ind = which(rollinsno.829.5hz$NO_LIF == max(rollinsno.829.5hz$NO_LIF, na.rm=TRUE))
-  rollinsso2.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190829_R1.ict')
+  rollinsso2.829.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190829_R1.ict')
   ind = which(rollinsso2.829.5hz$SO2_LIF == max(rollinsso2.829.5hz$SO2_LIF, na.rm=TRUE))
   # CIT VOCs - 
-  cit.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190829_R0_CIT.ict')
+  cit.829.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190829_R0_CIT.ict')
   ind = which(cit.829.5hz$PHENOL.1Hz_CIT_WENNBERG == max(cit.829.5hz$PHENOL.1Hz_CIT_WENNBERG, na.rm=TRUE))
   # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190829_R0_huey.ict')
+  gtcims.829.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190829_R0_huey.ict')
   # ----- Jimenez ---
-  jimenez.829.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190829_R0_20230314T134101.ict')
+  jimenez.829.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190829_R0_20230314T134101.ict')
   jimenez.829.5hz$OC_PM1_AMS_JIMENEZ = jimenez.829.5hz$OA_PM1_AMS_JIMENEZ/jimenez.829.5hz$OAtoOC_PM1_AMS
   
   # ------- append PI to colnames ----------
@@ -7881,114 +7870,110 @@ if (doread == 1){
   Elkhound.5hz.EF$transect_source_fire_ID = indA[1]
   
   # ----- [[[[[[[[[[[[[[[[[[[[ Aug 30rd ]]]]]]]]]]]]]]]]]]]]] -------
-  # ------------- Get 1 Hz Data -------------
-  #f1 = 'Aircraft/1s_MERGES/KTMERGE/firexaq-mrg1_dc8_20190830_KT.ict'
-  #aug30th.fire = getICARTTdataALL(f1)
-  #aug30th.fire = aug30th.fire[order(aug30th.fire$Time_Start),]
   # --------#######--------- Get 1 Hz Data individual 8/30------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190830_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190830_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190830_R1.ict')
+  met.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190830_R1.ict')
   met.830.1hz = merge(met.830.1hz, tags, by='Time_Start')
   # CO2
-  co2.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190830_R2.ict')
+  co2.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190830_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190830_R1.ict')
+  co.ch4.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190830_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190830_R3.ict')
+  warneke.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190830_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190830_R0.ict')
+  isaf.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190830_R0.ict')
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190830_R1.ict')
+  rollinsno.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190830_R1.ict')
   rollinsno.830.1hz$Time_Start = rollinsno.830.1hz$time_mid
-  rollinsso2.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190830_R1.ict')
+  rollinsso2.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190830_R1.ict')
   rollinsso2.830.1hz$Time_Start = rollinsso2.830.1hz$time_mid
   
   #  ----- WENNBERG - CIT VOCs - 
-  cit.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190830_R0_CIT.ict')
+  cit.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190830_R0_CIT.ict')
   # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190830_R0_Huey.ict')
+  gtcims.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190830_R0_Huey.ict')
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190830_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190830_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190830_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190830_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190830_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190830_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190830_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190830_R1.ict')
   ryerson.830.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) 
   ryerson.830.1hz$Time_Start = ryerson.830.1hz$Time_start
   # ----- JIMENEZ ---
-  jimenez.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190830_R1.ict')
+  jimenez.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190830_R1.ict')
   
   # ----- SCHWARZ ---
-  schwarz.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190830_R2.ict')
+  schwarz.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190830_R2.ict')
   # ----- FREID ---
-  freid.c2h6.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190830_R3.ict')
-  freid.ch2o.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190830_R3.ict')
+  freid.c2h6.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190830_R3.ict')
+  freid.ch2o.830.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190830_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190830_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190830_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190830_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190830_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190830_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190830_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190830_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190830_R1.ict')
   womack.830.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190830_R0.ict')
+  stclair.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190830_R0.ict')
   stclair.830.1hz$Time_Start = stclair.830.1hz$Time_start
   
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190830_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190830_R1.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190830_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190830_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190830_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190830_R0.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190830_R0.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190830_R0.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190830_R0.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190830_R0.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190830_R0.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190830_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190830_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190830_R1.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190830_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190830_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190830_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190830_R0.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190830_R0.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190830_R0.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190830_R0.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190830_R0.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190830_R0.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190830_R0.ict')
   veres.830.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.830.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190830_R0_Wisthaler.ict')
+  #wisthaler.830.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190830_R0_Wisthaler.ict')
 
   # ---- BLAKE
-  blake.830.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190830_R1.ict')
+  blake.830.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190830_R1.ict')
   cc = colnames(blake.830.1hz)
   blake.830.merge = blake.830.1hz[,c(1,2,96:225)]
   blake.830.merge$CO_DACOM_DISKIN_BLAKE = blake.830.1hz$CO_DACOM_DISKIN
   blake.830.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.830.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.830.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190830_R1.ict')
+  apel.830.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190830_R1.ict')
   cc = colnames(apel.830.1hz)
   apel.830.merge = apel.830.1hz[,c(1,2,226:315)]
   apel.830.merge$CO_DACOM_DISKIN_APEL = apel.830.1hz$CO_DACOM_DISKIN
   apel.830.merge$CO2_7000_ppm_DISKIN_APEL =apel.830.1hz$CO2_7000_ppm_DISKIN
   
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0830.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0830.xlsx'
   newTOGA.830 = readxl::read_xlsx(file); newTOGA.830[newTOGA.830==-999] = NaN; newTOGA.830[newTOGA.830==-888] = NaN
   newTOGA.830$CO_DACOM_DISKIN_BECKY = newTOGA.830$CO_DACOM_DISKIN
   newTOGA.830$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.830$Time_Start=newTOGA.830$Time_Start...4
   
   # ----GILMAN
-  gilman.830.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190830_R1.ict')
+  gilman.830.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190830_R1.ict')
   cc = colnames(gilman.830.1hz)
   gilman.830.merge = gilman.830.1hz[,c(1,2,316:361)]
   gilman.830.merge$CO_DACOM_DISKIN_GILMAN = gilman.830.1hz$CO_DACOM_DISKIN
   gilman.830.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.830.1hz$CO2_7000_ppm_DISKIN
   
   # ------ Moore 
-  moore.830fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190830_R0_MOORE.ict')
+  moore.830fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190830_R0_MOORE.ict')
   
-  moore.830p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190830_R0.ict')
-  moore.830p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190830_R0.ict')
-  moore.830p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190830_R0.ict')
-  moore.830p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190830_R0.ict')
-  moore.830p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190830_R0.ict')
-  moore.830p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190830_R0.ict')
+  moore.830p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190830_R0.ict')
+  moore.830p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190830_R0.ict')
+  moore.830p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190830_R0.ict')
+  moore.830p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190830_R0.ict')
+  moore.830p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190830_R0.ict')
+  moore.830p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190830_R0.ict')
   moore.830 =merge(moore.830p1, moore.830p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.830 =merge(moore.830, moore.830p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.830 =merge(moore.830, moore.830p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -8058,25 +8043,25 @@ if (doread == 1){
   colnames(jimenez.830.1hz) = cc
   # --------#######--------- Get 5 or 10 Hz Data 8/30 ------#######---------
   # MET DATA - BUI + YANG + DLH
-  met.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190830_R0_met.ict')
+  met.830.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190830_R0_met.ict')
   
   #CO, CH4
-  co.ch4.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast//FIREXAQ-DACOM-5Hz_DC8_20190830_R1.ict')
+  co.ch4.830.5hz = getICARTTdataSIMPLE('InputFiles//FIREXAQ-DACOM-5Hz_DC8_20190830_R1.ict')
   # CO2
-  co2.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190830_R1.ict')
+  co2.830.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190830_R1.ict')
   # WARNEKE VOCs
-  warneke.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190830_R3.ict')
+  warneke.830.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190830_R3.ict')
   # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190830_R0_ISAF.ict')
+  isaf.830.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190830_R0_ISAF.ict')
   # ROLLINS SO2 and NO
-  rollinsno.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190830_R0.ict')
-  rollinsso2.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190830_R1.ict')
+  rollinsno.830.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190830_R0.ict')
+  rollinsso2.830.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190830_R1.ict')
   # CIT VOCs - 
-  cit.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190830_R0_CIT.ict')
+  cit.830.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190830_R0_CIT.ict')
   # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190830_R0_huey.ict')
+  gtcims.830.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190830_R0_huey.ict')
   # ----- Jimenez ---
-  jimenez.830.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190830_R0_20230314T134114.ict')
+  jimenez.830.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190830_R0_20230314T134114.ict')
   jimenez.830.5hz$OC_PM1_AMS_JIMENEZ = jimenez.830.5hz$OA_PM1_AMS_JIMENEZ/jimenez.830.5hz$OAtoOC_PM1_AMS
   
   # ------- append PI to colnames ----------
@@ -9991,115 +9976,110 @@ if (doread == 1){
   
   # ========================== NEAR SUPERTRAMP  - not a good fire=====================
   # ----- [[[[[[[[[[[[[[[[[[[[ Aug 31st ]]]]]]]]]]]]]]]]]]]]] -------
-  # ------------- Get 1 Hz Data -------------
-  #f1 = 'Aircraft/1s_MERGES/KTMERGE/firexaq-mrg1_dc8_20190831_KT.ict' #??
-  #aug31st.fire = getICARTTdataALL(f1)
-  #aug31st.fire = aug31st.fire[order(aug31st.fire$Time_Start),]
-  
   # --------#######--------- Get 1 Hz Data individual 8/31------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190831_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190831_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190831_R1.ict')
+  met.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190831_R1.ict')
   met.831.1hz = merge(met.831.1hz, tags, by='Time_Start')
   # CO2
-  co2.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190831_R2.ict')
+  co2.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190831_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190831_R1.ict')
+  co.ch4.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190831_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190831_R3.ict')
+  warneke.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190831_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190831_R0.ict')
+  isaf.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190831_R0.ict')
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190831_R1.ict')
+  rollinsno.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190831_R1.ict')
   rollinsno.831.1hz$Time_Start = rollinsno.831.1hz$time_mid
-  rollinsso2.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190831_R1.ict')
+  rollinsso2.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190831_R1.ict')
   rollinsso2.831.1hz$Time_Start = rollinsso2.831.1hz$time_mid
   
   #  ----- WENNBERG - CIT VOCs - 
-  cit.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190831_R0_CIT.ict')
+  cit.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190831_R0_CIT.ict')
   # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190831_R0_Huey.ict')
+  gtcims.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190831_R0_Huey.ict')
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190831_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190831_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190831_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190831_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190831_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190831_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190831_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190831_R1.ict')
   ryerson.831.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) 
   ryerson.831.1hz$Time_Start = ryerson.831.1hz$Time_start
   # ----- JIMENEZ ---
-  jimenez.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190831_R1.ict')
+  jimenez.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190831_R1.ict')
   
   # ----- SCHWARZ ---
-  schwarz.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190831_R2.ict')
+  schwarz.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190831_R2.ict')
   # ----- FREID ---
-  freid.c2h6.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190831_R3.ict')
-  freid.ch2o.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190831_R3.ict')
+  freid.c2h6.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190831_R3.ict')
+  freid.ch2o.831.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190831_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190831_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190831_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190831_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190831_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190831_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190831_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190831_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190831_R1.ict')
   womack.831.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190831_R0.ict')
+  stclair.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190831_R0.ict')
   stclair.831.1hz$Time_Start = stclair.831.1hz$Time_start
   
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190831_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190831_R1.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190831_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190831_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190831_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190831_R0.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190831_R0.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190831_R0.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190831_R0.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190831_R0.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190831_R0.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190831_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190831_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190831_R1.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190831_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190831_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190831_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190831_R0.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190831_R0.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190831_R0.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190831_R0.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190831_R0.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190831_R0.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190831_R0.ict')
   veres.831.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.831.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190831_R0_Wisthaler.ict')
+  #wisthaler.831.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190831_R0_Wisthaler.ict')
   
   # ---- BLAKE
-  blake.831.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190831_R1.ict')
+  blake.831.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190831_R1.ict')
   cc = colnames(blake.831.1hz)
   blake.831.merge = blake.831.1hz[,c(1,2,96:225)]
   blake.831.merge$CO_DACOM_DISKIN_BLAKE = blake.831.1hz$CO_DACOM_DISKIN
   blake.831.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.831.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.831.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190831_R1.ict')
+  apel.831.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190831_R1.ict')
   cc = colnames(apel.831.1hz)
   apel.831.merge = apel.831.1hz[,c(1,2,226:315)]
   apel.831.merge$CO_DACOM_DISKIN_APEL = apel.831.1hz$CO_DACOM_DISKIN
   apel.831.merge$CO2_7000_ppm_DISKIN_APEL =apel.831.1hz$CO2_7000_ppm_DISKIN
   
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0831.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0831.xlsx'
   newTOGA.831 = readxl::read_xlsx(file); newTOGA.831[newTOGA.831==-999] = NaN; newTOGA.831[newTOGA.831==-888] = NaN
   newTOGA.831$CO_DACOM_DISKIN_BECKY = newTOGA.831$CO_DACOM_DISKIN
   newTOGA.831$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.831$Time_Start=newTOGA.831$Time_Start...4
   
   # ----GILMAN
-  gilman.831.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190831_R1.ict')
+  gilman.831.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190831_R1.ict')
   cc = colnames(gilman.831.1hz)
   gilman.831.merge = gilman.831.1hz[,c(1,2,316:361)]
   gilman.831.merge$CO_DACOM_DISKIN_GILMAN = gilman.831.1hz$CO_DACOM_DISKIN
   gilman.831.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.831.1hz$CO2_7000_ppm_DISKIN
 
   # ------ Moore 
-  moore.831fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190831_R0_MOORE.ict')
+  moore.831fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190831_R0_MOORE.ict')
   
-  moore.831p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190831_R0.ict')
-  moore.831p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190831_R0.ict')
-  moore.831p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190831_R0.ict')
-  moore.831p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190831_R0.ict')
-  moore.831p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190831_R0.ict')
-  moore.831p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190831_R0.ict')
+  moore.831p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190831_R0.ict')
+  moore.831p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190831_R0.ict')
+  moore.831p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190831_R0.ict')
+  moore.831p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190831_R0.ict')
+  moore.831p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190831_R0.ict')
+  moore.831p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190831_R0.ict')
   moore.831 =merge(moore.831p1, moore.831p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.831 =merge(moore.831, moore.831p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.831 =merge(moore.831, moore.831p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -10168,24 +10148,24 @@ if (doread == 1){
   colnames(jimenez.831.1hz) = cc
   # --------#######--------- Get 5 or 10 Hz Data 8/31 ------#######---------
   # MET DATA - BUI + YANG + DLH
-  met.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190831_R0_met.ict')
+  met.831.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190831_R0_met.ict')
   #CO, CH4
-  co.ch4.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast//FIREXAQ-DACOM-5Hz_DC8_20190831_R1.ict')
+  co.ch4.831.5hz = getICARTTdataSIMPLE('InputFiles//FIREXAQ-DACOM-5Hz_DC8_20190831_R1.ict')
   # CO2
-  co2.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190831_R1.ict')
+  co2.831.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190831_R1.ict')
   # WARNEKE VOCs
-  warneke.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190831_R3.ict')
+  warneke.831.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190831_R3.ict')
   # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190831_R0_ISAF.ict')
+  isaf.831.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190831_R0_ISAF.ict')
   # ROLLINS SO2 and NO
-  rollinsno.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190831_R0.ict')
-  rollinsso2.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190831_R1.ict')
+  rollinsno.831.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190831_R0.ict')
+  rollinsso2.831.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190831_R1.ict')
   # CIT VOCs - 
-  cit.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190831_R0_CIT.ict')
+  cit.831.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190831_R0_CIT.ict')
   # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190831_R0_huey.ict')
+  gtcims.831.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190831_R0_huey.ict')
   # ----- Jimenez ---
-  jimenez.831.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190831_R0_20230314T134128.ict')
+  jimenez.831.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190831_R0_20230314T134128.ict')
   jimenez.831.5hz$OC_PM1_AMS_JIMENEZ = jimenez.831.5hz$OA_PM1_AMS_JIMENEZ/jimenez.831.5hz$OAtoOC_PM1_AMS
   
   # ------- append PI to colnames ----------
@@ -12583,112 +12563,109 @@ if (doread == 1){
   
   # ----- [[[[[[[[[[[[[[[[[[[[ Sep 3rd ]]]]]]]]]]]]]]]]]]]]] -------
   # ------------- Get 1 Hz Data -------------
-  #f1 = 'Aircraft/1s_MERGES/KTMERGE/firexaq-mrg1_dc8_20190903_KT.ict' #??
-  #sep03rd.fire = getICARTTdataALL(f1)
-  #sep03rd.fire = sep03rd.fire[order(sep03rd.fire$Time_Start),]
   # --------#######--------- Get 1 Hz Data individual 8/21------#######---------
   # plume tags
-  tags = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-fire-Flags-1HZ_DC8_20190903_R9.ict') ;tags$Time_Start = tags$TIME_START
+  tags = getICARTTdataSIMPLE('InputFiles/firexaq-fire-Flags-1HZ_DC8_20190903_R9.ict') ;tags$Time_Start = tags$TIME_START
   # MET DATA
-  met.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-MetNav_DC8_20190903_R1.ict')
+  met.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-MetNav_DC8_20190903_R1.ict')
   met.903.1hz = merge(met.903.1hz, tags, by='Time_Start')
   # CO2
-  co2.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CO2-7000_DC8_20190903_R2.ict')
+  co2.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000_DC8_20190903_R2.ict')
   # -------- DISKIN -----CO, CH4
-  co.ch4.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-DACOM_DC8_20190903_R1.ict')
+  co.ch4.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-DACOM_DC8_20190903_R1.ict')
   # --------- WARNEKE ----  VOCs
-  warneke.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190903_R3.ict')
+  warneke.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-1Hz_DC8_20190903_R3.ict')
   # ------ HANISCO - ISAF HCHO - merged to 5Hz from the online merge
-  isaf.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ISAF-CH2O-1Hz_DC8_20190903_R0.ict')
+  isaf.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-ISAF-CH2O-1Hz_DC8_20190903_R0.ict')
   #  ------- ROLLINS - SO2 and NO
-  rollinsno.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-NO_DC8_20190903_R1.ict')
+  rollinsno.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO_DC8_20190903_R1.ict')
   rollinsno.903.1hz$Time_Start = rollinsno.903.1hz$time_mid
-  rollinsso2.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LIF-SO2_DC8_20190903_R1.ict')
+  rollinsso2.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2_DC8_20190903_R1.ict')
   rollinsso2.903.1hz$Time_Start = rollinsso2.903.1hz$time_mid
   #  ----- WENNBERG - CIT VOCs - 
-  cit.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190903_R0_CIT.ict')
+  cit.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190903_R0_CIT.ict')
   # ------ HUEY - GTCIMS PANs - not sure how to match up peaks here
-  gtcims.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190903_R0_Huey.ict')
+  gtcims.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190903_R0_Huey.ict')
   # ------ RYERSON
-  ryerson.A = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO_DC8_20190903_R1.ict')
-  ryerson.B = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NO2_DC8_20190903_R1.ict')
-  ryerson.C = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-NOy_DC8_20190903_R1.ict')
-  ryerson.D = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-NOyO3-O3_DC8_20190903_R1.ict')
+  ryerson.A = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO_DC8_20190903_R1.ict')
+  ryerson.B = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NO2_DC8_20190903_R1.ict')
+  ryerson.C = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-NOy_DC8_20190903_R1.ict')
+  ryerson.D = getICARTTdataSIMPLE('InputFiles/firexaq-NOyO3-O3_DC8_20190903_R1.ict')
   ryerson.903.1hz = cbind(ryerson.A,ryerson.B,ryerson.C,ryerson.D) ; ryerson.903.1hz$Time_Start = ryerson.903.1hz$Time_start
   # ----- JIMENEZ ---
-  jimenez.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-EESI_DC8_20190903_R1.ict')
+  jimenez.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-EESI_DC8_20190903_R1.ict')
   
   # average to 1s
   #jimenez.903.1hz = aggregate(jimenez.903.1hz, by=list(round(jimenez.903.1hz$Time_Start)), FUN='mean', na.rm=TRUE)
   # ----- SCHWARZ ---
-  schwarz.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-SP2-BC-1HZ_DC8_20190903_R2.ict')
+  schwarz.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-SP2-BC-1HZ_DC8_20190903_R2.ict')
   # ----- FREID ---
-  freid.c2h6.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-C2H6_DC8_20190903_R3.ict')
-  freid.ch2o.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-CH2O_DC8_20190903_R3.ict')
+  freid.c2h6.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-C2H6_DC8_20190903_R3.ict')
+  freid.ch2o.903.1hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CH2O_DC8_20190903_R3.ict')
   # ------ WOMACK ---
-  womackA = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CH3COCHO_DC8_20190903_R1.ict')
-  womackB = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-CHOCHO_DC8_20190903_R1.ict')
-  womackC = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-HNO2_DC8_20190903_R1.ict')
-  womackD = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-ACES-NO2_DC8_20190903_R1.ict')
+  womackA = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CH3COCHO_DC8_20190903_R1.ict')
+  womackB = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-CHOCHO_DC8_20190903_R1.ict')
+  womackC = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-HNO2_DC8_20190903_R1.ict')
+  womackD = getICARTTdataSIMPLE('InputFiles/firexaq-ACES-NO2_DC8_20190903_R1.ict')
   womack.903.1hz = cbind(womackA, womackB, womackC, womackD)
   # -------St Clair
-  stclair.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-CANOE-NO2_DC8_20190903_R0.ict')
+  stclair.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-CANOE-NO2_DC8_20190903_R0.ict')
   stclair.903.1hz$Time_Start = stclair.903.1hz$Time_start
   # ------- VERES
-  veres.A = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-ClNO2_DC8_20190903_R0.ict')
-  veres.B = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCOOH_DC8_20190903_R1.ict')
-  veres.C = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNO2_DC8_20190903_R1.ict')
-  veres.D = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-N2O5_DC8_20190903_R0.ict')
-  veres.E = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HPMTF_DC8_20190903_R0.ict')
-  veres.F = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190903_R0.ict')
-  veres.G = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-Cl2_DC8_20190903_R0.ict')
-  veres.H = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCl_DC8_20190903_R0.ict')
-  veres.I = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrCN_DC8_20190903_R0.ict')
-  veres.J = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-BrO_DC8_20190903_R0.ict')
-  veres.K = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HCN_DC8_20190903_R0.ict')
-  veres.L = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-NOAACIMS-HNCO_DC8_20190903_R0.ict')
+  veres.A = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-ClNO2_DC8_20190903_R0.ict')
+  veres.B = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCOOH_DC8_20190903_R1.ict')
+  veres.C = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNO2_DC8_20190903_R1.ict')
+  veres.D = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-N2O5_DC8_20190903_R0.ict')
+  veres.E = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HPMTF_DC8_20190903_R0.ict')
+  veres.F = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-CH3COOCl_DC8_20190903_R0.ict')
+  veres.G = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-Cl2_DC8_20190903_R0.ict')
+  veres.H = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCl_DC8_20190903_R0.ict')
+  veres.I = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrCN_DC8_20190903_R0.ict')
+  veres.J = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-BrO_DC8_20190903_R0.ict')
+  veres.K = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HCN_DC8_20190903_R0.ict')
+  veres.L = getICARTTdataSIMPLE('InputFiles/FIREXAQ-NOAACIMS-HNCO_DC8_20190903_R0.ict')
   veres.903.1hz = cbind(veres.A,veres.B,veres.C,veres.D,veres.E,veres.F,veres.G,veres.H,veres.I,veres.J,veres.K,veres.L)
   
   # --- WISTHALER
-  #wisthaler.903.1hz = getICARTTdataSIMPLE('Aircraft/Final_1s/firexaq-mrg1_dc8_20190903_R0_Wisthaler.ict')
+  #wisthaler.903.1hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg1_dc8_20190903_R0_Wisthaler.ict')
 
   # ---- BLAKE
-  blake.903.1hz = getICARTTdataSIMPLE('Aircraft/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190903_R1.ict')
+  blake.903.1hz = getICARTTdataSIMPLE('InputFiles/WAS-MERGE/firexaq-mrgWAS-dc8_merge_20190903_R1.ict')
   cc = colnames(blake.903.1hz)
   blake.903.merge = blake.903.1hz[,c(1,2,96:225)]
   blake.903.merge$CO_DACOM_DISKIN_BLAKE = blake.903.1hz$CO_DACOM_DISKIN
   blake.903.merge$CO2_7000_ppm_DISKIN_BLAKE = blake.903.1hz$CO2_7000_ppm_DISKIN
   
   # ------ APEL
-  apel.903.1hz = getICARTTdataSIMPLE('Aircraft/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190903_R1.ict')
+  apel.903.1hz = getICARTTdataSIMPLE('InputFiles/TOGA-MERGE/firexaq-mrgTOGA-dc8_merge_20190903_R1.ict')
   cc = colnames(apel.903.1hz)
   apel.903.merge = apel.903.1hz[,c(1,2,226:315)]
   apel.903.merge$CO_DACOM_DISKIN_APEL = apel.903.1hz$CO_DACOM_DISKIN
   apel.903.merge$CO2_7000_ppm_DISKIN_APEL =apel.903.1hz$CO2_7000_ppm_DISKIN
   
   # Becky's better merge
-  file = 'Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0903.xlsx'
+  file = 'InputFiles/Hornbrook/FIREX-AQ weighted TOGA merge 2022-01-24_0903.xlsx'
   newTOGA.903 = readxl::read_xlsx(file); newTOGA.903[newTOGA.903==-999] = NaN; newTOGA.903[newTOGA.903==-888] = NaN
   newTOGA.903$CO_DACOM_DISKIN_BECKY = newTOGA.903$CO_DACOM_DISKIN
   newTOGA.903$CO2_7000_ppm_DISKIN_BECKY = NaN
   newTOGA.903$Time_Start=newTOGA.903$Time_Start...4
   
   # ----GILMAN
-  gilman.903.1hz = getICARTTdataSIMPLE('Aircraft/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190903_R1.ict')
+  gilman.903.1hz = getICARTTdataSIMPLE('InputFiles/iWAS-MERGE/firexaq-mrgiWAS-dc8_merge_20190903_R1.ict')
   cc = colnames(gilman.903.1hz)
   gilman.903.merge = gilman.903.1hz[,c(1,2,316:361)]
   gilman.903.merge$CO_DACOM_DISKIN_GILMAN = gilman.903.1hz$CO_DACOM_DISKIN
   gilman.903.merge$CO2_7000_ppm_DISKIN_GILMAN = gilman.903.1hz$CO2_7000_ppm_DISKIN
 
   # ------ Moore 
-  moore.903fast = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190903_R0_MOORE.ict')
+  moore.903fast = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190903_R0_MOORE.ict')
   
-  moore.903p1 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190903_R0.ict')
-  moore.903p2 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAScold_DC8_20190903_R0.ict')
-  moore.903p3 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-LAShot_DC8_20190903_R0.ict')
-  moore.903p4 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CPSPD_DC8_20190903_R0.ict')
-  moore.903p5 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-CDP_DC8_20190903_R0.ict')
-  moore.903p6 = getICARTTdataSIMPLE('Aircraft/Final_1s/FIREXAQ-LARGE-SMPS_DC8_20190903_R0.ict')
+  moore.903p1 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-AerosolCloudConc_DC8_20190903_R0.ict')
+  moore.903p2 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAScold_DC8_20190903_R0.ict')
+  moore.903p3 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-LAShot_DC8_20190903_R0.ict')
+  moore.903p4 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CPSPD_DC8_20190903_R0.ict')
+  moore.903p5 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-CDP_DC8_20190903_R0.ict')
+  moore.903p6 = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LARGE-SMPS_DC8_20190903_R0.ict')
   moore.903 =merge(moore.903p1, moore.903p2, by='Time_mid', all = TRUE, incomparables = NA)
   moore.903 =merge(moore.903, moore.903p3, by='Time_mid', all = TRUE, incomparables = NA)
   moore.903 =merge(moore.903, moore.903p4, by='Time_mid', all = TRUE, incomparables = NA)
@@ -12758,24 +12735,24 @@ if (doread == 1){
   colnames(jimenez.903.1hz) = cc
   # --------#######--------- Get 5 or 10 Hz Data 9/03 ------#######---------
   # MET DATA - BUI + YANG + DLH
-  met.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190903_R0_met.ict')
+  met.903.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190903_R0_met.ict')
   #CO, CH4
-  co.ch4.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast//FIREXAQ-DACOM-5Hz_DC8_20190903_R1.ict')
+  co.ch4.903.5hz = getICARTTdataSIMPLE('InputFiles//FIREXAQ-DACOM-5Hz_DC8_20190903_R1.ict')
   # CO2
-  co2.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-CO2-7000-5Hz_DC8_20190903_R1.ict')
+  co2.903.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-CO2-7000-5Hz_DC8_20190903_R1.ict')
   # WARNEKE VOCs
-  warneke.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190903_R3.ict')
+  warneke.903.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-NOAAPTR-VOCs-5Hz_DC8_20190903_R3.ict')
   # ISAF HCHO - merged to 5Hz from the online merge
-  isaf.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190903_R0_ISAF.ict')
+  isaf.903.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190903_R0_ISAF.ict')
   # ROLLINS SO2 and NO
-  rollinsno.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-NO-5Hz_DC8_20190903_R0.ict')
-  rollinsso2.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/FIREXAQ-LIF-SO2-5Hz_DC8_20190903_R1.ict')
+  rollinsno.903.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-NO-5Hz_DC8_20190903_R0.ict')
+  rollinsso2.903.5hz = getICARTTdataSIMPLE('InputFiles/FIREXAQ-LIF-SO2-5Hz_DC8_20190903_R1.ict')
   # CIT VOCs - 
-  cit.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190903_R0_CIT.ict')
+  cit.903.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190903_R0_CIT.ict')
   # GTCIMS PANs - not sure how to match up peaks here
-  gtcims.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_dc8_20190903_R0_huey.ict')
+  gtcims.903.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_dc8_20190903_R0_huey.ict')
   # ----- Jimenez ---
-  jimenez.903.5hz = getICARTTdataSIMPLE('Aircraft/FinalFast/firexaq-mrg5hz_AMS_20190903_R0_20230314T134139.ict')
+  jimenez.903.5hz = getICARTTdataSIMPLE('InputFiles/firexaq-mrg5hz_AMS_20190903_R0_20230314T134139.ict')
   jimenez.903.5hz$OC_PM1_AMS_JIMENEZ = jimenez.903.5hz$OA_PM1_AMS_JIMENEZ/jimenez.903.5hz$OAtoOC_PM1_AMS
   
   # ------- append PI to colnames ----------

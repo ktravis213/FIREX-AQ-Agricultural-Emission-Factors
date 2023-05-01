@@ -60,7 +60,7 @@ mWMeCycPentane=	84.16 #6
 mWToluene=	92.14 #7
 mWEthynylBenzene=	102.133 #8
 mWx2EthToluene=	120.19 #9
-mWbPinene=	136.23 #C10
+mWbPinene=	136.24 #C10
 mWx2MeFuran=	82.1 #C5
 mWAcetonePropanal=	58.08 #C3
 mWNitromethane=61.04 #C1
@@ -100,9 +100,9 @@ mWx2MePentane = 86.18; mWx3MePentane = 86.178; mWx2MeHexane = 100.2; mWx3MeHexan
 mWx224TrimePentane =114.23; mWx234TrimePentane = 114.23; mWCycPentane =70.1 
 mWCycHexane =84.162; mWMeCycHexane = 98.186; mWCycPentene = 68.11; mWBenzene = MolecularWeight(formula=list(C=6, H=6))
 mWEthBenzene = MolecularWeight(formula=list(C=8, H=10)); mWmpXylene = 106.16 ; mWoXylene = 106.16; mWStyrene = 104.15
-mWiPropBenzene = 120.19; mWnPropBenzene =120.2 ; mWx3EthToluene = 120.19; mWx4EthToluene =120.19
-mWx135rimeBenzene = 120.19; mWx124rimeBenzene = 120.19; mWClBenzene =MolecularWeight(formula=list(C=6, H=5,Cl=1)); mWaPinene = 136.23
-mWTricyclene = MolecularWeight(formula=list(C=10, H=16)); mWCamphene = 136.24; mWMyrcene = 136.23; mWLimonene = 136.24; mWFuran =68.07
+mWiPropBenzene = 120.19; mWnPropBenzene =120.19 ; mWx3EthToluene = 120.19; mWx4EthToluene =120.19
+mWx135rimeBenzene = 120.19; mWx124rimeBenzene = 120.19; mWClBenzene =MolecularWeight(formula=list(C=6, H=5,Cl=1)); mWaPinene = 136.24
+mWTricyclene = MolecularWeight(formula=list(C=10, H=16)); mWCamphene = 136.24; mWMyrcene = 136.24; mWLimonene = 136.24; mWFuran =68.07
 mWx3MeFuran = 82.102; mWBenzFuran = 118.10; mWiButanal = 72.11; mWButanal = 72.11
 mWMEK = MolecularWeight(formula=list(C=4, H=8,O=1))
 mWMAC = 70.09; mWMVK = 70.09; mWAcrolein = MolecularWeight(formula=list(C=3, H=4, O=1)); mWiPropanol = 60.1
@@ -122,7 +122,7 @@ mWSyringol = 154.16;mWGlycolaldehydeCH3COOH =60.052 ; mWHAC = 74.08
 mW2Furanone = 84.07336 ; mW23butanedione = 86.09; mWDimeFuran=96.13; mWMaleicAnhyd=98.06; mWBenzNitrile=103.04 
 mWBenzaldehyde = 106.12; mWC8Aromatics=mWoXylene; 
 mWC7H8O=108.14; mWCatecholx5MeFurfural=110.11
-mWC9Aromatics=120.2; mWC6H4O3=124.09; mWGuaiacol=124.14; mWNaphthalene=128.1705;mWMonoterpenes = mWLimonene
+mWC9Aromatics=120.19; mWC6H4O3=124.09; mWGuaiacol=124.14; mWNaphthalene=128.1705;mWMonoterpenes = mWLimonene
 mWCresol=108.14
 # -------- Number of carbon atoms --------
 nCOCS=NaN;  nCDMS=NaN; nCCFC12=NaN; nCCFC11=NaN; nCCFC113=NaN; nCCFC114=NaN; nCHFC152a=NaN; nCHFC134a=NaN
@@ -173,7 +173,7 @@ OHC2H5OH=	3.20E-12
 OHAcrylonitrile=	4.00E-12
 OHAcrolein=	2.00E-11
 OHAcetonePropanal=	1.70E-13
-OHGlycolaldehydeCH3COOH=	3.68E-12
+OHGlycolaldehydeCH3COOH=	3.68E-12  # Glycoaldehyde = 1.00E-11 CH3COOH 8.00D-13
 OHCH3NO2=	2.00E-14
 OHDMS=	6.00E-12
 OHC4H5N=	1.11E-10

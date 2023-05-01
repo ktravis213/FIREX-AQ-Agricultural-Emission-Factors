@@ -3,7 +3,7 @@ source("Table1.R")
 source("speciateSpecies.R")
 q1=0.25; q2=0.75
 `%notin%` <- Negate(`%in%`)
-doER = 0
+doER = 1
 doEF = 1
 dowheatshrub =1
 options(scipen = 1, digits=3)
@@ -49,6 +49,8 @@ allBOTH.filter.mean.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel
 allBOTH.filter.sd.fuel = aggregate(allBOTH.filter, by=list(allBOTH.filter$fuel,allBOTH.filter$variable), FUN='sd', na.rm=TRUE)
 
 allBOTH.filter.median.fuel$FinalEF_mean = allBOTH.filter.mean.fuel$FinalEF
+allBOTH.filter.median.fuel$FinalEF_MCE92_mean = allBOTH.filter.mean.fuel$FinalEF_MCE92
+
 allBOTH.filter.median.fuel$FinalEF_sd = allBOTH.filter.sd.fuel$FinalEF
 allBOTH.filter.median.fuel$FinalERtoCO_mean = allBOTH.filter.mean.fuel$FinalERtoCO*1E3
 allBOTH.filter.median.fuel$FinalERtoCO_sd = allBOTH.filter.sd.fuel$FinalERtoCO*1E3
@@ -80,11 +82,6 @@ tmpTABLE = speciateSpecies(allBOTH.filter.median.fuel)
 # Here add kludge for headers
 newLine = tmpTABLE
 
-# ok want to put C9 aromatics and monoterpenes together regardless of lifetime
-ind = which(tmpTABLE$formula == 'C9H12')
-tmpTABLE$LifetimeCat[ind] = 1
-ind = which(tmpTABLE$formula == 'C10H16')
-tmpTABLE$LifetimeCat[ind] = 1
 ind =which(tmpTABLE$LifetimeCat == 2 & tmpTABLE$Category == 1)
 tmpTABLE$Category[ind] = 1.5
 # get rid of stuff without a category, category = 5 (oxidation products) and with USEME = 1
@@ -132,6 +129,8 @@ if (dothis == 1){
   new.data.frame.wheat2 = new.data.frame.wheat
   ind = which(!is.finite(new.data.frame.wheat2$FinalEF_mean))
   new.data.frame.wheat2$FinalEF_mean[ind] = new.data.frame$FinalEF_mean[ind]
+  new.data.frame.wheat2$FinalEF_MCE92_mean[ind] = new.data.frame$FinalEF_MCE92[ind]
+  
   new.data.frame.wheat2$FinalERtoCO_mean[ind] = new.data.frame$FinalERtoCO_mean[ind]
   ind = which(!is.finite(new.data.frame.wheat2$FinalEF_mean) | !is.finite(new.data.frame.wheat$FinalEF_sd))
   new.data.frame.wheat2$FinalEF_sd[ind] = new.data.frame$FinalEF_sd[ind]
@@ -140,6 +139,8 @@ if (dothis == 1){
   new.data.frame.soybean2 = new.data.frame.soybean
   ind = which(!is.finite(new.data.frame.soybean2$FinalEF_mean))
   new.data.frame.soybean2$FinalEF_mean[ind] = new.data.frame$FinalEF_mean[ind]
+  new.data.frame.soybean2$FinalEF_MCE92_mean[ind] = new.data.frame$FinalEF_MCE92_mean[ind]
+  
   new.data.frame.soybean2$FinalERtoCO_mean[ind] = new.data.frame$FinalERtoCO_mean[ind]
   ind = which(!is.finite(new.data.frame.soybean2$FinalEF_mean) | !is.finite(new.data.frame.soybean2$FinalEF_sd))
   new.data.frame.soybean2$FinalEF_sd[ind] = new.data.frame$FinalEF_sd[ind]
@@ -148,12 +149,14 @@ if (dothis == 1){
   new.data.frame.rice2 = new.data.frame.rice
   ind = which(!is.finite(new.data.frame.rice2$FinalEF_mean))
   new.data.frame.rice2$FinalEF_mean[ind] = new.data.frame$FinalEF_mean[ind]
+  new.data.frame.rice2$FinalEF_MCE92_mean[ind] = new.data.frame$FinalEF_MCE92_mean[ind]
   new.data.frame.rice2$FinalERtoCO_mean[ind] = new.data.frame$FinalEF_mean[ind]
   ind = which(!is.finite(new.data.frame.rice2$FinalEF_mean) |!is.finite(new.data.frame.rice2$FinalEF_sd) )
   new.data.frame.rice2$FinalEF_sd[ind] = new.data.frame$FinalEF_sd[ind]
   new.data.frame.rice2$FinalERtoCO_sd[ind] = new.data.frame$FinalERtoCO_sd[ind]
   
   new.data.frame.ag$FinalEF_mean = new.data.frame$FinalEF_mean*cornfrac  + new.data.frame.rice2$FinalEF_mean*ricefrac + new.data.frame.soybean2$FinalEF_mean*soyfrac + new.data.frame.wheat2$FinalEF_mean*wheatfrac
+  new.data.frame.ag$FinalEF_MCE92_mean = new.data.frame$FinalEF_MCE92_mean*cornfrac  + new.data.frame.rice2$FinalEF_MCE92_mean*ricefrac + new.data.frame.soybean2$FinalEF_MCE92_mean*soyfrac + new.data.frame.wheat2$FinalEF_MCE92_mean*wheatfrac
   new.data.frame.ag$FinalERtoCO_mean = new.data.frame$FinalERtoCO_mean*cornfrac  + new.data.frame.rice2$FinalERtoCO_mean*ricefrac  + new.data.frame.soybean2$FinalERtoCO_mean*soyfrac + new.data.frame.wheat2$FinalERtoCO_mean*wheatfrac
   new.data.frame.ag$COUNT_EFFINAL    = new.data.frame$COUNT_EFFINAL+new.data.frame.rice2$COUNT_EFFINAL + new.data.frame.soybean2$COUNT_EFFINAL + new.data.frame.wheat2$COUNT_EFFINAL
   new.data.frame.ag$FinalEF_sd   = sqrt(((new.data.frame$FinalEF_sd*cornfrac)^2 +(new.data.frame.rice2$FinalEF_sd*ricefrac)^2  +(new.data.frame.soybean2$FinalEF_sd*soyfrac)^2 + (new.data.frame.wheat2$FinalEF_sd*wheatfrac)^2)/4)
@@ -164,6 +167,7 @@ if (dothis == 1){
   new.data.frame.pile2 = new.data.frame.pile
   ind = which(!is.finite(new.data.frame.pile$FinalEF_mean) & is.finite(new.data.frame.slash$FinalEF_mean))
   new.data.frame.pile2$FinalEF_mean[ind] = new.data.frame.slash$FinalEF_mean[ind]
+  new.data.frame.pile2$FinalEF_MCE92_mean[ind] = new.data.frame.slash$FinalEF_MCE92_mean[ind]
   new.data.frame.pile2$FinalERtoCO_mean[ind] = new.data.frame.slash$FinalERtoCO_mean[ind]
   ind = which(!is.finite(new.data.frame.pile$FinalEF_sd) & is.finite(new.data.frame.slash$FinalEF_sd))
   new.data.frame.pile2$FinalEF_sd[ind] = new.data.frame.slash$FinalEF_sd[ind]
@@ -172,6 +176,7 @@ if (dothis == 1){
   new.data.frame.slash2 = new.data.frame.slash
   ind = which(is.finite(new.data.frame.pile2$FinalEF_mean) & !is.finite(new.data.frame.slash$FinalEF_mean))
   new.data.frame.slash2$FinalEF_mean[ind] = new.data.frame.pile$FinalEF_mean[ind]
+  new.data.frame.slash2$FinalEF_MCE92_mean[ind] = new.data.frame.pile$FinalEF_MCE92_mean[ind]
   new.data.frame.slash2$FinalERtoCO_mean[ind] = new.data.frame.pile$FinalERtoCO_mean[ind]
   ind = which(is.finite(new.data.frame.pile2$FinalEF_sd) & !is.finite(new.data.frame.slash$FinalEF_sd))
   new.data.frame.slash2$FinalEF_sd[ind] = new.data.frame.pile$FinalEF_sd[ind]
@@ -180,19 +185,22 @@ if (dothis == 1){
   new.data.frame.shrub2 = new.data.frame.shrub
   tmp = new.data.frame.pile2
   tmp$FinalEF_mean = (tmp$FinalEF_mean +new.data.frame.slash2$FinalEF_mean)/2
+  tmp$FinalEF_MCE92_mean = (tmp$FinalEF_MCE92_mean +new.data.frame.slash2$FinalEF_MCE92_mean)/2
   tmp$FinalERtoCO_mean = (tmp$FinalERtoCO_mean +new.data.frame.slash2$FinalERtoCO_mean)/2
   tmp$FinalEF_sd= sqrt((tmp$FinalEF_sd^2 +new.data.frame.slash2$FinalEF_sd^2)/2)
   tmp$FinalERtoCO_sd= sqrt((tmp$FinalERtoCO_sd^2 +new.data.frame.slash2$FinalERtoCO_sd^2)/2)
   
-  
   ind = which(is.finite(tmp$FinalEF_mean) & !is.finite(new.data.frame.shrub2$FinalEF_mean))
   new.data.frame.shrub2$FinalEF_mean[ind] = (tmp$FinalEF_mean[ind])/2
+  new.data.frame.shrub2$FinalEF_MCE92_mean[ind] = (tmp$FinalEF_MCE92_mean[ind])/2
+  
   new.data.frame.shrub2$FinalERtoCO_mean[ind] = (tmp$FinalERtoCO_mean[ind])/2
   ind = which(is.finite(tmp$FinalEF_sd) & !is.finite(new.data.frame.shrub2$FinalEF_sd))
   new.data.frame.shrub2$FinalEF_sd[ind] = tmp$FinalEF_sd[ind]
   new.data.frame.shrub2$FinalERtoCO_sd[ind] = tmp$FinalERtoCO_sd[ind]
   
   new.data.frame.presc$FinalEF_mean = new.data.frame.pile2$FinalEF_mean*pilefrac+new.data.frame.slash2$FinalEF_mean*slashfrac + new.data.frame.shrub2$FinalEF_mean*shrubfrac
+  new.data.frame.presc$FinalEF_MCE92_mean = new.data.frame.pile2$FinalEF_MCE92_mean*pilefrac+new.data.frame.slash2$FinalEF_MCE92_mean*slashfrac + new.data.frame.shrub2$FinalEF_MCE92_mean*shrubfrac
   new.data.frame.presc$FinalEF_sd   = sqrt(((new.data.frame.pile2$FinalEF_sd*pilefrac)^2 +(new.data.frame.slash2$FinalEF_sd*slashfrac)^2  +(new.data.frame.shrub2$FinalEF_sd*shrubfrac)^2 )/3)
   new.data.frame.presc$FinalERtoCO_mean = new.data.frame.pile2$FinalERtoCO_mean*pilefrac+new.data.frame.slash2$FinalERtoCO_mean*slashfrac + new.data.frame.shrub2$FinalERtoCO_mean*shrubfrac
   new.data.frame.presc$FinalERtoCO_sd = sqrt(((new.data.frame.pile2$FinalERtoCO_sd*pilefrac)^2 +(new.data.frame.slash2$FinalERtoCO_sd*slashfrac)^2  +(new.data.frame.shrub2$FinalERtoCO_sd*shrubfrac)^2 )/3)
@@ -218,15 +226,18 @@ setupdataEF = as.data.frame(cbind(new.data.frame$Category, new.data.frame$Lifeti
                                   
                                   new.data.frame.grass$FinalEF_mean,   new.data.frame.grass$FinalEF_sd,     new.data.frame.grass$COUNT_EFFINAL))
 
+setupdataEF_MCE92 = as.data.frame(cbind( new.data.frame$names,new.data.frame$PI,
+                                  new.data.frame.ag$FinalEF_mean, new.data.frame.ag$FinalEF_MCE92_mean,
+                                  new.data.frame.ag$COUNT_EFFINAL,  
+                                  new.data.frame.presc$FinalEF_mean,  new.data.frame.presc$FinalEF_MCE92_mean,  
+                                  new.data.frame.presc$COUNT_EFFINAL))
+colnames(setupdataEF_MCE92) = c("Names","PI","EF_ag","EF_ag92","N","EF_prec","EF_presc92","Np")                        
 # Save for comparison to Akagi and Andreae
 if (doEF == 1){save(setupdataEF,file='setupdataEF.RData')}
 # Ok, don't want to order nitrogen compounds by lifetimecat
 ind = which(setupdataEF$V1 == 2 | setupdataEF$V1 == 3)
 setupdataEF$V2[ind] = 1
-#setupdataEF =setupdataEF[ with(setupdataEF, order(V1,V2, as.numeric(V3), -as.numeric(V7) )),]#mWs,names, )),]
-attach(setupdataEF)
-setupdataEF <- setupdataEF[order(V1,V2, as.numeric(V3),-as.numeric(V7)),]
-detach(setupdataEF)
+setupdataEF =setupdataEF[ with(setupdataEF, order(V1,V2, as.numeric(V3) )),]#mWs,names, )),]
 #setupdataEF =setupdataEF[ with(setupdataEF, order(Category,LifetimeCat, -FinalEF )),]#mWs,names, )),]
 setupdataEF= subset(setupdataEF, select = -c( V1, V2,V3))
 # ------ ERs -----
@@ -256,13 +267,13 @@ setupdataER= subset(setupdataER, select = -c( V1, V2,V3))
 
 # ----------- wheat and shrub + blackwater
 setupdataWHEATSHRUB = as.data.frame(cbind(new.data.frame.wheat$Category, new.data.frame.wheat$LifetimeCat,new.data.frame$mWs,
-                                  new.data.frame.wheat$names,new.data.frame.wheat$formula,new.data.frame.wheat$PI,
-                                  new.data.frame.wheat$FinalEF, new.data.frame.wheat$FinalEF_25, new.data.frame.wheat$FinalEF_75,
-                                  new.data.frame.wheat$FinalERtoCO, new.data.frame.wheat$FinalERtoCO_25, new.data.frame.wheat$FinalERtoCO_75,
-                                  new.data.frame.wheat$COUNT_EFFINAL,
-                                  new.data.frame.shrub$FinalEF, new.data.frame.shrub$FinalEF_25,    new.data.frame.shrub$FinalEF_75,  
-                                  new.data.frame.shrub$FinalERtoCO, new.data.frame.shrub$FinalERtoCO_25, new.data.frame.shrub$FinalERtoCO_75,
-                                  new.data.frame.shrub$COUNT_EFFINAL))
+                                          new.data.frame.wheat$names,new.data.frame.wheat$formula,new.data.frame.wheat$PI,
+                                          new.data.frame.wheat$FinalEF, new.data.frame.wheat$FinalEF_25, new.data.frame.wheat$FinalEF_75,
+                                          new.data.frame.wheat$FinalERtoCO, new.data.frame.wheat$FinalERtoCO_25, new.data.frame.wheat$FinalERtoCO_75,
+                                          new.data.frame.wheat$COUNT_EFFINAL,
+                                          new.data.frame.shrub$FinalEF, new.data.frame.shrub$FinalEF_25,    new.data.frame.shrub$FinalEF_75,  
+                                          new.data.frame.shrub$FinalERtoCO, new.data.frame.shrub$FinalERtoCO_25, new.data.frame.shrub$FinalERtoCO_75,
+                                          new.data.frame.shrub$COUNT_EFFINAL))
 
 setupdataWHEATSHRUB  =setupdataWHEATSHRUB[ with(setupdataWHEATSHRUB, order(V1,V2, -as.numeric(V3) )),]#mWs,names, )),]
 #setupdataEF =setupdataEF[ with(setupdataEF, order(Category,LifetimeCat, -FinalEF )),]#mWs,names, )),]
@@ -285,34 +296,34 @@ for (i in 1:length(setupdata2$V6)){
     tt = as.numeric(setupdata2[i,j])
     if(is.finite(tt)){
       if (tt == 0){
-      setupdata2[i,j] = "NA"
+        setupdata2[i,j] = "NA"
       }
     }
     if (j != 6 & j != 9 & j != 12 & j != 15 & j != 18 & j != 21 & j != 24 & j != 27){
       tt = as.numeric(setupdata2[i,j])
       if (is.na(tt)){
         setupdata2[i,j] = "NA"
-      #  } else if {
-      #    setupdata2[i,j]=sprintf('%1.3g',tt)
-       # }
+        #  } else if {
+        #    setupdata2[i,j]=sprintf('%1.3g',tt)
+        # }
       } else if (tt >= 1E13){
         setupdata2[i,j] = sprintf('%1.2e',tt)
-        } else if (tt >= 50 & tt <1E13){
-         setupdata2[i,j] = sprintf('%1.0f',tt)
-       } else if (tt >=1 & tt <= 50){
-         setupdata2[i,j] = sprintf('%1.2f',tt)
-       }else if (tt >= 0.001 & tt < 1){
-         setupdata2[i,j] = sprintf('%0.3f',tt)
-       }else {#if (tt <= 0.001){
-         setupdata2[i,j] = sprintf('%0.2e',tt)
-       } 
+      } else if (tt >= 50 & tt <1E13){
+        setupdata2[i,j] = sprintf('%1.0f',tt)
+      } else if (tt >=1 & tt <= 50){
+        setupdata2[i,j] = sprintf('%1.2f',tt)
+      }else if (tt >= 0.001 & tt < 1){
+        setupdata2[i,j] = sprintf('%0.3f',tt)
+      }else {#if (tt <= 0.001){
+        setupdata2[i,j] = sprintf('%0.2e',tt)
+      } 
     }
     #print(c(i,j,tt, setupdata[i,j]))
   }
 }
 # make sure formats match for sd
 for (i in 1:length(setupdata2$V7)){
-
+  
   if (setupdata2$V8[i] != "NA" & setupdata2$V7[i] != "NA"){
     if (as.numeric(setupdata2$V8[i]) < 0.001 & as.numeric(setupdata2$V7[i]) >= 0.001){
       setupdata2$V8[i] = sprintf('%0.4f',as.numeric(setupdata2$V8[i]))
@@ -320,7 +331,7 @@ for (i in 1:length(setupdata2$V7)){
   }
   if (setupdata2$V11[i] != "NA" & setupdata2$V10[i] != "NA"){
     if (as.numeric(setupdata2$V11[i]) < 0.001 & as.numeric(setupdata2$V10[i]) >= 0.001){
-     setupdata2$V11[i] = sprintf('%0.4f',as.numeric(setupdata2$V11[i]))
+      setupdata2$V11[i] = sprintf('%0.4f',as.numeric(setupdata2$V11[i]))
     }
   }
   if (setupdata2$V14[i] != "NA" & setupdata2$V13[i] != "NA"){
@@ -330,7 +341,7 @@ for (i in 1:length(setupdata2$V7)){
   }
   if (setupdata2$V17[i] != "NA" & setupdata2$V16[i] != "NA"){
     if (as.numeric(setupdata2$V17[i]) < 0.001 & as.numeric(setupdata2$V16[i]) >= 0.001){
-     setupdata2$V17[i] = sprintf('%0.4f',as.numeric(setupdata2$V17[i]))
+      setupdata2$V17[i] = sprintf('%0.4f',as.numeric(setupdata2$V17[i]))
     }
   }
   if (setupdata2$V20[i] != "NA" & setupdata2$V19[i] != "NA"){
@@ -354,7 +365,7 @@ for (i in 1:length(setupdata2$V7)){
     }
   }
 }
-  # Clean up format
+# Clean up format
 dd=dim(setupdata2)
 for (i in 1:length(setupdata2$V6)){
   for (j in 4:dd[2]){
@@ -397,7 +408,7 @@ setupdata2= subset(setupdata2, select = -c(V25) )
 ind = which(setupdata2$V27 != "NA" &  is.finite(as.numeric(setupdata2$V28) ))
 setupdata2$V27[ind] = paste(setupdata2$V27[ind]," (",setupdata2$V28[ind], ")",sep='')
 setupdata2= subset(setupdata2, select = -c(V28) )
-  
+
 
 setHtmlTableTheme(theme = "Google docs")
 
@@ -630,8 +641,8 @@ newrow = setupdata[ind,]; newrow$`EF1, g/kg`=''; newrow$`EF2, g/kg`='';newrow$`E
 newrow$`EF5, g/kg`='';newrow$`EF6, g/kg` = ''; newrow$`EF7, g/kg`='';newrow$`EF8, g/kg` = '';  newrow$Formula=''; newrow$Instrument='';newrow$Names = 'Sulfur-containing Species'
 newrow$n1=''; newrow$n2=''; newrow$n3 = ''; newrow$n4=''; newrow$n5=''; newrow$n6 = '' ; newrow$n7=''; newrow$n8=''
 setupdata = rbind(setupdata[1:ind,],newrow,setupdata[-(1:ind),])
-ind = which(setupdata$Names == 'Black carbon'); ind = ind-1
-  newrow = setupdata[ind,]; newrow$`EF1, g/kg`=''; newrow$`EF2, g/kg`='';newrow$`EF3, g/kg`=''; newrow$`EF4, g/kg`=''
+ind = which(setupdata$Names == 'Black Carbon'); ind = ind-1
+newrow = setupdata[ind,]; newrow$`EF1, g/kg`=''; newrow$`EF2, g/kg`='';newrow$`EF3, g/kg`=''; newrow$`EF4, g/kg`=''
 newrow$`EF5, g/kg`='';newrow$`EF6, g/kg` = ''; newrow$`EF7, g/kg`='';newrow$`EF8, g/kg` = '';  newrow$Formula=''; newrow$Instrument='';newrow$Names = 'Aerosols'
 newrow$n1=''; newrow$n2=''; newrow$n3 = ''; newrow$n4=''; newrow$n5=''; newrow$n6 = '' ; newrow$n7=''; newrow$n8=''
 setupdata = rbind(setupdata[1:ind,],newrow,setupdata[-(1:ind),])
@@ -660,7 +671,7 @@ newrow = setupdataWHEATSHRUB[ind,]; newrow$`EF1, g/kg`=''; newrow$`EF2, g/kg`=''
 newrow$Formula=''; newrow$Instrument='';newrow$Names = 'Sulfur-containing Species'; newrow$n1=''; newrow$n2=''
 setupdataWHEATSHRUB = rbind(setupdataWHEATSHRUB[1:ind,],newrow,setupdataWHEATSHRUB[-(1:ind),])
 
-ind = which(setupdataWHEATSHRUB$Names == 'Black carbon'); ind = ind-1
+ind = which(setupdataWHEATSHRUB$Names == 'Black Carbon'); ind = ind-1
 newrow = setupdataWHEATSHRUB[ind,]; newrow$`EF1, g/kg`=''; newrow$`EF2, g/kg`='';newrow$`ER, ppt/ppb`=''; newrow$`ER2, ppt/ppb`=''
 newrow$Formula=''; newrow$Instrument='';newrow$Names = 'Aerosols'; newrow$n1=''; newrow$n2=''
 setupdataWHEATSHRUB = rbind(setupdataWHEATSHRUB[1:ind,],newrow,setupdataWHEATSHRUB[-(1:ind),])
@@ -680,8 +691,8 @@ ft <- add_header_row(ft,
                      colwidths = c(1,1,1,2,2,2,2,2,2,2,2),
                      values =  c("A","B","C","Corn", "Rice","Soybean","Ag","Slash","Pile","Presc","Grass"))
 ft <- add_header_row(ft,
-      colwidths = c(1,1,1,8,8),
-      values = c('','','','Agricultural Residue','Land Clearing'))
+                     colwidths = c(1,1,1,8,8),
+                     values = c('','','','Agricultural Residue','Land Clearing'))
 
 ft = fontsize(ft,part="body", size=6)
 ft = fontsize(ft,part="header", size=6)
@@ -708,8 +719,8 @@ sect_properties <- prop_section(
 ftWHEATSHRUB <- flextable(setupdataWHEATSHRUB)
 ftWHEATSHRUB <- theme_vanilla(ftWHEATSHRUB)
 ftWHEATSHRUB <- add_header_row(ftWHEATSHRUB,
-                     colwidths = c(1,1,1,3,3),
-                     values =  c("A","B","C","Wheat", "Shrub"))
+                               colwidths = c(1,1,1,3,3),
+                               values =  c("A","B","C","Wheat", "Shrub"))
 
 ftWHEATSHRUB = fontsize(ftWHEATSHRUB,part="body", size=6)
 ftWHEATSHRUB = fontsize(ftWHEATSHRUB,part="header", size=6)
