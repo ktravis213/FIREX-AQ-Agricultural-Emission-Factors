@@ -1,6 +1,6 @@
 # ---- Figure1: Plot CH4 EF vs. MCE for separated fuel types -----
 plotSpeciesMCE = function(allBOTH.filterIN,variableN,akagiN,andreaeN,xiaoxiN){
-  doavgshape = 0
+  doavgshape =0
   
   xiaoxi$fuel = c('Corn','Corn','Corn', 'Rice','Rice',
                   'Rice','Rice','Rice','Rice',
@@ -38,25 +38,12 @@ plotSpeciesMCE = function(allBOTH.filterIN,variableN,akagiN,andreaeN,xiaoxiN){
   
   cbp1 = cbp1b
   allBOTH.filter.CH4 = allBOTH.filterIN[ind,]
-  allBOTH.filter.CH4.avg = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuelORIG), FUN='median', na.rm=TRUE)
+  allBOTH.filter.CH4.avg = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuel2), FUN='mean', na.rm=TRUE)
   #allBOTH.filter.CH4.sd = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuelORIG), FUN='sd', na.rm=TRUE)
-  allBOTH.filter.CH4.25 = aggregate(allBOTH.filter.CH4$FinalEF, by=list(allBOTH.filter.CH4$fuelORIG), 'quantile',probs=c(q1),na.rm=TRUE)
-  allBOTH.filter.CH4.75 = aggregate(allBOTH.filter.CH4$FinalEF, by=list(allBOTH.filter.CH4$fuelORIG), 'quantile',probs=c(q2),na.rm=TRUE)
-  allBOTH.filter.CH4.25.mce = aggregate(allBOTH.filter.CH4$MCE, by=list(allBOTH.filter.CH4$fuelORIG), 'quantile',probs=c(q1),na.rm=TRUE)
-  allBOTH.filter.CH4.75.mce = aggregate(allBOTH.filter.CH4$MCE, by=list(allBOTH.filter.CH4$fuelORIG), 'quantile',probs=c(q2),na.rm=TRUE)
   allBOTH.filter.CH4.avg = getplumesANDmcebyfuel1VAR(allBOTH.filter.CH4.avg, allBOTH.filter.CH4 )
-  
-  allBOTH.filter.CH4.avg$FinalEF25 = allBOTH.filter.CH4.25$x
-  allBOTH.filter.CH4.avg$FinalEF75 = allBOTH.filter.CH4.75$x
-  allBOTH.filter.CH4.avg$MCE.25 = allBOTH.filter.CH4.25.mce$x
-  allBOTH.filter.CH4.avg$MCE.75 = allBOTH.filter.CH4.75.mce$x
  
-  allBOTH.filter.CH4$fuelORIG <- factor(allBOTH.filter.CH4$fuelORIG,
-                                    levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub","BlackwaterRiver"))
-  allBOTH.filter.CH4.avg$fuelORIG = allBOTH.filter.CH4.avg$Group.1
-  allBOTH.filter.CH4.avg$fuelORIG <- factor(allBOTH.filter.CH4.avg$fuelORIG,
-                                        levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub","BlackwaterRiver"))
-  
+  allBOTH.filter.CH4.avg$fuel2 = allBOTH.filter.CH4.avg$Group.1
+   
   # Slopes
   ind = which(allBOTH.filter.CH4$fuelORIG == 'corn'& is.finite(allBOTH.filter.CH4$FinalEF))
   if (length(ind) > 2){
@@ -166,10 +153,10 @@ plotSpeciesMCE = function(allBOTH.filterIN,variableN,akagiN,andreaeN,xiaoxiN){
     scale_shape_manual(values =fuelshapes)+
     xlim(xx)
   if (doavgshape == 1){
-    CH4vsMCE = CH4vsMCE + geom_errorbar(data=allBOTH.filter.CH4.avg[ierr,],aes(xmin=MCE.25,xmax=MCE.75, y=FinalEF, col=fuelORIG),  position=position_dodge(0.05))+
-    geom_errorbar(data=allBOTH.filter.CH4.avg[ierr,],aes(x=MCE, ymin=FinalEF25, ymax=FinalEF75,col=fuelORIG), width=0.0025, position=position_dodge(0.05))+
-    geom_point(data=allBOTH.filter.CH4.avg,aes(x=MCE,y=FinalEF, shape=fuelORIG), col='white', size=12, stroke = 1)+
-    geom_point(data=allBOTH.filter.CH4.avg,aes(x=MCE,y=FinalEF, col=fuelORIG,shape=fuelORIG), size=10, stroke = 2)
+    CH4vsMCE = CH4vsMCE + 
+   ggplot(allBOTH.filter.CH4.avg) + geom_point(data=allBOTH.filter.CH4.avg,aes(x=MCE,y=FinalEF, col=fuel2), shape=15, size=6)+
+      geom_point(data=allBOTH.filter.CH4.avg,aes(x=MCE,y=FinalEF_MCE92, col=fuel2), shape=16, size=5)#, shape=fuel2), col='black', size=12, stroke = 1)#+
+#    geom_point(data=allBOTH.filter.CH4.avg,aes(x=MCE,y=FinalEF, col=fuelORIG,shape=fuelORIG), size=10, stroke = 2)
   }
   
   if (length(indC) > 0){
@@ -292,25 +279,14 @@ plotSpeciesCOMCE = function(allBOTH.filterIN,variableN,akagiN,andreaeN,xiaoxiN){
   
   cbp1 = cbp1b
   allBOTH.filter.CH4 = allBOTH.filterIN[ind,]
-  allBOTH.filter.CH4.avg = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuel), FUN='median', na.rm=TRUE)
-  #allBOTH.filter.CH4.sd = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuel), FUN='sd', na.rm=TRUE)
-  allBOTH.filter.CH4.25 = aggregate(allBOTH.filter.CH4$FinalERtoCO, by=list(allBOTH.filter.CH4$fuel), 'quantile',probs=c(q1),na.rm=TRUE)
-  allBOTH.filter.CH4.75 = aggregate(allBOTH.filter.CH4$FinalERtoCO, by=list(allBOTH.filter.CH4$fuel), 'quantile',probs=c(q2),na.rm=TRUE)
-  allBOTH.filter.CH4.25.mce = aggregate(allBOTH.filter.CH4$MCE, by=list(allBOTH.filter.CH4$fuel), 'quantile',probs=c(q1),na.rm=TRUE)
-  allBOTH.filter.CH4.75.mce = aggregate(allBOTH.filter.CH4$MCE, by=list(allBOTH.filter.CH4$fuel), 'quantile',probs=c(q2),na.rm=TRUE)
+  allBOTH.filter.CH4.avg = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuel2), FUN='mean', na.rm=TRUE)
+  #allBOTH.filter.CH4.sd = aggregate(allBOTH.filter.CH4, by=list(allBOTH.filter.CH4$fuel2), FUN='sd', na.rm=TRUE)
   allBOTH.filter.CH4.avg = getplumesANDmcebyfuel1VAR(allBOTH.filter.CH4.avg, allBOTH.filter.CH4 )
-  
-  allBOTH.filter.CH4.avg$FinalERtoCO25 = allBOTH.filter.CH4.25$x
-  allBOTH.filter.CH4.avg$FinalERtoCO75 = allBOTH.filter.CH4.75$x
-  allBOTH.filter.CH4.avg$MCE.25 = allBOTH.filter.CH4.25.mce$x
-  allBOTH.filter.CH4.avg$MCE.75 = allBOTH.filter.CH4.75.mce$x
   
   allBOTH.filter.CH4$fuel <- factor(allBOTH.filter.CH4$fuel,
                                     levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub","BlackwaterRiver"))
-  allBOTH.filter.CH4.avg$fuel = allBOTH.filter.CH4.avg$Group.1
-  allBOTH.filter.CH4.avg$fuel <- factor(allBOTH.filter.CH4.avg$fuel,
-                                        levels = c("winter wheat", "soybean","rice","corn","grass","slash","pile","shrub","BlackwaterRiver"))
-  
+  allBOTH.filter.CH4.avg$fuel2 = allBOTH.filter.CH4.avg$Group.1
+ 
   # Slopes
   ind = which(allBOTH.filter.CH4$fuel == 'corn'& is.finite(allBOTH.filter.CH4$FinalERtoCO))
   if (length(ind) > 2){

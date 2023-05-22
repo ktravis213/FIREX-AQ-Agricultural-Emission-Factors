@@ -32,17 +32,19 @@ allBOTH.filter.bin = aggregate(allBOTH.filter[ind,], by=list(allBOTH.filter$vari
 for (i in 1:length(allBOTH.filter.bin$Group.1)){
   ind = which(allBOTH.filter$variable==allBOTH.filter.bin$Group.1[i] )
   allBOTH.filter.bin$names[i] = allBOTH.filter$names[ind[1]]
+  allBOTH.filter.bin$fuelORIG[i] = allBOTH.filter$fuelORIG[ind[1]]
   
 }
 varsALL = as.data.frame(cbind(vars))
 varsALL$Rval_ag = NaN; varsALL$Slope_ag = NaN; varsALL$Slopestd_ag = NaN; varsALL$Intercept_ag = NaN
 varsALL$Rval_presc = NaN; varsALL$Slope_presc = NaN; varsALL$Slopestd_presc = NaN; varsALL$Intercept_presc = NaN
 varsALL$Rval_grass = NaN; varsALL$Slope_grass = NaN; varsALL$Slopestd_grass = NaN; varsALL$Intercept_grass = NaN
-
+minD = 10
 for (i in 1:length(varsALL$vars)){
   # ---------------------- Agriculture --------------------
-  ind = which(allBOTH.filter.bin$Group.1 == varsALL$vars[i] & allBOTH.filter.bin$Group.2 == 'agriculture' & is.finite(allBOTH.filter.bin$FinalEF))
-  if (length(ind) > 4){
+  ind = which(allBOTH.filter.bin$Group.1 == varsALL$vars[i] & allBOTH.filter.bin$Group.2== 'agriculture' &
+                is.finite(allBOTH.filter.bin$FinalEF))
+  if (length(ind) > minD){
     tmp = lm(allBOTH.filter.bin$FinalEF[ind]~allBOTH.filter.bin$MCE[ind])
     sL = summary(tmp)
     sQ = cor.test(allBOTH.filter.bin$FinalEF[ind],allBOTH.filter.bin$MCE[ind])
@@ -54,8 +56,9 @@ for (i in 1:length(varsALL$vars)){
     }
   }
   # ---------------------- Prescribed --------------------
-  ind = which(allBOTH.filter.bin$Group.1 == varsALL$vars[i] & allBOTH.filter.bin$Group.2 == 'prescribed' & is.finite(allBOTH.filter.bin$FinalEF))
-  if (length(ind) > 4){
+  ind = which(allBOTH.filter.bin$Group.1 == varsALL$vars[i] & allBOTH.filter.bin$Group.2 == 'prescribed' &
+                is.finite(allBOTH.filter.bin$FinalEF))
+  if (length(ind) > minD){
     tmp = lm(allBOTH.filter.bin$FinalEF[ind]~allBOTH.filter.bin$MCE[ind])
     sL = summary(tmp)
     sQ = cor.test(allBOTH.filter.bin$FinalEF[ind],allBOTH.filter.bin$MCE[ind])
@@ -67,8 +70,9 @@ for (i in 1:length(varsALL$vars)){
     }
   }
   # ---------------------- Grassland --------------------
-  ind = which(allBOTH.filter.bin$Group.1 == varsALL$vars[i] & allBOTH.filter.bin$Group.2 == 'grass' & is.finite(allBOTH.filter.bin$FinalEF))
-  if (length(ind) > 4){
+  ind = which(allBOTH.filter.bin$Group.1 == varsALL$vars[i] & allBOTH.filter.bin$Group.2 == 'grass' &
+                is.finite(allBOTH.filter.bin$FinalEF))
+  if (length(ind) > minD){
     tmp = lm(allBOTH.filter.bin$FinalEF[ind]~allBOTH.filter.bin$MCE[ind])
     sL = summary(tmp)
     sQ = cor.test(allBOTH.filter.bin$FinalEF[ind],allBOTH.filter.bin$MCE[ind])

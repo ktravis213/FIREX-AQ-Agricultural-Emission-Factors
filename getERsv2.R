@@ -1121,7 +1121,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
               1, 1,  1,  1,1, 1,  1,  1,1, 1,  1,  1,1, 1,  1,  1,
               1, 1,  1,  1,1, 1,  1,  1,1, 1,  1,  1, 1, 2,  1)
     names1=c(names1,bnames)
-    formulas = c(formulas, 'OCS',	'DMS', 'CFC12', 'CFC11', 'CFC113', 'CFC114', 'HFC152a', 'HFC134a', 'HFC365mfc', 'HCFC22', 
+    formulas = c(formulas, 'OCS',	'C2H6S', 'CFC12', 'CFC11', 'CFC113', 'CFC114', 'HFC152a', 'HFC134a', 'HFC365mfc', 'HCFC22', 
     'HCFC142b', 'HCFC141b', 'H1301', 'H2402', 'H1211', 'CH3CCl3', 'CCl4', 'CHCl3', 'CH2Cl2', 'C2HCl3', 'C2Cl4', 'CH3Cl', 
     'CH3Br', 'CH3I', 'CH2Br2', 'CHBrCl2', 'CHBr2Cl', 'CHBr3', 'CH2ClCH2Cl', 'C2H5Cl', 'CH3NO3', 'C2H5NO3', 'C3H7NO3', 
     'C3H7NO3', 'C4H9NO3', 'C5H11NO3', 'C5H11NO3', 'C5H11NO3', 'C2H6', 'C2H4', 'C2H2', 'C3H6', 'C3H8', 'C3H4', 'C3H4',
@@ -1586,7 +1586,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
                'Nitromethane', 'Methyl nitrate', 'Ethyl nitrate', 'i-propyl nitrate','2/i-Butyl nitrate')
     formulas=c(formulas,'HFC134a', 'HCFC141b', 'HCFC142b', 'HCFC22', 'CH2Cl2', 'CHCl3', 'CH2ClCH2Cl', 'CH3CCl3', 
                'C2Cl4', 'C6H5Cl', 'CHBrCl2', 'CHBr2Cl', 'CH3Br', 'CH2Br2', 'CHBr3', 'CH2ClI', 'CH3I', 'CS2', 'CH3SH',
-               'DMS', 'C3H8', 'C4H10', 'C4H10', 'C5H12', 'C5H12', 'C6H14', 'C6H14', 'C6H14', 'C8H18', 'C7H16', 'C8H18',
+               'C2H6S', 'C3H8', 'C4H10', 'C4H10', 'C5H12', 'C5H12', 'C6H14', 'C6H14', 'C6H14', 'C8H18', 'C7H16', 'C8H18',
                'C3H6', 'C4H8', 'C5H8', 'C10H16', 'C10H16', 'C10H16', 'C10H16', 'C10H16', 'C6H6', 'C7H8', 'C8H10', 'C8H10',
                'C8H10', 'C8H8', 'C8H6', 'CH2O', 'C2H4O', 'C3H6O', 'C4H8O', 'C4H8O', 'C3H4O', 'C4H6O', 'C3H6O', 'C4H8O', 
                'CH3OH', 'C2H5OH', 'C3H8O', 'C5H10O', 'C4H6O', 'C4H6O', 'C2H4O2', 'CH3COOCH3', 'C4H4O', 'C5H6O', 'C5H6O',
@@ -2017,7 +2017,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
              'Nitromethane','Dimethyl sulfide','Pyrrole/Butenenitrile',' Furan and fragments','MVK/MACR',
              'MEK/ 2-methyl propanal', 'Methyl acetate/Ethyl formate/Hydroxyacetone','Benzene',
              'sum of 2-methylfuran 3-methylfuran and fragments',
-             '2-(3H)-Furanone',
+             '2(3H)-Furanone',
              '2,3-Butanedione/2-Oxobutanal/1,4-Butanedial','Toluene','Phenol', 'sum of 2-furfural (dominant isomer) 3-furfural and fragments',
              '2,5-Dimethylfuran/2-Ethylfuran/Other unidentified organic compounds',
              'Maleic anhydride','Benzonitrile','Styrene','Benzaldehyde', 

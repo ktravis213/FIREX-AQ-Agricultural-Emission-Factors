@@ -1,7 +1,7 @@
 # Run Plots
 # Figure 1 is from Emily Gargulinski
 # Figure 3 is in CalculateEmissionFactorsv2.R - Chips
-source("plotSpeciesMCE.R"); source("xioaxi.R"); require(CropScapeR)
+source("plotSpeciesMCE.R"); source("xioaxi.R"); require(CropScapeR); require(pals)
 options(scipen=0, digits=7)
 print('Fig 2')
 # ---------- Figure 2: Map and Histogram --------------------
@@ -22,8 +22,8 @@ cbp1 = cbp1a
 domap=0
 if (domap == 1){
   # Example 3. Retrieve data for a rectangle box defined by four corner points in 2018.
-  data <- GetCDLImage(aoi = c(130783,2203171,153923,2217961), year1 = 2019, year2 = 2019, type = 'b')
-  head(data, 5)
+  #data <- GetCDLImage(aoi = c(130783,2203171,153923,2217961), year1 = 2019, year2 = 2019, type = 'b')
+  #head(data, 5)
   
   map.us <- get_stamenmap(c(-98.5,30,-82,41), zoom=5)
   ind = which(allBOTH.filter$fire == 'BlackwaterRiver'); allBOTH.filter$fuel[ind] = 'BlackwaterRiver'
@@ -47,17 +47,19 @@ if (domap == 1){
 #   geom_point(data = all5hz.map[ind,], aes(x = lon,y = lat,colour =fuel, size=catCO))
 
 # ---- MCE  histogram
-ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' & allBOTH.filter$fuel != 'coniferous/decidous' &
-              allBOTH.filter$fire != "Invictus" &
-              allBOTH.filter$fire != "Copper Breaks" &
-              allBOTH.filter$fire != "Vivian" )
+ind = which(allBOTH.filter$variable == 'CO_DACOM_DISKIN' & 
+              allBOTH.filter$fuel2 != 'coniferous/decidous' &
+              allBOTH.filter$fuel2 != "forest" &
+             is.finite(allBOTH.filter$FinalEF))
 tmpMCE = allBOTH.filter[ind,]
-ind = which(tmpMCE$fire == 'BlackwaterRiver' & tmpMCE$MAtoF.5hz > 0.2)
-tmpMCE$MCE[ind] = NaN
 MCEhist = ggplot(tmpMCE, aes(x=MCE, col=fuelORIG, fill=fuelORIG)) + geom_histogram()+theme_classic()+
   scale_color_manual(values = c(cbp1 ),limits=fuellimits) + scale_fill_manual(values = c(cbp1 ),
                                                                               limits=fuellimits) +
   theme(legend.position = "top")+labs(fill="")
+# ----- Add GG ------
+ggMCE = 0.900; ggSD = 0.023
+ggdat = as.data.frame(cbind(ggMCE,ggSD))
+MCEhist + geom_point(data=ggdat,mapping = aes(x=ggMCE,y=0))
 ggsave(filename = 'MCEhist.pdf',MCEhist,width = 6,height = 6,units = 'in')
 
 if (domap == 1){ggsave(filename = 'Figure1_FireMap.pdf',mapfire,width = 6,height = 6,units = 'in')}
@@ -76,16 +78,20 @@ print('Fig 4')
 # --------- Figure 4: VOC contribution pie chart -------
 ind = which(allBOTH.filter$names == ' Furan and fragments')
 allBOTH.filter$USEME[ind] =0
+ind = which(allBOTH.filter$names == 'Phenol' & allBOTH.filter$PI == 'WARNEKE')
+allBOTH.filter$USEME[ind] =0
+ind = which(allBOTH.filter$names == 'Phenol' & allBOTH.filter$PI == 'WARNEKE')
+allBOTH.filter$USEME[ind] =0
 ind = which(allBOTH.filter$fuelORIG == 'corn' | allBOTH.filter$fuelORIG == 'rice' | allBOTH.filter$fuelORIG == 'soybean' |
               allBOTH.filter$fuelORIG == 'winter wheat' | allBOTH.filter$fuelORIG == 'pile' | allBOTH.filter$fuelORIG == 'slash' |
               allBOTH.filter$fuelORIG == 'grass' | allBOTH.filter$fuelORIG == 'shrub' | 
-              allBOTH.filter$fuelORIG == 'BlackwaterRiver')
+              allBOTH.filter$fuelORIG == 'Blackwater')
 allBOTH.filter.ag = allBOTH.filter[ind,]
 ind = which(allBOTH.filter.ag$Category == 1 & allBOTH.filter.ag$USEME == 1 )
 allBOTH.filter.ag = allBOTH.filter.ag[ind,]
-allBOTH.filter.ag.avg = aggregate(allBOTH.filter.ag, by=list(allBOTH.filter.ag$names), FUN='median', na.rm=TRUE)
+allBOTH.filter.ag.avg = aggregate(allBOTH.filter.ag, by=list(allBOTH.filter.ag$names, allBOTH.filter.ag$PI), FUN='mean', na.rm=TRUE)
 
-tmp = as.data.frame(cbind(names=allBOTH.filter.ag.avg$Group.1, EF=allBOTH.filter.ag.avg$FinalEF, lifetime=allBOTH.filter.ag.avg$LifetimeCat,
+tmp = as.data.frame(cbind(names=allBOTH.filter.ag.avg$Group.1,PI=allBOTH.filter.ag.avg$Group.2, EF=allBOTH.filter.ag.avg$FinalEF, lifetime=allBOTH.filter.ag.avg$LifetimeCat,
                           MW=allBOTH.filter.ag.avg$mWs, kOH=allBOTH.filter.ag.avg$OHrate.1hz, nC=allBOTH.filter.ag.avg$nCs))
 # Calculate reactivity
 tmp$dummyppt = as.numeric(tmp$EF)*6.022E23*1E12/1E15/as.numeric(tmp$MW)/2.69E19# 1km3, 273K, 1atm, 1kg fuel
@@ -113,9 +119,15 @@ write.csv(tmp, file='VOCcontributions.csv')
 print('Fig 5')
 # ------- Figure  5: total VOCs ----------------
 ind = which(allBOTH.filter$fuel2 == 'agriculture' & allBOTH.filter$names == 'Short-lived VOC')
+short.ag = allBOTH.filter[ind,]
 cor.test(allBOTH.filter$MCE[ind], allBOTH.filter$FinalEF[ind])
 ind = which(allBOTH.filter$fuel2 == 'agriculture' & allBOTH.filter$names == 'Long-lived VOC')
+long.ag = allBOTH.filter[ind,]
+
 cor.test(allBOTH.filter$MCE[ind], allBOTH.filter$FinalEF[ind])
+ind = which(allBOTH.filter$fuel2 == 'agriculture' & allBOTH.filter$names == 'Methane')
+ch4.ag = allBOTH.filter[ind,]
+ch4.ag$FinalEF = ch4.ag$FinalEF + short.ag$FinalEF + long.ag$FinalEF
 
 ind = which(allBOTH.filter$fuel2 == 'prescribed' & allBOTH.filter$names == 'Short-lived VOC')
 cor.test(allBOTH.filter$MCE[ind], allBOTH.filter$FinalEF[ind])
@@ -239,7 +251,7 @@ HNO2vsMCE3 = plotSpeciesMCE(allBOTH.filter,'HNO2_NOAACIMS_VERES','HNO2','HNO2','
 CH3CNvsMCE = plotSpeciesMCE(allBOTH.filter,'CH3CN_NOAAPTR_ppbv_WARNEKE','Acetonitrile','Acetonitrile','Acetonitrile')
 HCNvsMCE = plotSpeciesMCE(allBOTH.filter,'Hydrogen cyanide_VERES_WENNBERG__','Hydrogen cyanide','Hydrogen cyanide','HCN')
 HCNvsMCE1 = plotSpeciesMCE(allBOTH.filter,'HCN_NOAAPTR_ppbv_WARNEKE','Hydrogen cyanide','HCN','HCN')
-HCNvsMCE2 = plotSpeciesMCE(allBOTH.filter,'HCN_WENNBERG','Hydrogen cyanide','HCN','HCN')
+HCNvsMCE2 = plotSpeciesMCE(allBOTH.filter,'HCN_WENNBERG','Hydrogen cyanide','Hydrogen cyanide','HCN')
 HCNvsMCE3 = plotSpeciesMCE(allBOTH.filter,'HCN_NOAACIMS_VERES','Hydrogen cyanide','HCN','HCN')
 HNO3vsMCE = plotSpeciesMCE(allBOTH.filter,'HNO3_WENNBERG','Nitric acid','HNO3','HNO3')
 PANvsMCE = plotSpeciesMCE(allBOTH.filter,'PAN_HUEY','PAN','PAN','PAN')
@@ -596,10 +608,12 @@ xiaoxiNormalizeInorg$AndreaeSD     = (tmp1$AndreaeSD/tmp1$AndreaeEF)
 xiaoxiNormalizeInorg$Xiaoxisd      = as.numeric(tmp1$Xiaoxisd)/as.numeric(tmp1$XiaoxiEF)
 
 xiaoxiNormalizeOrg = tmp2
-xiaoxiNormalizeOrg$FinalEF_sd_ag = as.numeric(tmp2$FinalEF_mean_ag)*as.numeric(tmp2$FinalEF_sd_ag)/(as.numeric(tmp2$FinalEF_mean_ag))
+xiaoxiNormalizeOrg$FinalEF_sd_ag = as.numeric(tmp2$FinalEF_mean_ag)*as.numeric(tmp2$FinalEF_sd_ag)/
+  (as.numeric(tmp2$FinalEF_mean_ag))
 xiaoxiNormalizeOrg$AkagiSD       = xiaoxiNormalizeOrg$AkagiEF*(tmp2$AkagiSD/tmp2$AkagiEF)
 xiaoxiNormalizeOrg$AndreaeSD     = xiaoxiNormalizeOrg$AndreaeEF*(tmp2$AndreaeSD/tmp2$AndreaeEF)
-xiaoxiNormalizeOrg$Xiaoxisd      = as.numeric(tmp1$XiaoxiEF) * (as.numeric(tmp2$Xiaoxisd)/as.numeric(tmp2$XiaoxiEF))
+xiaoxiNormalizeOrg$Xiaoxisd      = as.numeric(tmp2$XiaoxiEF) * (as.numeric(tmp2$Xiaoxisd)/
+                                                                  as.numeric(tmp2$XiaoxiEF))
 
 EFcomparisonNormInOrg=ggplot(xiaoxiNormalizeInorg)  + #scale_x_continuous(limits=c(0,6))+
   geom_point(aes(x=rep(1,length(ind1)),y=variableNUM+0.2 ),size=4,col='blue', show.legend=FALSE)+
@@ -637,6 +651,7 @@ ggsave('EFComparisonBoth4.pdf',tmp,width = ww*2, height=ww*1/aspR)
 ind = which(is.finite(outputdata$XiaoxiEF))
 write.csv(outputdata[ind,],'Fig13.csv')
 # ---- Figure S1 C9 aromatics --------
+print("Fig. S1 C9 arom")
 tmp = as.data.frame(cbind(as.numeric(toga.all$x124rimeBenzene_WAS_TM), as.numeric(toga.all$x135rimeBenzene_WAS_TM), as.numeric(toga.all$iPropBenzene_WAS_TM),
                           as.numeric(toga.all$nPropBenzene_WAS_TM), as.numeric(toga.all$x2EthToluene_WAS_TM), as.numeric(toga.all$x3EthToluene_WAS_TM), 
                           as.numeric(toga.all$x4EthToluene_WAS_TM)))
@@ -650,6 +665,7 @@ abline(tt, col='black')
 text(200,250,paste("WAS slope = ", round(tt$coefficients[1], digits = 2)))
 
 # ---- Figure S2 Monoterpenes ------
+print("Fig. S2 Monoterpenes ")
 tmp = as.data.frame(cbind(toga.all$aPinene_ppt,toga.all$bPineneMyrcene_ppt , toga.all$Camphene_ppt ,toga.all$Tricyclene_ppt))
 ind = which(is.finite(toga.all$bPineneMyrcene_ppt) & is.finite(toga.all$Camphene_ppt)) # don't include outliers in slope
 plot( toga.all$Monoterpenes_NOAAPTR_TM[ind],rowSums(tmp[ind,], na.rm=TRUE), pch=19, xlab='Monoterpenes, ppt', ylab='aPinene+bPinene+Myrcene+Camphene+Tricyclene, ppt')
@@ -661,6 +677,7 @@ tt = lm(yy~xx+0)
 abline(tt, col='black')
 text(500,800,paste("TOGA slope = ", round(tt$coefficients[1], digits = 2)))
 # ----- Figure S3 TOGA/WAS meacetate -----
+print("Fig. S3 MeAcetate ")
 plot( toga.all$C3H6O2_NOAAPTR_TM,toga.all$MeAcetate_ppt, pch=19,ylab='Methyl acetate, ppt', xlab='C3H6O2 (NOAA PTRMS), ppt')
 xx=toga.all$C3H6O2_NOAAPTR_TM
 yy=as.numeric(toga.all$MeAcetate_ppt)
@@ -668,13 +685,14 @@ tt = lm(yy~xx+0)
 abline(tt, col='black')
 text(4000,6000,paste("TOGA slope = ", round(tt$coefficients[1], digits = 2)))
 
-points(toga.all$C3H6O2_NOAAPTR_TM, toga.all$MeAcetate_WAS_TM, pch=19, col='red')
-yy=as.numeric(toga.all$MeAcetate_WAS_TM)
-tt2 = lm(yy~xx+0)
-abline(tt2, col='red')
-text(4000,5600,paste("WAS slope = ", round(tt2$coefficients[1], digits = 2)), col='red')
+#points(toga.all$C3H6O2_NOAAPTR_TM, toga.all$MeAcetate_WAS_TM, pch=19, col='red')
+#yy=as.numeric(toga.all$MeAcetate_WAS_TM)
+#tt2 = lm(yy~xx+0)
+#abline(tt2, col='red')
+#text(4000,5600,paste("WAS slope = ", round(tt2$coefficients[1], digits = 2)), col='red')
 
 # ---- Figure S4 TOGA pyrrole -------
+print('Fig S4, pyrrole')
 plot( toga.all$C4H5N_NOAAPTR_TM, toga.all$Pyrrole_ppt, pch=19, xlab='C4H5N (NOAA PTRMS), ppt', ylab='Pyrrole, ppt')
 xx=as.numeric(toga.all$C4H5N_NOAAPTR_TM)
 yy=as.numeric(toga.all$Pyrrole_ppt)
@@ -684,8 +702,8 @@ tt = lm(yy~xx+0)
 abline(tt, col='black')
 text(400,800,paste("TOGA slope = ", round(tt$coefficients[1], digits = 2)))
 
-
 # Isoprene ---
+print('Isoprene')
 plot(toga.all$Isoprene_NOAAPTR_TM, toga.all$Isoprene_ppt, ylab='Isoprene, ppt', xlab='NOAA PTRMS Isoprene, ppt', pch=19, xlim=c(0,10E3), ylim=c(0,10E3))
 tt = lm(toga.all$Isoprene_ppt ~toga.all$Isoprene_NOAAPTR_TM)
 abline(tt, col='grey')
@@ -721,8 +739,6 @@ abline(tt, col='red')
 abline(tt, col='blue')
 text(3e3,1.6e4,paste("WAS slope = ", round(tt$coefficients[2], digits = 2)), col='blue')
 
-
-
 # furan, butanal, isobutanal, methylfurans, 
 plot(toga.all$Butanal_ppt, as.numeric(toga.all$Butanal_WAS_TM), xlab='TOGA Butanal, ppt', ylab='WAS Butanal, ppt',xlim=c(0,max(toga.all$Butanal_ppt, na.rm=TRUE)),
      ylim=c(0,max(toga.all$Butanal_ppt, na.rm=TRUE)))
@@ -738,7 +754,6 @@ plot(toga.all$iButanal_ppt, as.numeric(toga.all$iButanal_WAS_TM), xlab='TOGA iBu
 tt =lm(as.numeric(toga.all$iButanal_WAS_TM) ~ toga.all$iButanal_ppt)
 abline(tt)
 text(300,1000,paste("WAS slope = ", round(tt$coefficients[2], digits = 2)))
-
 
 # ---- Fig. S7 -----
 allBOTH.filter$fuel = allBOTH.filter$fuelORIG

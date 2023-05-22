@@ -5,7 +5,7 @@ load('AgFires.RData')
  source('speciateSpecies.R')
 require(dplyr); require(plyr); require(GMCM)
 
-R2filter = 0.7; R2filterCO = 0.90 # stricter criteria for CO as this defines the plume
+R2filter = 0.70; R2filterCO = 0.90 # stricter criteria for CO as this defines the plume
 R2Bot = 0.5 ; COcutoff = 400 # ppb 
 doprocess=0;doprocessSTEP2 =0
 OHval = 5E6
@@ -231,12 +231,12 @@ if (doprocess == 1){
   }
   
   # Remove EF and ER below R2 filter
-  ind = which(round(allBOTH.filter$R2toCO.5hz, digits = 1) < R2filter)
+  ind = which(round(allBOTH.filter$R2toCO.5hz, digits = 2) < R2filter)
   allBOTH.filter$EF1CO.5hz[ind] = NaN
   allBOTH.filter$ERtoCO.5hz[ind] = NaN
   allBOTH.filter$MCE[ind] = NaN
   
-  ind = which(round(allBOTH.filter$R2toCO.1hz, digits=1) < R2filter)
+  ind = which(round(allBOTH.filter$R2toCO.1hz, digits=2) < R2filter)
   allBOTH.filter$EF1CO.1hz[ind] = NaN
   allBOTH.filter$ERtoCO.1hz[ind] = NaN
   allBOTH.filter$MCE[ind] = NaN
@@ -476,6 +476,12 @@ if (doprocessSTEP2 == 1){
   # ---------------- Get PM1 EF --------------------------------
   ind1 = which(allBOTH.filter$variable == 'OC_JIMENEZ')
   oc = allBOTH.filter[ind1,]
+  oa = oc
+  oa$FinalEF = oa$FinalEF*oa$OAtoOC.5hz
+  oa$FinalERtoCO = oa$FinalERtoCO*oa$OAtoOC.5hz
+  oa$names = 'Organic aerosol'
+  oa$variable = 'OA_JIMENEZ'
+  
   ind1 = which(allBOTH.filter$variable == 'BC_SCHWARZ')
   bc = allBOTH.filter[ind1,]
   ind1 = which(allBOTH.filter$variable == 'Ammonium_JIMENEZ')
@@ -490,9 +496,9 @@ if (doprocessSTEP2 == 1){
   pot = allBOTH.filter[ind1,]
   for (i in 1:length(oc$variable)){
     newline = oc[i,]
-    vars = c(oc$FinalEF[i]*oc$OAtoOC.5hz[i],bc$FinalEF[i],ammonium$FinalEF[i],
+    vars = c(oa$FinalEF[i],bc$FinalEF[i],ammonium$FinalEF[i],
              sulf$FinalEF[i],nit$FinalEF[i],nrcl$FinalEF[i], pot$FinalEF[i])
-    varsER = c(oc$FinalERtoCO[i]*oc$OAtoOC.51hz[i],bc$FinalERtoCO[i],ammonium$FinalERtoCO[i],
+    varsER = c(oc$FinalERtoCO[i],bc$FinalERtoCO[i],ammonium$FinalERtoCO[i],
              sulf$FinalERtoCO[i],nit$FinalERtoCO[i],nrcl$FinalERtoCO[i],pot$FinalERtoCO[i])
     # only sum PM1 if we have OC
     newline$FinalEF = NaN
@@ -505,7 +511,10 @@ if (doprocessSTEP2 == 1){
     newline$mWs= 500
     allBOTH.filter = rbind(allBOTH.filter,newline)
   }
+  # also append OA
+  allBOTH.filter = rbind(allBOTH.filter,oa)
   
+
   # --- actually don't do this
   dobeckyoutliers = 0
   if (dobeckyoutliers == 1){
@@ -1247,6 +1256,9 @@ if (doprocessSTEP2 == 1){
   # ----- save for processing
   save(allBOTH.filter, file='AllBOTH.filterP2.RData')
 } else (load('AllBOTH.filterP2.RData'))
+# For OA, fix variable
+ind = which(allBOTH.filter$names == 'Organic aerosol')
+if (length(ind) > 0){ allBOTH.filter$variable[ind] = 'OA_JIMENEZ'}
 # ---- Give all passes the 5hz MCE ----
 ff = unique(allBOTH.filter$uniqueid) 
 allBOTH.filter$MCE = NaN

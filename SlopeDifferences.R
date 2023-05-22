@@ -124,27 +124,23 @@ varsALL$Slope_ag[ind] = varsALL$Slope_ag[indA];varsALL$Slope_presc[ind] = varsAL
 varsALL$Intercept_ag[ind] = varsALL$Intercept_ag[indA];varsALL$Intercept_presc[ind] = varsALL$Intercept_presc[indA]; varsALL$Intercept_grass[ind] = varsALL$Intercept_grass[indA]
 varsALL$Rval_ag[ind] = varsALL$Rval_ag[indA];varsALL$Rval_presc[ind] = varsALL$Rval_presc[indA]; varsALL$Rval_grass[ind] = varsALL$Rval_grass[indA]
 
+corVAL = 0.5
 for (i in 1:length(varsALL$vars)){
-  # only correct if at least 20% of variability is driven by MCE
-  if (abs( varsALL$Rval_ag[i]^2) >= 0.2 ){
+  # only correct if at least 50% of variability is driven by MCE
+  if (abs( varsALL$Rval_ag[i]^2) >= corVAL ){
     ind = which(allBOTH.filter$variable == varsALL$vars[i] & allBOTH.filter$fuel2 == 'agriculture')
     EF1= allBOTH.filter$MCE[ind]*varsALL$Slope_ag[i] +varsALL$Intercept_ag[i]
     EF2= (0.92*varsALL$Slope_ag[i] +varsALL$Intercept_ag[i])#*cContent/cContentAG
     allBOTH.filter$FinalEF_MCE92[ind] = allBOTH.filter$FinalEF[ind]*(EF2/EF1)
   }
 
-  if (abs( varsALL$Rval_presc[i]) >= 0.2 ){ # if there IS a correlation
-      EF1= allBOTH.filter$MCE[ind]*varsALL$Slope_presc[i] +varsALL$Intercept_presc[i]
+  if (abs( varsALL$Rval_presc[i]^2) >= corVAL ){ # if there IS a correlation
+    ind = which(allBOTH.filter$variable == varsALL$vars[i] & allBOTH.filter$fuel2 == 'prescribed')
+    EF1= allBOTH.filter$MCE[ind]*varsALL$Slope_presc[i] +varsALL$Intercept_presc[i]
       EF2= (0.92*varsALL$Slope_presc[i] +varsALL$Intercept_presc[i])#*cContent/cContentPresc
       allBOTH.filter$FinalEF_MCE92[ind] = allBOTH.filter$FinalEF[ind]*(EF2/EF1)
-      # wasnt sure if I should ONLY correct ag and not prescribed but took it out
-            #  if (is.finite(varsALL$prescSLOPE[i])){
-      # } else{
-  #    EF1= allBOTH.filter$MCE[ind]*varsALL$agrSLOPE[i] +varsALL$agrInt[i]
-  #    EF2= (0.92*varsALL$Slope_ag[i] +varsALL$agrInt[i])#*cContent/cContentPresc
-  #   }
   }
-  if (abs(varsALL$Rval_grass[i]^2) >= 0.2){
+  if (abs(varsALL$Rval_grass[i]^2) >= corVAL){
     ind = which(allBOTH.filter$variable == varsALL$vars[i] & allBOTH.filter$fuel2 == 'grass')
     EF1= allBOTH.filter$MCE[ind]*varsALL$Slope_grass[i] +varsALL$Intercept_grass[i]
     EF2= (0.92*varsALL$Slope_grass[i] +varsALL$Intercept_grass[i])#*cContent/cContentGrassShrub
