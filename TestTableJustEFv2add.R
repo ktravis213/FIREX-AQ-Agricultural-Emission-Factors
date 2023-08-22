@@ -6,9 +6,8 @@ source("speciateSpecies.R")
 require(flextable)
 q1=0.25; q2=0.75
 `%notin%` <- Negate(`%in%`)
-doER = 0
-doEF = 1
-dowheatshrub =1
+doER =1
+doEF = 0
 options(scipen = 1, digits=3)
 
 cornfrac = table1$fires[1]/sum(table1$fires[1:4])
@@ -20,6 +19,10 @@ slashfrac = table1$fires[6]/sum(table1$fires[6:8])
 pilefrac = table1$fires[7]/sum(table1$fires[6:8])
 shrubfrac = table1$fires[8]/sum(table1$fires[6:8])
 
+ind = which(allBOTH.filter$fuel != 'forest' & allBOTH.filter$fuel != 'coniferous/decidous' )
+allBOTH.filter.mean.all = aggregate(allBOTH.filter[ind,], by=list(allBOTH.filter$variable[ind]), 
+                                    FUN='mean', na.rm=TRUE)
+
 # 
 allBOTH.filter.median = aggregate(allBOTH.filter, by=list(allBOTH.filter$variable), FUN='median', na.rm=TRUE)
 propertiesSpecies = as.data.frame(cbind(allBOTH.filter.median$Group.1,
@@ -28,8 +31,7 @@ propertiesSpecies = as.data.frame(cbind(allBOTH.filter.median$Group.1,
                                         allBOTH.filter.median$OHrate.5hz, allBOTH.filter.median$lifetime_jval,allBOTH.filter.median$lifetime))
 ind = which(allBOTH.filter.median$USEME != 0)
 write.csv(propertiesSpecies[ind,],file='propertiesSpecies.csv')
-library(htmlTable); library(plyr)
-library(magrittr)
+
 # --------------
 
 ind = which(allBOTH.filter$fire == 'BlackwaterRiver') 
@@ -78,7 +80,9 @@ for (i in 1:length(allBOTH.filter.median.fuel$kind)){
 }
 allBOTH.filter.median.fuel= getplumesANDmcebyfuel(allBOTH.filter.median.fuel, allBOTH.filter )
 #allBOTH.filter.median.fuel = speciateSpecies(allBOTH.filter.median.fuel)
-
+# kludge
+ind = which(allBOTH.filter.median.fuel$names == 'Nitrocatechol')
+allBOTH.filter.median.fuel$Category[ind] = 2
 tmpTABLE = speciateSpecies(allBOTH.filter.median.fuel)
 # Here add kludge for headers
 newLine = tmpTABLE
@@ -127,12 +131,109 @@ new.data.frame.blackwater = tmpTABLE[ind,]
 
 # ------- Make average ag --------
 # but account for zeros by replacing with corn which has complete EFs
-dothis=1
+dothis=0
 new.data.frame.ag=new.data.frame
 new.data.frame.presc=new.data.frame
+cornSDfrac = rep(cornfrac, length(new.data.frame$FinalEF))
+riceSDfrac = rep(ricefrac, length(new.data.frame$FinalEF))
+soySDfrac = rep(soyfrac, length(new.data.frame$FinalEF))
+wheatSDfrac = rep(wheatfrac, length(new.data.frame$FinalEF))
+pileSDfrac = rep(pilefrac, length(new.data.frame$FinalEF))
+slashSDfrac = rep(slashfrac, length(new.data.frame$FinalEF))
+shrubSDfrac = rep(shrubfrac, length(new.data.frame$FinalEF))
+# 
+new.data.frame.ag = new.data.frame
+new.data.frame.presc = new.data.frame.pile
+
+# add wheat frac to corn where missing
+ind = which(!is.finite(new.data.frame.wheat$FinalEF_mean))
+cornSDfrac[ind] = cornSDfrac[ind] + wheatfrac
+wheatSDfrac[ind] = 0
+ind = which(!is.finite(new.data.frame.soybean$FinalEF_mean))
+cornSDfrac[ind] = cornSDfrac[ind] + soyfrac
+soySDfrac[ind] = 0
+ind = which(!is.finite(new.data.frame.rice$FinalEF_mean))
+cornSDfrac[ind] = cornSDfrac[ind] + ricefrac
+riceSDfrac[ind] = 0
+
+ind = which(is.finite(new.data.frame.pile$FinalEF_mean) & !is.finite(new.data.frame.slash$FinalEF_mean))
+pileSDfrac[ind] = pileSDfrac[ind] + slashfrac
+slashSDfrac[ind] = 0
+ind = which(is.finite(new.data.frame.slash$FinalEF_mean) & !is.finite(new.data.frame.pile$FinalEF_mean))
+slashSDfrac[ind] = slashSDfrac[ind] + pilefrac
+pileSDfrac[ind] = 0
+
+ind = which(!is.finite(new.data.frame.shrub$FinalEF_mean) & is.finite(new.data.frame.pile$FinalEF_mean) & ! is.finite(new.data.frame.slash$FinalEF_mean))
+pileSDfrac[ind] = pileSDfrac[ind] + shrubfrac
+shrubSDfrac[ind] = 0
+ind = which(!is.finite(new.data.frame.shrub$FinalEF_mean) & is.finite(new.data.frame.slash$FinalEF_mean) & ! is.finite(new.data.frame.pile$FinalEF_mean))
+slashSDfrac[ind] = slashSDfrac[ind] + shrubfrac
+shrubSDfrac[ind] = 0
+# ----------------------------------------------------------------------------------
+new.data.frame$FinalEF_mean[!is.finite(new.data.frame$FinalEF_mean )] = 0
+new.data.frame.rice$FinalEF_mean[!is.finite(new.data.frame.rice$FinalEF_mean )] = 0
+new.data.frame.soybean$FinalEF_mean[!is.finite(new.data.frame.soybean$FinalEF_mean )] = 0
+new.data.frame.wheat$FinalEF_mean[!is.finite(new.data.frame.wheat$FinalEF_mean )] = 0
+
+new.data.frame.pile$FinalEF_mean[!is.finite(new.data.frame.pile$FinalEF_mean)] = 0
+new.data.frame.slash$FinalEF_mean[!is.finite(new.data.frame.slash$FinalEF_mean)] = 0
+new.data.frame.shrub$FinalEF_mean[!is.finite(new.data.frame.shrub$FinalEF_mean)] = 0
+
+new.data.frame$FinalERtoCO_mean[!is.finite(new.data.frame$FinalERtoCO_mean)] = 0
+new.data.frame.rice$FinalERtoCO_mean[!is.finite(new.data.frame.rice$FinalERtoCO_mean )] = 0
+new.data.frame.soybean$FinalERtoCO_mean[!is.finite(new.data.frame.soybean$FinalERtoCO_mean )] = 0
+new.data.frame.wheat$FinalERtoCO_mean[!is.finite(new.data.frame.wheat$FinalERtoCO_mean )] = 0
+
+new.data.frame.pile$FinalERtoCO_mean[!is.finite(new.data.frame.pile$FinalERtoCO_mean)] = 0
+new.data.frame.slash$FinalERtoCO_mean[!is.finite(new.data.frame.slash$FinalERtoCO_mean)] = 0
+new.data.frame.shrub$FinalERtoCO_mean[!is.finite(new.data.frame.shrub$FinalERtoCO_mean)] = 0
+
+new.data.frame$FinalEF_sd[!is.finite(new.data.frame$FinalEF_sd)] = 0
+new.data.frame.rice$FinalEF_sd[!is.finite(new.data.frame.rice$FinalEF_sd )] = 0
+new.data.frame.soybean$FinalEF_sd[!is.finite(new.data.frame.soybean$FinalEF_sd )] = 0
+new.data.frame.wheat$FinalEF_sd[!is.finite(new.data.frame.wheat$FinalEF_sd )] = 0
+
+new.data.frame.pile$FinalEF_sd[!is.finite(new.data.frame.pile$FinalEF_sd)] = 0
+new.data.frame.slash$FinalEF_sd[!is.finite(new.data.frame.slash$FinalEF_sd)] = 0
+new.data.frame.shrub$FinalEF_sd[!is.finite(new.data.frame.shrub$FinalEF_sd)] = 0
+  
+new.data.frame$FinalERtoCO_sd[!is.finite(new.data.frame$FinalERtoCO_sd)] = 0
+new.data.frame.rice$FinalERtoCO_sd[!is.finite(new.data.frame.rice$FinalERtoCO_sd )] = 0
+new.data.frame.soybean$FinalERtoCO_sd[!is.finite(new.data.frame.soybean$FinalERtoCO_sd )] = 0
+new.data.frame.wheat$FinalERtoCO_sd[!is.finite(new.data.frame.wheat$FinalERtoCO_sd )] = 0
+
+new.data.frame.pile$FinalERtoCO_sd[!is.finite(new.data.frame.pile$FinalERtoCO_sd)] = 0
+new.data.frame.slash$FinalERtoCO_sd[!is.finite(new.data.frame.slash$FinalERtoCO_sd)] = 0
+new.data.frame.shrub$FinalERtoCO_sd[!is.finite(new.data.frame.shrub$FinalERtoCO_sd)] = 0
+
+new.data.frame.ag$FinalEF_mean = new.data.frame$FinalEF_mean*cornSDfrac  + new.data.frame.rice$FinalEF_mean*riceSDfrac + 
+  new.data.frame.soybean$FinalEF_mean*soySDfrac + new.data.frame.wheat$FinalEF_mean*wheatSDfrac
+new.data.frame.ag$FinalERtoCO_mean = new.data.frame$FinalERtoCO_mean*cornSDfrac  + new.data.frame.rice$FinalERtoCO_mean*riceSDfrac  + new.data.frame.soybean$FinalERtoCO_mean*soySDfrac + new.data.frame.wheat$FinalERtoCO_mean*wheatSDfrac
+new.data.frame.ag$COUNT_EFFINAL    = new.data.frame$COUNT_EFFINAL+new.data.frame.rice$COUNT_EFFINAL + new.data.frame.soybean$COUNT_EFFINAL + new.data.frame.wheat$COUNT_EFFINAL
+new.data.frame.ag$FinalEF_sd   = sqrt((((cornSDfrac*new.data.frame$FinalEF_sd)^2 +
+                                          (riceSDfrac*new.data.frame.rice$FinalEF_sd)^2  +
+                                          (soySDfrac*new.data.frame.soybean$FinalEF_sd)^2 + 
+                                          (wheatSDfrac*new.data.frame.wheat$FinalEF_sd)^2)))
+new.data.frame.ag$FinalERtoCO_sd   = sqrt((((cornSDfrac*new.data.frame$FinalERtoCO_sd)^2 + (riceSDfrac*new.data.frame.rice$FinalERtoCO_sd)^2  +
+                                              (soySDfrac*new.data.frame.soybean$FinalERtoCO_sd)^2 + (wheatSDfrac*new.data.frame.wheat$FinalERtoCO_sd)^2)))
+
+
+new.data.frame.presc$FinalEF_mean = new.data.frame.pile$FinalEF_mean*pileSDfrac+new.data.frame.slash$FinalEF_mean*slashSDfrac + new.data.frame.shrub$FinalEF_mean*shrubSDfrac
+new.data.frame.presc$FinalEF_sd = sqrt((((pileSDfrac*new.data.frame.pile$FinalEF_sd)^2 +(slashSDfrac*new.data.frame.slash$FinalEF_sd)^2  +
+                                           (shrubSDfrac*new.data.frame.shrub$FinalEF_sd)^2 )))
+new.data.frame.presc$FinalERtoCO_mean = new.data.frame.pile$FinalERtoCO_mean*pileSDfrac+new.data.frame.slash$FinalERtoCO_mean*slashSDfrac + new.data.frame.shrub$FinalERtoCO_mean*shrubSDfrac
+new.data.frame.presc$FinalERtoCO_sd = sqrt((((pileSDfrac*new.data.frame.pile$FinalERtoCO_sd)^2 +
+                                               (slashSDfrac*new.data.frame.slash$FinalERtoCO_sd)^2)  +
+                                              (shrubSDfrac*new.data.frame.shrub$FinalERtoCO_sd)^2 ))
+new.data.frame.presc$COUNT_EFFINAL = new.data.frame.pile$COUNT_EFFINAL+new.data.frame.slash$COUNT_EFFINAL + new.data.frame.shrub$COUNT_EFFINAL
+
 if (dothis == 1){
-  new.data.frame.ag = new.data.frame
   new.data.frame.wheat2 = new.data.frame.wheat
+  new.data.frame.soybean2 = new.data.frame.soybean
+  new.data.frame.rice2 = new.data.frame.rice
+  new.data.frame.pile2 = new.data.frame.pile
+  new.data.frame.slash2 = new.data.frame.slash
+  new.data.frame.shrub2 = new.data.frame.shrub
   ind = which(!is.finite(new.data.frame.wheat2$FinalEF_mean))
   new.data.frame.wheat2$FinalEF_mean[ind] = new.data.frame$FinalEF_mean[ind]
   new.data.frame.wheat2$FinalERtoCO_mean[ind] = new.data.frame$FinalERtoCO_mean[ind]
@@ -140,7 +241,6 @@ if (dothis == 1){
   new.data.frame.wheat2$FinalEF_sd[ind] = new.data.frame$FinalEF_sd[ind]
   new.data.frame.wheat2$FinalERtoCO_sd[ind] = new.data.frame$FinalERtoCO_sd[ind]
   
-  new.data.frame.soybean2 = new.data.frame.soybean
   ind = which(!is.finite(new.data.frame.soybean2$FinalEF_mean))
   new.data.frame.soybean2$FinalEF_mean[ind] = new.data.frame$FinalEF_mean[ind]
   new.data.frame.soybean2$FinalERtoCO_mean[ind] = new.data.frame$FinalERtoCO_mean[ind]
@@ -148,7 +248,6 @@ if (dothis == 1){
   new.data.frame.soybean2$FinalEF_sd[ind] = new.data.frame$FinalEF_sd[ind]
   new.data.frame.soybean2$FinalERtoCO_sd[ind] = new.data.frame$FinalERtoCO_sd[ind]
   
-  new.data.frame.rice2 = new.data.frame.rice
   ind = which(!is.finite(new.data.frame.rice2$FinalEF_mean))
   new.data.frame.rice2$FinalEF_mean[ind] = new.data.frame$FinalEF_mean[ind]
   new.data.frame.rice2$FinalERtoCO_mean[ind] = new.data.frame$FinalEF_mean[ind]
@@ -166,9 +265,7 @@ if (dothis == 1){
   new.data.frame.ag$FinalERtoCO_sd   = sqrt((((cornfrac*new.data.frame$FinalERtoCO_sd)^2 + (ricefrac*new.data.frame.rice2$FinalERtoCO_sd)^2  +
                                                (soyfrac*new.data.frame.soybean2$FinalERtoCO_sd)^2 + (wheatfrac*new.data.frame.wheat2$FinalERtoCO_sd)^2)))
   # ---- Make average presc ------------
-  new.data.frame.presc = new.data.frame.pile
   # fill missing pile
-  new.data.frame.pile2 = new.data.frame.pile
   ind = which(!is.finite(new.data.frame.pile$FinalEF_mean) & is.finite(new.data.frame.slash$FinalEF_mean))
   new.data.frame.pile2$FinalEF_mean[ind] = new.data.frame.slash$FinalEF_mean[ind]
   new.data.frame.pile2$FinalERtoCO_mean[ind] = new.data.frame.slash$FinalERtoCO_mean[ind]
@@ -176,7 +273,6 @@ if (dothis == 1){
   new.data.frame.pile2$FinalEF_sd[ind] = new.data.frame.slash$FinalEF_sd[ind]
   new.data.frame.pile2$FinalERtoCO_sd[ind] = new.data.frame.slash$FinalERtoCO_sd[ind]
   # fill missing slash
-  new.data.frame.slash2 = new.data.frame.slash
   ind = which(is.finite(new.data.frame.pile2$FinalEF_mean) & !is.finite(new.data.frame.slash$FinalEF_mean))
   new.data.frame.slash2$FinalEF_mean[ind] = new.data.frame.pile$FinalEF_mean[ind]
   new.data.frame.slash2$FinalERtoCO_mean[ind] = new.data.frame.pile$FinalERtoCO_mean[ind]
@@ -184,7 +280,6 @@ if (dothis == 1){
   new.data.frame.slash2$FinalEF_sd[ind] = new.data.frame.pile$FinalEF_sd[ind]
   new.data.frame.slash2$FinalERtoCO_sd[ind] = new.data.frame.pile$FinalERtoCO_sd[ind]
   # fill missing shrub
-  new.data.frame.shrub2 = new.data.frame.shrub
        # with average of pile + slash
   tmp = new.data.frame.pile2
   tmp$FinalEF_mean = (pilefrac*new.data.frame.pile2$FinalEF_mean +slashfrac*new.data.frame.slash2$FinalEF_mean)

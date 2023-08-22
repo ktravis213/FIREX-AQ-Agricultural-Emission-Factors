@@ -26,16 +26,19 @@ NO3=c(0.441,0.283,0.326,0.419,0.398,0.316,0.425,NaN,0.229,0.168,1.22,0.0792,1.16
 Chl=c(1.30,0.323,2.37,3.23,0.132,0.138,0.715,NaN,1.07,1.66,0.176,1.22,0.883,0.555,1.16,1.07,0.89)
 SO4=c(0.420,-0.026,0.139,0.199,0.361,0.111,0.146,NaN,0.102,0.115,0.184,0.0932,0.210,0.0504,0.135,0.160,0.115)
 OA=c(13.4,8.20,18.5,20.9,27.6,4.15,9.10,NaN,8.81,7.02,11.0,10.8,18.0,11.0,12.2,12.9,6.3)
+OC=OA/2.0
 BC=c(0.270,0.209,0.059,0.106,0.024,0.027,0.192,0.316,0.521,0.226,0.158,0.049,0.037,NaN,0.082,0.163,0.141)
 PM1=c(16.3,9.06,22.2,25.8,28.6,4.88,10.9,NaN,11.1,9.77,13.1,12.5,20.9,NaN,14.2,15.4,7.1)
 NOxasNO = NO + NO2*30/46
 xiaoxi = as.data.frame(cbind(MCE, CO2, CO, NO, NO2,NOxasNO, SO2, HCN, Formaldehyde, Methanol, Hydroxyacetone, Acetonitrile, Acetaldehyde, MVKMACRcrotonaldehyde,
-               Isoprenepentadienescyclopentenefuran, Isoprenehydroperoxyaldehydes, Benzene, Monoterpenes, Toluene, NH4, NO3, Chl, SO4, OA, BC, PM1))
+               Isoprenepentadienescyclopentenefuran, Isoprenehydroperoxyaldehydes, Benzene, Monoterpenes, Toluene, NH4, NO3, Chl, SO4, OA,OC, BC, PM1))
 xiaoxiEF = c(MCE[1:15], CO2[1:15], CO[1:15], NO[1:15], NO2[1:15], NOxasNO[1:15],SO2[1:15], HCN[1:15], Formaldehyde[1:15], Methanol[1:15], Hydroxyacetone[1:15], Acetonitrile[1:15], Acetaldehyde[1:15], MVKMACRcrotonaldehyde[1:15],
-                             Isoprenepentadienescyclopentenefuran[1:15], Isoprenehydroperoxyaldehydes[1:15], Benzene[1:15], Monoterpenes[1:15], Toluene[1:15], NH4[1:15], NO3[1:15], Chl[1:15], SO4[1:15], OA[1:15], BC[1:15], PM1[1:15])
+                             Isoprenepentadienescyclopentenefuran[1:15], Isoprenehydroperoxyaldehydes[1:15], Benzene[1:15], Monoterpenes[1:15], Toluene[1:15], NH4[1:15], NO3[1:15], 
+             Chl[1:15], SO4[1:15], OA[1:15],OC[1:15], BC[1:15], PM1[1:15])
 var= c(rep('MCE',15), rep('CO2',15),rep('CO',15), rep('NO',15), rep('NO2',15),rep('NOx (as NO)',15), rep('SO2',15), rep('HCN',15), rep('Formaldehyde',15),
        rep('Methanol',15), rep('Hydroxyacetone',15), rep('Acetonitrile',15), rep('Acetaldehyde',15), rep('MVKMACRcrotonaldehyde',15),
-            rep('Isoprenepentadienescyclopentenefuran',15), rep('Isoprenehydroperoxyaldehydes',15), rep('Benzene',15), rep('Monoterpenes',15), rep('Toluene',15), rep('NH4',15), rep('NO3',15), rep('Chl',15), rep('SO4',15), rep('OA',15), rep('BC',15), rep('PM1',15))
+            rep('Isoprenepentadienescyclopentenefuran',15), rep('Isoprenehydroperoxyaldehydes',15), rep('Benzene',15), rep('Monoterpenes',15), rep('Toluene',15),
+       rep('NH4',15), rep('NO3',15), rep('Chl',15), rep('SO4',15), rep('OA',15), rep('OC',15),rep('BC',15), rep('PM1',15))
 xiaoxi2 = as.data.frame(cbind(EF=xiaoxiEF,name=var))
 # last two are avg and stdev
-xiaoxi=xiaoxi[1:15,1:26]
+xiaoxi=xiaoxi[1:15,1:27]

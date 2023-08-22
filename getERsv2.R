@@ -1148,7 +1148,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
     '2,2,4-Trimethylpentane', '2,3,4-Trimethylpentane', 'Cyclopentane', 'Methylcyclopentane', 'Cyclohexane', 
     'Methylcyclohexane', 'Cyclopentene', 'Benzene', 'Toluene', 'Ethylbenzene', 'm,p-Xylene', 'o-Xylene', 'Styrene', 
     'Ethynylbenzene', 'i-Propylbenzene', 'n-Propylbenzene', '3-Ethyltoluene', '4-Ethyltoluene', '2-Ethyltoluene', 
-    '1,3,5-Trimethylbenzene', '1,2,4-Trimethylbenzene', 'Chlorobenzene', '⍺-Pinene', 'β-Pinene', 'Tricyclene',
+    '1,3,5-Trimethylbenzene', '1,2,4-Trimethylbenzene', 'Chlorobenzene', 'alpha-Pinene', 'beta-Pinene', 'Tricyclene',
     'Camphene', 'Myrcene', 'Limonene', 'Furan', '2-Methylfuran', '3-Methylfuran', 'Benzofuran', 'Isobutanal', 'Butanal',
     'Acetone/Propanal', 'Methyl ethyl ketone', 'Methacrolein', 'Methyl vinyl ketone', 'Acrolein', 'Isopropanol', 
     'Nitromethane', 'Acrylonitrile', 'Propionitrile','Methyl acetate')
@@ -1578,7 +1578,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
                'Methyl bromide', 'Dibromomethane', 'Bromoform', 'Chloroiodomethane', 'Iodomethane', 'Carbon disulfide', 'Methanethiol',
                'Dimethyl sulfide', 'Propane', 'Isobutane', 'n-Butane', 'Isopentane', 'n-Pentane', '2-Methylpentane', '3-Methylpentane',
                'n-Hexane', '2,2,4-Trimethylpentane', 'n-Heptane', 'n-Octane', 'Propene', 'i-Butene/1Butene', 'Isoprene', 'Tricyclene', 
-               '⍺-Pinene', 'Camphene', 'β-Pinene/Myrcene', 'Limonene/D3Carene', 'Benzene', 'Toluene', 'Ethylbenzene', 'm,p-Xylene', 
+               'alpha-Pinene', 'Camphene', 'beta-Pinene/Myrcene', 'Limonene/D3Carene', 'Benzene', 'Toluene', 'Ethylbenzene', 'm,p-Xylene', 
                'o-Xylene', 'Styrene', 'Ethynylbenzene', 'Formaldehyde', 'Acetaldehyde', 'Propanal', 'Butanal', 'Isobutanal', 'Acrolein', 
                '2-Butenals', 'Acetone/Propanal', 'Methyl ethyl ketone', 'Methanol', 'Ethanol', 'Isopropanol', '2-methyl-3-butene-2-ol',
                'Methacrolein', 'Methyl vinyl ketone', 'Methyl formate', 'Methyl acetate', 'Furan', '2-Methylfuran', '3-Methylfuran', 
@@ -1622,7 +1622,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
                'n-Octane', '2,2,4-Trimethylpentane', 'n-Nonane', 'n-Decane', 'Methylcyclopentane', 'Cyclohexane', 
                'Methylcyclohexane', 'Ethyne', 'Ethene', 'Propene', '1-Butene', 'cis-2-Butene', 'trans-2-Butene', 
                'i-Butene', '1-Pentene', 'cis-2-Pentene', 'trans-2-Pentene', '2-Methyl-1-butene', '3-Methyl-1-butene',
-               'trans-1,3-Pentadiene', 'Isoprene', '⍺-Pinene', 'Benzene', 'Toluene', 'Ethylbenzene', 'o-Xylene', 'm,p-Xylene',
+               'trans-1,3-Pentadiene', 'Isoprene', 'alpha-Pinene', 'Benzene', 'Toluene', 'Ethylbenzene', 'o-Xylene', 'm,p-Xylene',
                'Acetone', 'Methyl ethyl ketone', 'Methyl formate', 'Furan', 'Acetonitrile',	'Acrylonitrile')
     kind = c(kind,'halogen', 'halogen', 'alkane', 'alkane', 
                'alkane', 'alkane', 'alkane', 'alkane',
@@ -2238,6 +2238,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   # ------------------------------------------ WENNBERG ------------------------------------------ 
   if (debugKT == 1){print("WENNBERG")}
   print('BUTENEHN')
+  # ------- *BUTENEHN -------
   #BUTENE-HN-1Hz_CIT_WENNBERG#C4O4H9N, +-(25% of measurement value + 3 pptv),  pptv
   if (res == 1){
     pass$tmperror = (pass$BUTENE.HN.1Hz_CIT_WENNBERG*0.25 + 3)/1E3
@@ -2280,6 +2281,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   nCs  = c(nCs, 4)
   
   print('BUTENEHP')
+  # ------- *BUTENEHP -------
   #   #BUTENE-HP-1Hz_CIT_WENNBERG#C4O3H10, +-(30% of measurement value + 7 pptv),  pptv
   if (res == 1){
     pass$tmperror = (pass$BUTENE.HP.1Hz_CIT_WENNBERG*0.3 + 7)/1E3
@@ -2321,6 +2323,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   nCs  = c(nCs, 4)
   
   #ETHENE-HN-1Hz_CIT_WENNBERG# C2O4H5N,+-(25% of measurement value + 7 pptv)  pptv
+  # ------- *ETHENEHN -------
   if (res == 1){
     pass$tmperror = (pass$ETHENE.HN.1Hz_CIT_WENNBERG*0.25 + 7)/1E3
   } else{    pass$tmperror = (pass$ETHENE.HN.10Hz_CIT_WENNBERG*0.25 + 7)/1E3}
@@ -2361,7 +2364,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs, mWETHENEHN)
   nCs  = c(nCs, 2)
   print('ETHENEHN')
-  
+  # ------- *ETHENEHP -------
   #ETHENE-HP-1Hz_CIT_WENNBERG#C2O3H6, +-(30% of measurement value + 9 pptv),  pptv
   if (res == 1){
     pass$tmperror = (pass$ETHENE.HP.1Hz_CIT_WENNBERG*0.3 + 9)/1E3
@@ -2403,7 +2406,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs, mWETHENEHP)
   nCs  = c(nCs, 2)
   print('ETHENEHP')
-  
+  # ------- *PHENOL -------
   #PHENOL-1Hz_CIT_WENNBERG#C6OH6,  +-(25% of measurement value + 20 pptv) pptv
   if (res == 1){
     pass$tmperror = (pass$PHENOL.1Hz_CIT_WENNBERG*0.25 + 20)/1E3
@@ -2447,7 +2450,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs,mWPHENOL)
   nCs  = c(nCs, 6)
   print('PHENOL')
-  
+  # ------- *H2O2 -------
   #H2O2-1Hz_CIT_WENNBERG# +-(25% of measurement value + 67 pptv),  pptv
   if (res == 1){
     pass$tmperror = (pass$H2O2.1Hz_CIT_WENNBERG*0.25 + 67)/1E3
@@ -2492,7 +2495,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs,mWH2O2)
   nCs  = c(nCs, 0)
   print('H2O2')
-  
+  # ------- *ISOPN -------
   #ISOPN-1Hz_CIT_WENNBERG#C5O4H9N, +-(25% of measurement value + 3 pptv),  pptv
   if (res == 1){
     pass$tmperror = (pass$ISOPN.1Hz_CIT_WENNBERG*0.25 + 3)/1E3
@@ -2536,8 +2539,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs, mWISOPN)
   nCs  = c(nCs,5)
   print('ISOPN')
-  
-  
+  # ------- *PROPENEHN-------
   #PROPENE-HN-1Hz_CIT_WENNBERG#C3O4H7N: +-(25% of measurement value + 2.5 pptv)
   if (res == 1){
     pass$tmperror = (pass$PROPENE.HN.1Hz_CIT_WENNBERG*0.25 + 2.5)/1E3
@@ -2581,6 +2583,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs,  mWPROPENEHN)
   nCs  = c(nCs, 3)
   print('PROPENEHN')
+  # ------- *PROPENEHP-------
   
   #PROPENE-HP-1Hz_CIT_WENNBERG#C3H8O3 +-(30% of measurement value + 15 pptv) ,  pptv
   if (res == 1){
@@ -2626,7 +2629,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs,mWPROPENEHP)
   nCs  = c(nCs, 3)
   print('PROPENEHP')
-  
+  # ------- *HCN -------
   #HCN-1Hz_CIT_WENNBERG#+-(25% of measurement value + 61 pptv),  pptv
   if (res == 1){
     pass$tmperror = (pass$HCN.1Hz_CIT_WENNBERG*0.25 + 61)/1E3
@@ -2670,6 +2673,7 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   mWs   = c(mWs, mWHCN)
   nCs  = c(nCs,1)
   print('HCN - Wennberg')
+  # ------- *HNO3-------
   
   # #HNO3-1Hz_CIT_WENNBERG#+-(25% of measurement value + 48 pptv),  pptv
   # if (res ==1){ pass$HNO3.1Hz_CIT_WENNBERG = pass$HNO3_CIT_WENNBERG ; background$HNO3.1Hz_CIT_WENNBERG = background$HNO3_CIT_WENNBERG}
@@ -2715,7 +2719,193 @@ ERsEFsALLhzv2 = function(pass, background,xspecies, fire, fuel, res, SLOW, blake
   nCs  = c(nCs,0)
   print('HNO3 - Wennberg')
   
-  # ------------------------------------------ HUEY ------------------------------------------ 
+  # ------- *Nitrocatechol -------
+  # #NITROCATECHOL.1Hz_CIT_WENNBERG#+-(50% of measurement value + 6 pptv)
+  if (res == 1){
+    pass$tmperror = (pass$NITROCATECHOL.1Hz_CIT_WENNBERG*0.5 + 6)/1E3
+    passErrors=c(passErrors,pass$tmperror)
+    pass$tmpy = pass$NITROCATECHOL.1Hz_CIT_WENNBERG/1E3
+    background$tmpy = background$NITROCATECHOL.1Hz_CIT_WENNBERG/1E3
+  
+    pW1 = smallfun(pass,background,xspecies,'tmpy',      xerror, 'tmperror',SLOW) 
+    pW1CO = smallfun(pass,background,'CO_DACOM_DISKIN','tmpy',      xerror, 'tmperror',SLOW) 
+    passERs = c(passERs, pW1$slope)
+    passERsint = c(passERsint, pW1$ERint)    
+    passERsintfill = c(passERsintfill, pW1$ERintfill)    
+    passBGX  = c(passBGX, pW1$BGX)
+    passBGCO  = c(passBGCO, pW1CO$BGX)
+    passBGS  = c(passBGS, pW1$BGS)
+    passRsqsCO2 = c(passRsqsCO2, pW1$r_sq)   
+    passExcessX = c(passExcessX,pW1$ExcessX)
+    passExcessS = c(passExcessS,pW1$ExcessS)
+    passsigma = c(passsigma, pW1$uncertainty_slope)
+    passERszero= c(passERszero,pW1$intercept)
+    passERsCO = c(passERsCO, pW1CO$slope)
+    passRsqsCO  = c(passRsqsCO, pW1CO$r_sq)   
+    passERsCOint = c(passERsCOint, pW1CO$ERint)    
+    passERsCOintfill = c(passERsCOintfill, pW1CO$ERintfill)  
+    passERsCOzero = c(passERsCOzero,pW1CO$intercept)
+    passMAX   = c(passMAX, maxfun(pass,'tmpy' ))
+    passOHrate = c(passOHrate, OHNitrocatechol)
+    names1=c(names1, 'NITROCATECHOL_WENNBERG')
+    isNMVOC = c(isNMVOC,2)
+    kind = c(kind,'nitrogen')
+    formulas=c(formulas,'C6H5NO4')
+    usenames=c(usenames,'Nitrocatechol')
+    mWs   = c(mWs, mWNitrocatechol)
+    nCs  = c(nCs,6)
+    print('Nitrocatechol - Wennberg')
+  }
+  # ------- *Nitromethylcatechol -------
+  #  NITROMETHYLCATECHOL, NITROPHENOL, CATECHOL, CRESOL, DHT
+  # NITROMETHYLCATECHOL.1Hz_CIT_WENNBERG#+-(50% of measurement value + 6 pptv)
+  if (res == 1){
+    pass$tmperror = (pass$NITROMETHYLCATECHOL.1Hz_CIT_WENNBERG*0.5 + 6)/1E3
+    passErrors=c(passErrors,pass$tmperror)
+    pass$tmpy = pass$NITROMETHYLCATECHOL.1Hz_CIT_WENNBERG/1E3
+    background$tmpy = background$NITROMETHYLCATECHOL.1Hz_CIT_WENNBERG/1E3
+    pW1 = smallfun(pass,background,xspecies,'tmpy',      xerror, 'tmperror',SLOW) 
+    pW1CO = smallfun(pass,background,'CO_DACOM_DISKIN','tmpy',      xerror, 'tmperror',SLOW) 
+    passERs = c(passERs, pW1$slope)
+    passERsint = c(passERsint, pW1$ERint)    
+    passERsintfill = c(passERsintfill, pW1$ERintfill)    
+    passBGX  = c(passBGX, pW1$BGX)
+    passBGCO  = c(passBGCO, pW1CO$BGX)
+    passBGS  = c(passBGS, pW1$BGS)
+    passRsqsCO2 = c(passRsqsCO2, pW1$r_sq)   
+    passExcessX = c(passExcessX,pW1$ExcessX)
+    passExcessS = c(passExcessS,pW1$ExcessS)
+    passsigma = c(passsigma, pW1$uncertainty_slope)
+    passERszero= c(passERszero,pW1$intercept)
+    passERsCO = c(passERsCO, pW1CO$slope)
+    passRsqsCO  = c(passRsqsCO, pW1CO$r_sq)   
+    passERsCOint = c(passERsCOint, pW1CO$ERint)    
+    passERsCOintfill = c(passERsCOintfill, pW1CO$ERintfill)  
+    passERsCOzero = c(passERsCOzero,pW1CO$intercept)
+    passMAX   = c(passMAX, maxfun(pass,'tmpy' ))
+    passOHrate = c(passOHrate, OHNitromethylcatechol )
+    names1=c(names1, 'NITROMETHYLCATECHOL_WENNBERG')
+    isNMVOC = c(isNMVOC,2)
+    kind = c(kind,'nitrogen')
+    formulas=c(formulas,'C7H7NO4')
+    usenames=c(usenames,'NITROMETHYLCATECHOL')
+    mWs   = c(mWs, mWNitromethylcatechol)
+    nCs  = c(nCs,7)
+    print('NITROMETHYLCATECHOL - Wennberg')
+  }
+  # ------- *Nitrocresol -------
+  #  NITROCRESOL,  NITROPHENOL, CATECHOL, CRESOL, DHT
+  # #NITROCRESOL.1Hz_CIT_WENNBERG#+-(50% of measurement value + 6 pptv)
+  if (res == 1){
+    pass$tmperror = (pass$NITROCRESOL.1Hz_CIT_WENNBERG*0.5 + 6)/1E3
+    passErrors=c(passErrors,pass$tmperror)
+    pass$tmpy = pass$NITROCRESOL.1Hz_CIT_WENNBERG/1E3
+    background$tmpy = background$NITROCRESOL.1Hz_CIT_WENNBERG/1E3
+  
+    pW1 = smallfun(pass,background,xspecies,'tmpy',      xerror, 'tmperror',SLOW) 
+    pW1CO = smallfun(pass,background,'CO_DACOM_DISKIN','tmpy',      xerror, 'tmperror',SLOW) 
+    passERs = c(passERs, pW1$slope)
+    passERsint = c(passERsint, pW1$ERint)    
+    passERsintfill = c(passERsintfill, pW1$ERintfill)    
+    passBGX  = c(passBGX, pW1$BGX)
+    passBGCO  = c(passBGCO, pW1CO$BGX)
+    passBGS  = c(passBGS, pW1$BGS)
+    passRsqsCO2 = c(passRsqsCO2, pW1$r_sq)   
+    passExcessX = c(passExcessX,pW1$ExcessX)
+    passExcessS = c(passExcessS,pW1$ExcessS)
+    passsigma = c(passsigma, pW1$uncertainty_slope)
+    passERszero= c(passERszero,pW1$intercept)
+    passERsCO = c(passERsCO, pW1CO$slope)
+    passRsqsCO  = c(passRsqsCO, pW1CO$r_sq)   
+    passERsCOint = c(passERsCOint, pW1CO$ERint)    
+    passERsCOintfill = c(passERsCOintfill, pW1CO$ERintfill)  
+    passERsCOzero = c(passERsCOzero,pW1CO$intercept)
+    passMAX   = c(passMAX, maxfun(pass,'tmpy' ))
+    passOHrate = c(passOHrate, OHNitrocresol)
+    names1=c(names1, 'NITROCRESOL_WENNBERG')
+    isNMVOC = c(isNMVOC,2)
+    kind = c(kind,'nitrogen')
+    formulas=c(formulas,'C7H7NO3')
+    usenames=c(usenames,'Nitrocresol')
+    mWs   = c(mWs, mWNitrocresol)
+    nCs  = c(nCs,7)
+    print('Nitrocresol - Wennberg')
+  }
+  # ------- *Nitrophenol -------
+  #   NITROPHENOL, CATECHOL, CRESOL, DHT
+  # #NITROCRESOL.1Hz_CIT_WENNBERG#+-(50% of measurement value + 6 pptv)
+  if (res == 1){
+    pass$tmperror = (pass$NITROPHENOL.1Hz_CIT_WENNBERG*0.5 + 6)/1E3
+    passErrors=c(passErrors,pass$tmperror)
+    pass$tmpy = pass$NITROPHENOL.1Hz_CIT_WENNBERG/1E3
+    background$tmpy = background$NITROPHENOL.1Hz_CIT_WENNBERG/1E3
+  
+    pW1 = smallfun(pass,background,xspecies,'tmpy',      xerror, 'tmperror',SLOW) 
+    pW1CO = smallfun(pass,background,'CO_DACOM_DISKIN','tmpy',      xerror, 'tmperror',SLOW) 
+    passERs = c(passERs, pW1$slope)
+    passERsint = c(passERsint, pW1$ERint)    
+    passERsintfill = c(passERsintfill, pW1$ERintfill)    
+    passBGX  = c(passBGX, pW1$BGX)
+    passBGCO  = c(passBGCO, pW1CO$BGX)
+    passBGS  = c(passBGS, pW1$BGS)
+    passRsqsCO2 = c(passRsqsCO2, pW1$r_sq)   
+    passExcessX = c(passExcessX,pW1$ExcessX)
+    passExcessS = c(passExcessS,pW1$ExcessS)
+    passsigma = c(passsigma, pW1$uncertainty_slope)
+    passERszero= c(passERszero,pW1$intercept)
+    passERsCO = c(passERsCO, pW1CO$slope)
+    passRsqsCO  = c(passRsqsCO, pW1CO$r_sq)   
+    passERsCOint = c(passERsCOint, pW1CO$ERint)    
+    passERsCOintfill = c(passERsCOintfill, pW1CO$ERintfill)  
+    passERsCOzero = c(passERsCOzero,pW1CO$intercept)
+    passMAX   = c(passMAX, maxfun(pass,'tmpy' ))
+    passOHrate = c(passOHrate, OHNitrophenol)
+    names1=c(names1, 'NITROPHENOL_WENNBERG')
+    isNMVOC = c(isNMVOC,2)
+    kind = c(kind,'nitrogen')
+    formulas=c(formulas,'C6H5NO3')
+    usenames=c(usenames,'Nitrophenol')
+    mWs   = c(mWs, mWNitrophenol)
+    nCs  = c(nCs,6)
+    print('Nitrophenol - Wennberg')
+  }
+   # ------- *Cresol -------
+  if (res == 1){
+    pass$tmperror = (pass$CRESOL.1Hz_CIT_WENNBERG*0.5 + 6)/1E3
+    passErrors=c(passErrors,pass$tmperror)
+    pass$tmpy = pass$CRESOL.1Hz_CIT_WENNBERG/1E3
+    background$tmpy = background$CRESOL.1Hz_CIT_WENNBERG/1E3
+  
+    pW1 = smallfun(pass,background,xspecies,'tmpy',      xerror, 'tmperror',SLOW) 
+    pW1CO = smallfun(pass,background,'CO_DACOM_DISKIN','tmpy',      xerror, 'tmperror',SLOW) 
+    passERs = c(passERs, pW1$slope)
+    passERsint = c(passERsint, pW1$ERint)    
+    passERsintfill = c(passERsintfill, pW1$ERintfill)    
+    passBGX  = c(passBGX, pW1$BGX)
+    passBGCO  = c(passBGCO, pW1CO$BGX)
+    passBGS  = c(passBGS, pW1$BGS)
+    passRsqsCO2 = c(passRsqsCO2, pW1$r_sq)   
+    passExcessX = c(passExcessX,pW1$ExcessX)
+    passExcessS = c(passExcessS,pW1$ExcessS)
+    passsigma = c(passsigma, pW1$uncertainty_slope)
+    passERszero= c(passERszero,pW1$intercept)
+    passERsCO = c(passERsCO, pW1CO$slope)
+    passRsqsCO  = c(passRsqsCO, pW1CO$r_sq)   
+    passERsCOint = c(passERsCOint, pW1CO$ERint)    
+    passERsCOintfill = c(passERsCOintfill, pW1CO$ERintfill)  
+    passERsCOzero = c(passERsCOzero,pW1CO$intercept)
+    passMAX   = c(passMAX, maxfun(pass,'tmpy' ))
+    passOHrate = c(passOHrate, OHCresol)
+    names1=c(names1, 'CRESOL_WENNBERG')
+    isNMVOC = c(isNMVOC,1)
+    kind = c(kind,'oVOC')
+    formulas=c(formulas,'C7H8O')
+    usenames=c(usenames,'Cresol')
+    mWs   = c(mWs, mWCresol)
+    nCs  = c(nCs,7)
+    print('CRESOL - Wennberg')
+  }
+   # ------------------------------------------ HUEY ------------------------------------------ 
   # PAN
   if (debugKT == 1){ print("HUEY")}
   pass$tmperror = (pass$PAN_GTCIMS_HUEY*0.2)/1E3

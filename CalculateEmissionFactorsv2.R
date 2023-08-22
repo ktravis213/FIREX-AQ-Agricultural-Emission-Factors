@@ -27,7 +27,7 @@
 ##
 ## ---------------------------
 # Location of FIREX Working directory
-setwd('/Users/ktravis1/OneDrive - NASA/ForGITHUB/')
+setwd('/Users/ktravis1/OneDrive - NASA/FIREX/FinalAnalysisForGithub/')
 # ------------------------------------------------
 # Required Packages ---------------------------------
 require(ggmap) ; require(OrgMassSpecR); library(readxl) ;require(plyr) ; require(dplyr); require(ggpubr); require(ncdf4)

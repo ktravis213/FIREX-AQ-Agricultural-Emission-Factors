@@ -35,6 +35,7 @@ speciateSpecies = function(speciateData){
     iw = which(!is.finite(fracmpx))
     if (length(iw) != 0){fracmpx[iw] = mean(fracmpx, na.rm=TRUE)}
     
+    #  ----- Ethylbenzene -----
     newline = speciateData[ind,]
     newline$PI = 'Warneke w/Blake+GILMAN+APEL'
     #newline$Group.2 = 'Warneke w/Blake+GILMAN+APEL'
@@ -46,6 +47,7 @@ speciateSpecies = function(speciateData){
     newline$USEME = 1
     speciateData = rbind(speciateData,newline)
     
+    # ------- o-Xylene -----
     newline = speciateData[ind,]
     newline$PI = 'Warneke w/Blake+GILMAN+APEL'
     #newline$Group.2 = 'Warneke w/Blake+GILMAN+APEL'
@@ -57,6 +59,7 @@ speciateSpecies = function(speciateData){
     newline$USEME = 1
     speciateData = rbind(speciateData,newline)
     
+    # ------- m,p-Xylene -----
     newline = speciateData[ind,]
     newline$PI = 'Warneke w/Blake+GILMAN+APEL'
     #newline$Group.2 = 'Warneke w/Blake+GILMAN+APEL'
@@ -77,16 +80,18 @@ speciateSpecies = function(speciateData){
     ind3 = which(speciateData$Group.2== 'Acetone_ppt')
     speciateData$USEME[ind3] = 0
     
-    newline = speciateData[ind,]
-    newline$PI = 'Warneke w/APEL'
-    #newline$Group.2 = 'Warneke w/APEL'
-    newline$names = 'Acetone'; newline$variable = 'Acetone'
     fracacetone =  speciateData$FinalEF[ind3]/(speciateData$FinalEF[ind3] + speciateData$FinalEF[ind2])
     # check for negs
     iw = which(!is.finite(fracacetone))
     fracacetone[iw] = mean(fracacetone, na.rm=TRUE)
     fracpropanal = 1-fracacetone
     
+    # ---- Acetone -----
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
+    #newline$Group.2 = 'Warneke w/APEL'
+    newline$names = 'Acetone'; newline$variable = 'Acetone'
+     
     newline$FinalEF = newline$FinalEF*fracacetone;  newline$FinalEF_mean = newline$FinalEF_mean*fracacetone
     newline$FinalERtoCO = newline$FinalERtoCO*fracacetone; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracacetone
     newline$FinalEF_sd = newline$FinalEF_sd*fracacetone
@@ -96,7 +101,10 @@ speciateSpecies = function(speciateData){
     newline$LifetimeCat = speciateData$LifetimeCat[ind3]
     speciateData = rbind(speciateData,newline)
     
-     newline$names = 'Propanal'; newline$variable = 'Propanal'
+    # ---- Propanal ------
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
+    newline$names = 'Propanal'; newline$variable = 'Propanal'
     newline$FinalEF = newline$FinalEF*fracpropanal; newline$FinalEF_mean = newline$FinalEF_mean*fracpropanal
     newline$FinalERtoCO = newline$FinalERtoCO*fracpropanal; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracpropanal
     newline$FinalEF_sd = newline$FinalEF_sd*fracpropanal
@@ -128,6 +136,7 @@ speciateSpecies = function(speciateData){
     fracmacr[iw] = mean(fracmacr, na.rm=TRUE)
     fracbutenal= 1-fracmvk - fracmacr
     
+    # ---- MVK ----
     newline = speciateData[ind,]
     newline$PI = 'Warneke w/APEL'
     #newline$Group.2 = 'Warneke w/APEL'
@@ -145,6 +154,9 @@ speciateSpecies = function(speciateData){
     
     speciateData = rbind(speciateData,newline)
     
+    # ---- MACR ------
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
     newline$names = speciateData$names[ind3[1]]
     newline$FinalEF = newline$FinalEF*fracmacr; newline$FinalEF_mean = newline$FinalEF_mean*fracmacr
     newline$FinalERtoCO = newline$FinalERtoCO*fracmacr; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracmacr
@@ -156,8 +168,12 @@ speciateSpecies = function(speciateData){
     newline$LifetimeCat = speciateData$LifetimeCat[ind3[1]]
     
     speciateData = rbind(speciateData,newline)
+    
+    # ---- Butenal ------
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
     newline$names = speciateData$names[ind4[1]]
-    newline$FinalEF = newline$FinalEF*fracmacr; newline$FinalEF_mean = newline$FinalEF_mean*fracmacr
+    newline$FinalEF = newline$FinalEF*fracbutenal; newline$FinalEF_mean = newline$FinalEF_mean*fracbutenal
     newline$FinalERtoCO = newline$FinalERtoCO*fracbutenal; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracbutenal
     newline$FinalEF_sd = newline$FinalEF_sd*fracbutenal
    # newline$FinalEF_75 = newline$FinalEF_75*fracbutenal
@@ -168,8 +184,8 @@ speciateSpecies = function(speciateData){
     speciateData = rbind(speciateData,newline)
   }
   if (domek == 1){
-    # -------- MEK + ibutenal + butenal -------
-    ind = which(speciateData$Group.2== 'C4Carbonyls_NOAAPTR_ppbv_WARNEKE')
+    # -------- MEK + ibutanal + butanal -------
+    ind = which(speciateData$Group.2== 'C4Carbonyls_NOAAPTR_ppbv_WARNEKE' )
     speciateData$USEME[ind] = 0
     ind2 = which(speciateData$Group.2 == 'Butanal_ppt')
     speciateData$USEME[ind2] = 0
@@ -177,13 +193,6 @@ speciateSpecies = function(speciateData){
     speciateData$USEME[ind3] = 0
     ind4 = which(speciateData$Group.2== 'iButanal_ppt')
     speciateData$USEME[ind4] = 0
-    
-    newline = speciateData[ind,]
-    newline$PI = 'Warneke w/APEL'
-    #newline$Group.2 = 'Warneke w/APEL'
-    newline$names = speciateData$names[ind2[1]]
-    newline$lifetime = speciateData$lifetime[ind2[1]]
-    newline$LifetimeCat = speciateData$LifetimeCat[ind2[1]]
     
     fracbutanal=  speciateData$FinalEF[ind2]/
       (speciateData$FinalEF[ind2] + speciateData$FinalEF[ind3] + speciateData$FinalEF[ind4])
@@ -195,6 +204,13 @@ speciateSpecies = function(speciateData){
     fracibutanal[iw] = mean(fracibutanal, na.rm=TRUE)
     fracMEK= 1-fracibutanal - fracbutanal
     
+    # ---------   Butanal -----
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
+    newline$names = speciateData$names[ind2[1]]
+    newline$lifetime = speciateData$lifetime[ind2[1]]
+    newline$LifetimeCat = speciateData$LifetimeCat[ind2[1]]
+    
     newline$FinalEF = newline$FinalEF*fracbutanal;  newline$FinalEF_mean = newline$FinalEF_mean*fracbutanal
     newline$FinalERtoCO = newline$FinalERtoCO*fracbutanal; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracbutanal
     newline$FinalEF_sd = newline$FinalEF_sd*fracbutanal
@@ -205,6 +221,9 @@ speciateSpecies = function(speciateData){
     
     speciateData = rbind(speciateData,newline)
     
+    # ------- MEK -------
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
     newline$names = speciateData$names[ind3[1]]
     newline$FinalEF = newline$FinalEF*fracMEK; newline$FinalEF_mean = newline$FinalEF_mean*fracMEK
     newline$FinalERtoCO = newline$FinalERtoCO*fracMEK; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracMEK
@@ -217,6 +236,9 @@ speciateSpecies = function(speciateData){
     
     speciateData = rbind(speciateData,newline)
     
+    # ------------- iButanal -----------
+    newline = speciateData[ind,]
+    newline$PI = 'Warneke w/APEL'
     newline$names = speciateData$names[ind4[1]]
     newline$FinalEF = newline$FinalEF*fracibutanal;  newline$FinalEF_mean = newline$FinalEF_mean*fracibutanal
     newline$FinalERtoCO = newline$FinalERtoCO*fracibutanal; newline$FinalERtoCO_mean = newline$FinalERtoCO_mean*fracibutanal

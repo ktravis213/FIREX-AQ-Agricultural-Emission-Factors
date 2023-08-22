@@ -447,7 +447,7 @@ plotSpeciesCOMCE = function(allBOTH.filterIN,variableN,akagiN,andreaeN,xiaoxiN){
   print(cor.test(allBOTH.filter.CH4$FinalERtoCO[ind], allBOTH.filter.CH4$MCE[ind]))
   
   #Our transformation function
-  scaleFUN <- function(x) sprintf("%.1f", x)
+  scaleFUN <- function(x) sprintf("%.2f", x)
   
   #make all y-axis same decimal points
   CH4vsMCE=CH4vsMCE + scale_y_continuous(labels=scaleFUN) + theme(legend.position="none")

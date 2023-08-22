@@ -1,8 +1,8 @@
  # --------- Supplement ----------
-f2 = '/Users/ktravis1/OneDrive - NASA/ForGITHUB/InputFiles/OtherStudies/Andreae-BB-EMFactors-14Apr2021_justtable1.csv'
+f2 = '/Users/ktravis1/OneDrive - NASA/FIREX/FinalAnalysisForGithub/InputFiles/OtherStudies/Andreae-BB-EMFactors-14Apr2021_justtable1.csv'
 andreae = read.csv(f2)
 require(readxl)
-akagi=readxl::read_xlsx('/Users/ktravis1/OneDrive - NASA/ForGITHUB/InputFiles/OtherStudies/Akagi_acp-11-4039-2011-supplement/Tables 1-5_4.27.11.xlsx')
+akagi=readxl::read_xlsx('/Users/ktravis1/OneDrive - NASA/FIREX/FinalAnalysisForGithub/InputFiles/OtherStudies/Akagi_acp-11-4039-2011-supplement/Tables 1-5_4.27.11.xlsx')
 
 
 # ------- Need to apply Table 4 --------

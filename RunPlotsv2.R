@@ -19,6 +19,7 @@ cbp1d <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
            "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 cbp1 = cbp1a
+
 domap=0
 if (domap == 1){
   # Example 3. Retrieve data for a rectangle box defined by four corner points in 2018.
@@ -241,6 +242,11 @@ aroms = ggarrange(StyrenevsMCE,
 
 print('Fig 7')
 # ------ Figure 7: Nitrogen species -----
+CresolvsMCE = plotSpeciesMCE(allBOTH.filter,'CRESOL_WENNBERG','Cresol','NO4','NO4')
+NCvsMCE = plotSpeciesMCE(allBOTH.filter,'NITROCRESOL_WENNBERG','Nitrocresol','NO4','NO4')
+NPvsMCE = plotSpeciesMCE(allBOTH.filter,'NITROPHENOL_WENNBERG','Nitrophenol','NO4','NO4')
+NCTvsMCE = plotSpeciesMCE(allBOTH.filter,'NITROCATECHOL_WENNBERG','Nitrocatechol','NO4','NO4')
+NMCTvsMCE = plotSpeciesMCE(allBOTH.filter,'NITROMETHYLCATECHOL_WENNBERG','Nitromethylcatechol','NO4','NO4')
 
 NOvsMCE = plotSpeciesMCE(allBOTH.filter,'Nitrogen oxide_ROLLINS_RYERSON','NO','NO','NO')
 NO2vsMCE = plotSpeciesMCE(allBOTH.filter,'Nitrogen dioxide_WOMACK_RYERSON','NO2','NO2','NO2')
@@ -435,17 +441,14 @@ xiaoxi2.med = aggregate(xiaoxi2,by=list(xiaoxi2$name), FUN='mean', na.rm=TRUE)
 xiaoxi2.sd = aggregate(xiaoxi2,by=list(xiaoxi2$name), FUN='sd', na.rm=TRUE)
 xiaoxi2.med$EF_sd = xiaoxi2.sd$EF
 xiaoxi2.med$name =xiaoxi2.med$Group.1
-xiaoxi$fuel = c('Corn','Corn','Corn', 'Rice','Rice', 'Rice','Rice','Rice','Rice','Rice','Rice','Soybean', 'Popcorn','DblCrpWinWht_Soy',   'WoodyWetlands')
+#xiaoxi$fuel = c('Corn','Corn','Corn', 'Rice','Rice', 'Rice','Rice','Rice','Rice','Rice','Rice','Soybean', 'Popcorn','DblCrpWinWht_Soy',   'WoodyWetlands')
 
 ind = which(outputdata$names == 'Black carbon')
 outputdata$names[ind] = 'BC'
+ind = which(outputdata$names == 'Organic aerosol')
+outputdata$names[ind] = "OA"; outputdata$formula[ind] = 'OA' #kludge
 ind = which(outputdata$names == 'Organic carbon')
-outputdata$names[ind] = "OA"
-outputdata$FinalEF_mean_ag[ind] = as.numeric(outputdata$FinalEF_mean_ag[ind]) * 2.0
-outputdata$FinalEF_mean_presc[ind] = as.numeric(outputdata$FinalEF_mean_presc[ind]) * 2.0
-outputdata$FinalEF_sd_ag[ind] = as.numeric(outputdata$FinalEF_sd_ag[ind]) * 2.0
-outputdata$FinalEF_sd_presc[ind] = as.numeric(outputdata$FinalEF_sd_presc[ind]) * 2.0
-
+outputdata$names[ind] = "OC"
 # ---
 ind = which(outputdata$names == 'Chloride')
 outputdata$formula[ind] = 'Chl'
@@ -483,17 +486,17 @@ outputdata=outputdata[ind,]
 
 print('Fig Akagi')
 # --------- Get Akagi/Andreae emission factors ------------
-f2 = '/Users/ktravis1/OneDrive - NASA/ForGITHUB/InputFiles/OtherStudies/Andreae-BB-EMFactors-14Apr2021_justtable1.csv'
+f2 = '/Users/ktravis1/OneDrive - NASA/FIREX/FinalAnalysisForGithub/InputFiles/OtherStudies/Andreae-BB-EMFactors-14Apr2021_justtable1.csv'
 andreae = read.csv(f2)
 require(readxl)
-akagi=readxl::read_xlsx('/Users/ktravis1/OneDrive - NASA/ForGITHUB/InputFiles/OtherStudies/Akagi_acp-11-4039-2011-supplement/Tables 1-5_4.27.11.xlsx')
+akagi=readxl::read_xlsx('/Users/ktravis1/OneDrive - NASA/FIREX/FinalAnalysisForGithub/InputFiles/OtherStudies/Akagi_acp-11-4039-2011-supplement/Tables 1-5_4.27.11.xlsx')
 outputdata$AkagiName = outputdata$names
 outputdata$AndreaeName = outputdata$Names
 outputdata$AkagiEF = NaN; outputdata$AkagiSD=NaN
 outputdata$AndreaeEF = NaN; outputdata$AndreaeSD=NaN
 
-ind = which(outputdata$names == 'OA')
-outputdata$names[ind] = 'OC'
+#ind = which(outputdata$names == 'OA')
+#outputdata$names[ind] = 'OC'
 fix=c()
 for (i in 1:length(outputdata$names)){
   ind = which(outputdata$names[i] == akagi$Species)

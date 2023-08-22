@@ -124,6 +124,11 @@ mWBenzaldehyde = 106.12; mWC8Aromatics=mWoXylene;
 mWC7H8O=108.14; mWCatecholx5MeFurfural=110.11
 mWC9Aromatics=120.19; mWC6H4O3=124.09; mWGuaiacol=124.14; mWNaphthalene=128.1705;mWMonoterpenes = mWLimonene
 mWCresol=108.14
+mWNitrocatechol = 155
+mWNitrocresol = 153
+mWNitromethylcatechol = 169 
+mWDHT = 124
+mWNitrophenol = 139
 # -------- Number of carbon atoms --------
 nCOCS=NaN;  nCDMS=NaN; nCCFC12=NaN; nCCFC11=NaN; nCCFC113=NaN; nCCFC114=NaN; nCHFC152a=NaN; nCHFC134a=NaN
 nCHFC365mfc=NaN; nCHCFC22=NaN; nCHCFC142b=NaN; nCHCFC141b=NaN;  nCH1301=NaN; nCH2402=NaN; nCH1211=NaN; nCCH3CCl3=NaN; nCCCl4=NaN; nCCHCl3=NaN; nCCH2Cl2=NaN; nCCH2ClI=NaN
@@ -330,4 +335,9 @@ F12	=10^(log10(FC12)/(1.0+(log10(KR12)/NC12)^2))
 OHSO2 =(K120*K12I*F12)/(K120+K12I) #MCM
 
 OHOCS = 5.3E-15 #https://www.sciencedirect.com/science/article/pii/S0009261417302178
-
+OHNitrocatechol = 3.47E-12 # MCM
+OHNitrocresol = NA
+OHNitromethylcatechol = 6.83E-12 # MCM MNCATECH
+OHNitrophenol = 9.00E-13 #MCM
+OHCresol = 4.65E-11
+OHDHT = 2E-10 # MCM mcatechol

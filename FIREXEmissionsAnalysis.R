@@ -745,6 +745,9 @@ if (doprocessSTEP2 == 1){
   ind3 = which(allBOTH.filter$variable== 'Acetone_ppt')
   allBOTH.filter$USEME[ind3] =2
   
+  ind3 = which(allBOTH.filter$variable== 'CRESOL_WENNBERG')
+  allBOTH.filter$USEME[ind3] =2
+  
   # ----- These species just really don't correlate in my opinion!
   ind = which(allBOTH.filter$variable =='Cl2_NOAACIMS_VERES')
   allBOTH.filter$USEME[ind] = -1
@@ -756,7 +759,7 @@ if (doprocessSTEP2 == 1){
   allBOTH.filter$USEME[ind] = 1
   ind2 = which(allBOTH.filter$names== '1,2,4-Trimethylbenzene')
   allBOTH.filter$USEME[ind2] = 2
-  ind3 = which(allBOTH.filter$names== '1,3,5-trimethylbenzene')
+  ind3 = which(allBOTH.filter$names== '1,3,5-trimethylbenzene' | allBOTH.filter$names== '1,3,5-Trimethylbenzene' )
   allBOTH.filter$USEME[ind3] = 2
   ind4 = which(allBOTH.filter$names== 'i-Propylbenzene')
   allBOTH.filter$USEME[ind4] = 2
@@ -824,13 +827,13 @@ if (doprocessSTEP2 == 1){
   
   ind = which(allBOTH.filter$names == 'MEK/ 2-methyl propanal' & allBOTH.filter$PI == 'WARNEKE')
   allBOTH.filter$USEME[ind] = 1
-  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI == 'GILMAN')#
+  ind = which(allBOTH.filter$names == 'Methyl ethyl ketone' & allBOTH.filter$PI == 'GILMAN')#
   allBOTH.filter$USEME[ind] = 0
-  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI == 'BLAKE' )
+  ind = which(allBOTH.filter$names == 'Methyl ethyl ketone' & allBOTH.filter$PI == 'BLAKE' )
   allBOTH.filter$USEME[ind] = 0
-  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' &  allBOTH.filter$PI == 'ppt')
+  ind = which(allBOTH.filter$names == 'Methyl ethyl ketone' &  allBOTH.filter$PI == 'ppt')
   allBOTH.filter$USEME[ind] = 0
-  ind = which(allBOTH.filter$names == 'Methyl Ethyl Ketone' & allBOTH.filter$PI != 'WARNEKE' & allBOTH.filter$PI != 'GILMAN' &
+  ind = which(allBOTH.filter$names == 'Methyl ethyl ketone' & allBOTH.filter$PI != 'WARNEKE' & allBOTH.filter$PI != 'GILMAN' &
                 allBOTH.filter$PI != 'ppt' & allBOTH.filter$PI != 'BLAKE')
   allBOTH.filter$USEME[ind] = 2
   # Stategy - maybe average the 'short' measurements?
